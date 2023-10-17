@@ -1,0 +1,5 @@
+asyncio
+playwright
+urllib3
+PyExecJS
+requests
