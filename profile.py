@@ -1,6 +1,6 @@
 import requests
 from dy_utils.dy_util import js, get_headers, get_profile_params, splice_url, handle_profile_info, check_info, download_media, check_and_create_path, norm_str, save_user_detail
-
+ 
 class Profile:
     def __init__(self):
         self.info = check_info()
