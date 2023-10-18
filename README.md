@@ -15,7 +15,8 @@
 ![image](https://github.com/cv-cat/DouYin_Spider/assets/94289429/fa6f5e65-7e3c-4abf-b140-cd20c33d3b43)
 ### 某个视频\图集具体的内容
 ![image](https://github.com/cv-cat/DouYin_Spider/assets/94289429/16cfc027-6186-4914-bca4-901f886a9b82)
-
+### 某个直播时的具体弹幕发言
+![image](https://github.com/cv-cat/DouYin_Spider/assets/94289429/7a075adb-8e2d-4c5e-a1fd-72278bd336a5)
 
 
 ## ⛳运行环境
