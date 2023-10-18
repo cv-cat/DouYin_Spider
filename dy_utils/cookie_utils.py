@@ -2,7 +2,7 @@ import asyncio
 import getpass
 from playwright.async_api import async_playwright
 from urllib.parse import urlparse, parse_qs
-
+ 
 webid = None
 cookies = None
 def handle_request(request):
