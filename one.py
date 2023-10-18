@@ -2,7 +2,7 @@ import json
 import re
 import requests
 from dy_utils.dy_util import download_media, check_and_create_path, norm_str, get_headers, handle_video_info, check_info, save_video_detail
-
+ 
 class OneVideo:
     def __init__(self):
         self.info = check_info()
