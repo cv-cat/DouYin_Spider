@@ -1,7 +1,7 @@
 import requests
 from profile import Profile
 from dy_utils.dy_util import norm_str, download_media, check_and_create_path, get_headers, get_list_params, splice_url, handle_list_video_info_each, js, save_video_detail
-
+ 
 class Home:
     def __init__(self):
         self.profile = Profile()
