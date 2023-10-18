@@ -1,5 +1,8 @@
 asyncio
+aiofiles
 playwright
 urllib3
 PyExecJS
 requests
+argparse
+websockets
