@@ -1,6 +1,6 @@
 import requests
 from dy_utils.dy_util import js, get_headers, get_search_params, splice_url, check_info, handle_search_info_each, download_media, check_and_create_path, norm_str, save_video_detail
-
+ 
 class Search:
     def __init__(self):
         self.search_url = "https://www.douyin.com/aweme/v1/web/general/search/single/"
