@@ -14,6 +14,8 @@
 ![image](https://github.com/cv-cat/DouYin_Spider/assets/94289429/16cfc027-6186-4914-bca4-901f886a9b82)
 ### 某个直播时的具体弹幕发言和礼物数据
 ![image](https://github.com/cv-cat/DouYin_Spider/assets/94289429/e2cde1f1-6309-44fe-8aa3-bca2821bf30d)
+### 图形化界面
+![image](https://github.com/cv-cat/DouYin_Spider/assets/94289429/9f44f934-3558-4dca-8ff5-3d1171fc7ef2)
 
 
 ## ⛳运行环境
