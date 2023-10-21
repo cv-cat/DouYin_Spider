@@ -1,11 +1,15 @@
 import requests
 from dy_utils.dy_util import js, get_headers, get_profile_params, splice_url, handle_profile_info, check_info, download_media, check_and_create_path, norm_str, save_user_detail
- 
+
 class Profile:
-    def __init__(self):
-        self.info = check_info()
+    def __init__(self, info=None):
+        if info is None:
+            self.info = check_info()
+        else:
+            self.info = info
         self.headers = get_headers()
 
+    # 个人信息主页
     def get_profile_info(self, url):
         sec_user_id = url.split('/')[-1]
         profile_url = "https://www.douyin.com/aweme/v1/web/user/profile/other/"
