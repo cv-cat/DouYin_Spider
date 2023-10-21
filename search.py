@@ -1,11 +1,16 @@
 import requests
+
 from dy_utils.dy_util import js, get_headers, get_search_params, splice_url, check_info, handle_search_info_each, download_media, check_and_create_path, norm_str, save_video_detail
- 
+
+
 class Search:
-    def __init__(self):
+    def __init__(self, info=None):
+        if info is None:
+            self.info = check_info()
+        else:
+            self.info = info
         self.search_url = "https://www.douyin.com/aweme/v1/web/general/search/single/"
         self.headers = get_headers()
-        self.info = check_info()
 
     def get_search_data(self, query, number, sort_type='0'):
         params = get_search_params()
@@ -36,9 +41,10 @@ class Search:
             params['count'] = '10'
         return video_list
 
-    def save_search_data(self, query, number, sort_type, need_cover=False):
+    def save_search_data(self, query, number, sort_type, publish_time, need_cover=False):
         params = get_search_params()
         params['sort_type'] = sort_type
+        params['publish_time'] = publish_time
         params['keyword'] = query
         params['count'] = '25'
         params['webid'] = self.info['webid']
@@ -66,12 +72,13 @@ class Search:
             params['count'] = '10'
         print(f'搜索结果全部下载完成，共 {index} 个视频')
 
+    # 工具类，用于保存信息
     def save_one_video_info(self, video, need_cover=False):
         try:
             title = norm_str(video.title)
             if title.strip() == '':
                 title = f'无标题'
-            path = f'./datas_search/{video.nickname}_{video.sec_uid}/{title}_{video.awemeId}'
+            path = f'./search_datas/{video.nickname}_{video.sec_uid}/{title}_{video.awemeId}'
             exist = check_and_create_path(path)
             if exist and not need_cover:
                 print(f'用户: {video.nickname}, 标题: {title} 本地已存在，跳过保存')
@@ -88,8 +95,12 @@ class Search:
             print(f'用户: {video.nickname}, 标题: {norm_str(video.title)} 保存失败')
 
 
-    def main(self, query, number):
-        self.save_search_data(query, number, sort_type)
+    def main(self, info):
+        query = info['query']
+        number = info['number']
+        sort_type = info['sort_type']
+        publish_time = info['publish_time']
+        self.save_search_data(query, number, sort_type, publish_time)
 
 
 if __name__ == '__main__':
@@ -102,4 +113,10 @@ if __name__ == '__main__':
     number = 20
     # 0为不限时间，其余数字为限制时间，如1是1天内的视频，666是666天内的视频
     publish_time = '0'
-    search.main(query, number)
+    info = {
+        'query': query,
+        'number': number,
+        'sort_type': sort_type,
+        'publish_time': publish_time,
+    }
+    search.main(info)
