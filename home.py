@@ -1,14 +1,18 @@
 import requests
+from dy_utils.dy_util import norm_str, download_media, check_and_create_path, get_headers, get_list_params, splice_url, handle_list_video_info_each, js, save_video_detail, check_info
 from profile import Profile
-from dy_utils.dy_util import norm_str, download_media, check_and_create_path, get_headers, get_list_params, splice_url, handle_list_video_info_each, js, save_video_detail
- 
+
 class Home:
-    def __init__(self):
-        self.profile = Profile()
-        self.info = self.profile.info
+    def __init__(self, info=None):
+        if info is None:
+            self.info = check_info()
+        else:
+            self.info = info
+        self.profile = Profile(self.info)
         self.list_url = "https://www.douyin.com/aweme/v1/web/aweme/post/"
         self.headers = get_headers()
 
+    # 主页
     def get_all_video_info(self, url):
         profile = self.profile.get_profile_info(url)
         video_list = []
@@ -34,6 +38,7 @@ class Home:
                 break
         return video_list, profile
 
+    # 主页
     def save_all_video_info(self, url, need_cover=False):
         profile = self.profile.save_profile_info(url)
         nickname = norm_str(profile.nickname)
@@ -65,6 +70,7 @@ class Home:
                 break
         print(f'用户 {profile.nickname} 全部视频信息保存成功')
 
+    # 工具类，用于保存信息
     def save_videos_info(self, video_list, index, nickname, user_path, aweme_count, need_cover):
         for video in video_list:
             try:
