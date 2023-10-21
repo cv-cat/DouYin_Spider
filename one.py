@@ -2,12 +2,16 @@ import json
 import re
 import requests
 from dy_utils.dy_util import download_media, check_and_create_path, norm_str, get_headers, handle_video_info, check_info, save_video_detail
- 
+
 class OneVideo:
-    def __init__(self):
-        self.info = check_info()
+    def __init__(self, info=None):
+        if info is None:
+            self.info = check_info()
+        else:
+            self.info = info
         self.headers = get_headers()
 
+    # 单个视频
     def get_one_video_info(self, url):
         response = requests.get(url, headers=self.headers, cookies=self.info['cookies'])
         html_text = response.text
@@ -17,6 +21,7 @@ class OneVideo:
         video = handle_video_info(video_info_json)
         return video
 
+    # cover 是否覆盖
     def save_one_video_info(self, url, need_cover=False):
         video = self.get_one_video_info(url)
         nickname = norm_str(video.nickname)
@@ -42,8 +47,6 @@ class OneVideo:
 
     def main(self, url_list):
         for url in url_list:
-            self.save_one_video_info(url)
-
             try:
                 self.save_one_video_info(url)
             except:
