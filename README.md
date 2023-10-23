@@ -19,7 +19,7 @@
 
 
 ## ⛳运行环境
-Python环境>=3.6
+Python环境>=3.7
 NodeJS环境>=14
 ```
 pip install -r requirements.txt
