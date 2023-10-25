@@ -21,18 +21,16 @@ class Server():
             while True:
                 resv_text = await websocket.recv()
                 res = json.loads(resv_text)
+                paload = res[0]['payload']
+                nickname = paload['user']['nickname']
+                pay_grade_level = paload['user']['pay_grade']['level']
+                sec_uid = paload['user']['sec_uid']
                 if res[0]['method'] == 'WebcastChatMessage':
-                    paload = res[0]['payload']
-                    nickname = paload['user']['nickname']
-                    sec_uid = paload['user']['sec_uid']
                     content = paload['content']
-                    print(f'【弹幕信息】 用户:【{nickname}】 说了 【{content}】, home_url: {self.user_homepage_url + sec_uid} ')
+                    print(f'【弹幕信息】 用户:【{nickname}】 等级{pay_grade_level} 说了 【{content}】, home_url: {self.user_homepage_url + sec_uid} ')
                 elif res[0]['method'] == 'WebcastGiftMessage':
-                    paload = res[0]['payload']
-                    nickname = paload['user']['nickname']
-                    sec_uid = paload['user']['sec_uid']
                     gift_name = paload['gift']['name']
-                    print(f'【礼物信息】 用户:【{nickname}】 送出了 【{gift_name}】!! home_url: {self.user_homepage_url + sec_uid} ')
+                    print(f'【礼物信息】 用户:【{nickname}】 等级{pay_grade_level} 送出了 【{gift_name}】!! home_url: {self.user_homepage_url + sec_uid} ')
 
         except:
             print(f"Client disconnected: {websocket}")
