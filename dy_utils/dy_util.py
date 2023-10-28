@@ -344,7 +344,7 @@ def save_video_detail(path, video):
         f.write(f"视频分享数量: {video.share_count}\n")
         f.write(f"视频上传时间: {timestamp_to_str(video.upload_time)}\n")
 def check_info():
-    print('运行代码前先用本地的chrome浏览器打开抖音，查看右上角保证用户已经登录。（获取cookie时不能开着浏览器），若cookie获取成功后仍运行失败，请清空static下的info.json文件，重新运行程序')
+    print('获取cookie时请关闭chrome浏览器），若cookie获取成功后仍运行失败，请清空static下的info.json文件，重新运行程序')
     headers = get_headers()
     if not os.path.exists("./static/info.json"):
         open('./static/info.json', 'w')
