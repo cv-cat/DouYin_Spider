@@ -21,6 +21,7 @@ class Home:
         while True:
             params = get_list_params()
             params['webid'] = self.info['webid']
+            params['msToken'] = self.info['msToken']
             params['max_cursor'] = max_cursor
             params['sec_user_id'] = sec_user_id
             splice_url_str = splice_url(params)
@@ -51,6 +52,7 @@ class Home:
             video_list = []
             params = get_list_params()
             params['webid'] = self.info['webid']
+            params['msToken'] = self.info['msToken']
             params['max_cursor'] = max_cursor
             params['sec_user_id'] = sec_user_id
             splice_url_str = splice_url(params)
