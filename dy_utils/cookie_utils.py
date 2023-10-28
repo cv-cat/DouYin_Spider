@@ -38,9 +38,9 @@ async def get_ttwid_and_webid():
         )
         page = browser.pages[0]
         page.on("request", lambda request: handle_request(request=request))
-        page_cookies = await page.context.cookies()
         await page.goto(url)
         await check_webid()
+        page_cookies = await page.context.cookies()
         await browser.close()
         await asyncio.sleep(3)
         global cookies
@@ -53,8 +53,6 @@ async def get_ttwid_and_webid():
                         global msToken
                         msToken = cookie['value']
                     break
-
-
 
 
 
