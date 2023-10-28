@@ -24,25 +24,22 @@ async def check_webid():
 async def get_ttwid_and_webid():
     domian_key = ['douyin', 'bytedance']
     url = 'https://www.douyin.com/user/MS4wLjABAAAAEpmH344CkCw2M58T33Q8TuFpdvJsOyaZcbWxAMc6H03wOVFf1Ow4mPP94TDUS4Us'
-    USER_DIR_PATH = f"C:\\Users\\{getpass.getuser()}\\AppData\Local\Google\Chrome\\User Data"
     headless = False
     print('如出现验证过程，请手动验证')
     async with async_playwright() as p:
-        browser = await p.chromium.launch_persistent_context(
-            user_data_dir=USER_DIR_PATH,
+        browser = await p.chromium.launch(
             headless=headless,
             args=[
                 '--disable-blink-features=AutomationControlled',
             ],
             channel='chrome'
         )
-        page = browser.pages[0]
+        page = await browser.new_page()
         page.on("request", lambda request: handle_request(request=request))
         await page.goto(url)
         await check_webid()
         page_cookies = await page.context.cookies()
         await browser.close()
-        await asyncio.sleep(3)
         global cookies
         cookies = {}
         for cookie in page_cookies:
