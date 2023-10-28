@@ -2,8 +2,9 @@ import asyncio
 import getpass
 from playwright.async_api import async_playwright
 from urllib.parse import urlparse, parse_qs
- 
+
 webid = None
+msToken = None
 cookies = None
 def handle_request(request):
     url = request.url
@@ -13,6 +14,7 @@ def handle_request(request):
         global webid
         webid = query_params['webid'][0]
 
+# 每隔1秒判断webid是否拿到
 async def check_webid():
     while True:
         if webid is not None:
@@ -40,18 +42,27 @@ async def get_ttwid_and_webid():
         await page.goto(url)
         await check_webid()
         await browser.close()
+        await asyncio.sleep(3)
         global cookies
         cookies = {}
         for cookie in page_cookies:
             for key in domian_key:
                 if key in cookie['domain']:
                     cookies[cookie['name']] = cookie['value']
+                    if cookie['name'] == 'msToken':
+                        global msToken
+                        msToken = cookie['value']
                     break
+
+
+
+
 
 def get_new_cookies():
     asyncio.run(get_ttwid_and_webid())
     return {
         'webid': webid,
+        'msToken': msToken,
         'cookies': cookies,
     }
 
