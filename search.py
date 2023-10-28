@@ -18,6 +18,7 @@ class Search:
         params['keyword'] = query
         params['count'] = '25'
         params['webid'] = self.info['webid']
+        params['msToken'] = self.info['msToken']
         splice_url_str = splice_url(params)
         xs = js.call('get_dy_xb', splice_url_str)
         params['X-Bogus'] = xs
@@ -48,6 +49,7 @@ class Search:
         params['keyword'] = query
         params['count'] = '25'
         params['webid'] = self.info['webid']
+        params['msToken'] = self.info['msToken']
         splice_url_str = splice_url(params)
         xs = js.call('get_dy_xb', splice_url_str)
         params['X-Bogus'] = xs
