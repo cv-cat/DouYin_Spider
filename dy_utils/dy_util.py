@@ -359,6 +359,7 @@ def check_info():
         }
         params = get_profile_params()
         params['webid'] = info['webid']
+        params['msToken'] = info['msToken']
         sec_user_id = test_user_url.split('/')[-1]
         params['sec_user_id'] = sec_user_id
         splice_url_str = splice_url(params)
