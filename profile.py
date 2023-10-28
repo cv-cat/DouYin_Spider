@@ -15,6 +15,7 @@ class Profile:
         profile_url = "https://www.douyin.com/aweme/v1/web/user/profile/other/"
         params = get_profile_params()
         params['webid'] = self.info['webid']
+        params['msToken'] = self.info['msToken']
         params['sec_user_id'] = sec_user_id
         splice_url_str = splice_url(params)
         xs = js.call('get_dy_xb', splice_url_str)
