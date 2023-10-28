@@ -13,9 +13,14 @@ class OneVideo:
 
     # 单个视频
     def get_one_video_info(self, url):
-        response = requests.get(url, headers=self.headers, cookies=self.info['cookies'])
-        html_text = response.text
-        video_info = re.findall('<script id="RENDER_DATA" type="application/json">(.*?)</script>', html_text, re.S)[0]
+        try:
+            response = requests.get(url, headers=self.headers, cookies={"s_v_web_id": self.info['cookies']["s_v_web_id"]})
+            html_text = response.text
+            video_info = re.findall('<script id="RENDER_DATA" type="application/json">(.*?)</script>', html_text, re.S)[0]
+        except:
+            response = requests.get(url, headers=self.headers, cookies=self.info['cookies'])
+            html_text = response.text
+            video_info = re.findall('<script id="RENDER_DATA" type="application/json">(.*?)</script>', html_text, re.S)[0]
         video_info = requests.utils.unquote(video_info)
         video_info_json = json.loads(video_info)
         video = handle_video_info(video_info_json)
