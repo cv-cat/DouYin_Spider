@@ -20,7 +20,7 @@
 
 ## ⛳运行环境
 Python环境>=3.7
-NodeJS环境>=14
+NodeJS环境>=16
 ```
 pip install -r requirements.txt
 python -m playwright install
