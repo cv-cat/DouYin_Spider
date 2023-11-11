@@ -27,7 +27,8 @@ class Home:
             splice_url_str = splice_url(params)
             xs = js.call('get_dy_xb', splice_url_str)
             params['X-Bogus'] = xs
-            response = requests.get(self.list_url, headers=self.headers, params=params, cookies=self.info['cookies'])
+            post_url = self.list_url + '?' + splice_url(params)
+            response = requests.get(post_url, headers=self.headers, cookies=self.info['cookies'])
             res_json = response.json()
             max_cursor = str(res_json['max_cursor'])
             has_more = res_json['has_more']
@@ -58,7 +59,8 @@ class Home:
             splice_url_str = splice_url(params)
             xs = js.call('get_dy_xb', splice_url_str)
             params['X-Bogus'] = xs
-            response = requests.get(self.list_url, headers=self.headers, params=params, cookies=self.info['cookies'])
+            post_url = self.list_url + '?' + splice_url(params)
+            response = requests.get(post_url, headers=self.headers, cookies=self.info['cookies'])
             res_json = response.json()
             max_cursor = str(res_json['max_cursor'])
             has_more = res_json['has_more']
@@ -109,10 +111,8 @@ class Home:
 if __name__ == '__main__':
     home = Home()
     url_list = [
-        # 'https://www.douyin.com/user/MS4wLjABAAAAp2OG100fRV13HqBbRnbPM_l7DU0eTOaxgL-4_l07fQo',
-        'https://www.douyin.com/user/MS4wLjABAAAAup3S7EWeZIeBM0-qnT6YmI2nMI4KUtOqiuJBasbbm3o',
-        'https://www.douyin.com/user/MS4wLjABAAAAEpmH344CkCw2M58T33Q8TuFpdvJsOyaZcbWxAMc6H03wOVFf1Ow4mPP94TDUS4Us',
-        # 'https://www.douyin.com/user/MS4wLjABAAAAigSKToDtKeC5cuZ3YsDrHfYuvpLqVSygIZ0m0yXfUAI',
+        'https://www.douyin.com/user/MS4wLjABAAAAp2OG100fRV13HqBbRnbPM_l7DU0eTOaxgL-4_l07fQo',
+        'https://www.douyin.com/user/MS4wLjABAAAAigSKToDtKeC5cuZ3YsDrHfYuvpLqVSygIZ0m0yXfUAI',
     ]
     home.main(url_list)
 
