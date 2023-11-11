@@ -8,11 +8,10 @@ class Profile:
         else:
             self.info = info
         self.headers = get_headers()
-
+        self.profile_url = "https://www.douyin.com/aweme/v1/web/user/profile/other/"
     # 个人信息主页
     def get_profile_info(self, url):
         sec_user_id = url.split('/')[-1]
-        profile_url = "https://www.douyin.com/aweme/v1/web/user/profile/other/"
         params = get_profile_params()
         params['webid'] = self.info['webid']
         params['msToken'] = self.info['msToken']
@@ -20,7 +19,8 @@ class Profile:
         splice_url_str = splice_url(params)
         xs = js.call('get_dy_xb', splice_url_str)
         params['X-Bogus'] = xs
-        response = requests.get(profile_url, headers=self.headers, cookies=self.info['cookies'], params=params)
+        post_url = self.profile_url + '?' + splice_url(params)
+        response = requests.get(post_url, headers=self.headers, cookies=self.info['cookies'])
         profile_json = response.json()
         profile = handle_profile_info(profile_json)
         return profile
