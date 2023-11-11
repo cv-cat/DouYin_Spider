@@ -61,10 +61,9 @@ class OneVideo:
 if __name__ == '__main__':
     one_video = OneVideo()
     url_list = [
-        'https://www.douyin.com/user/MS4wLjABAAAAup3S7EWeZIeBM0-qnT6YmI2nMI4KUtOqiuJBasbbm3o?modal_id=6848667352352001295',
+        'https://www.douyin.com/user/MS4wLjABAAAAp2OG100fRV13HqBbRnbPM_l7DU0eTOaxgL-4_l07fQo?modal_id=7149358157217795368',
         'https://www.douyin.com/user/MS4wLjABAAAAup3S7EWeZIeBM0-qnT6YmI2nMI4KUtOqiuJBasbbm3o?modal_id=7166141112820747551',
         'https://www.douyin.com/user/MS4wLjABAAAAh7MdVA-UbMYLeO3_zhA_Z-Mrkh8cDwBCU_qQqucnrFE?modal_id=7137966302055894306',
-        'https://www.douyin.com/user/MS4wLjABAAAAEpmH344CkCw2M58T33Q8TuFpdvJsOyaZcbWxAMc6H03wOVFf1Ow4mPP94TDUS4Us?modal_id=7204284921039310135',
     ]
     one_video.main(url_list)
 
