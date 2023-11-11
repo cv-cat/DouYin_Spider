@@ -64,6 +64,8 @@ def norm_str(str):
 def splice_url(params):
     splice_url_str = ''
     for key, value in params.items():
+        if value is None:
+            value = ''
         splice_url_str += key + '=' + value + '&'
     return splice_url_str[:-1]
 
@@ -315,7 +317,10 @@ def handle_profile_info(data):
         gender = '女'
     else:
         gender = '未知'
-    ip_location = data['user']['ip_location']
+    try:
+        ip_location = data['user']['ip_location']
+    except:
+        ip_location = '未知'
     user_detail = User_Detail(None, sec_uid, nickname, author_avatar, desc, following_count, follower_count, total_favorited, aweme_count,unique_id, user_age, gender, ip_location)
     return user_detail
 
@@ -354,18 +359,16 @@ def check_info():
     try:
         profile_url = "https://www.douyin.com/aweme/v1/web/user/profile/other/"
         info = json.loads(info)
-        cookies = {
-            'ttwid': info['cookies']['ttwid'],
-        }
+        sec_user_id = test_user_url.split('/')[-1]
         params = get_profile_params()
         params['webid'] = info['webid']
         params['msToken'] = info['msToken']
-        sec_user_id = test_user_url.split('/')[-1]
         params['sec_user_id'] = sec_user_id
         splice_url_str = splice_url(params)
         xs = js.call('get_dy_xb', splice_url_str)
         params['X-Bogus'] = xs
-        response = requests.get(profile_url, headers=headers, cookies=cookies, params=params)
+        post_url = profile_url + '?' + splice_url(params)
+        response = requests.get(post_url, headers=headers, cookies=info['cookies'])
         profile_json = response.json()
         print('cookie有效')
         return info
