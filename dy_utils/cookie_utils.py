@@ -1,5 +1,4 @@
 import asyncio
-import getpass
 from playwright.async_api import async_playwright
 from urllib.parse import urlparse, parse_qs
 
@@ -22,7 +21,6 @@ async def check_webid():
         await asyncio.sleep(1)
 
 async def get_ttwid_and_webid():
-    domian_key = ['douyin', 'bytedance']
     url = 'https://www.douyin.com/user/MS4wLjABAAAAEpmH344CkCw2M58T33Q8TuFpdvJsOyaZcbWxAMc6H03wOVFf1Ow4mPP94TDUS4Us'
     headless = False
     print('如出现验证过程，请手动验证')
@@ -37,19 +35,17 @@ async def get_ttwid_and_webid():
         page = await browser.new_page()
         page.on("request", lambda request: handle_request(request=request))
         await page.goto(url)
+        await asyncio.sleep(3)
         await check_webid()
         page_cookies = await page.context.cookies()
         await browser.close()
         global cookies
         cookies = {}
         for cookie in page_cookies:
-            for key in domian_key:
-                if key in cookie['domain']:
-                    cookies[cookie['name']] = cookie['value']
-                    if cookie['name'] == 'msToken':
-                        global msToken
-                        msToken = cookie['value']
-                    break
+            cookies[cookie['name']] = cookie['value']
+            if cookie['name'] == 'msToken':
+                global msToken
+                msToken = cookie['value']
 
 
 
