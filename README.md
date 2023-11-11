@@ -60,6 +60,7 @@ python live.py
 2. one处理的是(视频\图集)详细页 https://www.douyin.com/user/MS4wLjABAAAAh7MdVA-UbMYLeO3_zhA_Z-Mrkh8cDwBCU_qQqucnrFE?modal_id=7137966302055894306
 3. search处理的是搜索内容
 4. live是监听直播间
+5. 如果经常报错，请删除info.json文件的内容，重新获取cookie！！！
 
 🛹额外说明
 1. 感谢star⭐，不时更新。
