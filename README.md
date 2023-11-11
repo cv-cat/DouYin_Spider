@@ -50,6 +50,7 @@ python live.py
 | 23/10/21 | - 新增可视化界面到release v1.1.0。 |
 | 23/10/25 | - 新增issue提出的输出直播间消息时包括用户等级。 |
 | 23/10/28 | - 遇到验证码请手动点击！Fix Some Bugs。 |
+| 23/11/11 | - 修复了很多很多大家的bug~~，关于v.dy格式的url正在处理 |
 
 
 ## 🧸注意事项
@@ -58,6 +59,7 @@ python live.py
 1. home处理的是个人主页 https://www.douyin.com/user/MS4wLjABAAAAEpmH344CkCw2M58T33Q8TuFpdvJsOyaZcbWxAMc6H03wOVFf1Ow4mPP94TDUS4Us
 2. one处理的是(视频\图集)详细页 https://www.douyin.com/user/MS4wLjABAAAAh7MdVA-UbMYLeO3_zhA_Z-Mrkh8cDwBCU_qQqucnrFE?modal_id=7137966302055894306
 3. search处理的是搜索内容
+4. live是监听直播间
 
 🛹额外说明
 1. 感谢star⭐，不时更新。
