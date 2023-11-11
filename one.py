@@ -32,6 +32,8 @@ class OneVideo:
         nickname = norm_str(video.nickname)
         sec_uid = video.sec_uid
         title = norm_str(video.title)
+        if len(title) > 50:
+            title = title[:50]
         if title.strip() == '':
             title = f'无标题'
         path = f'./datas/{nickname}_{sec_uid}/{title}_{video.awemeId}'
