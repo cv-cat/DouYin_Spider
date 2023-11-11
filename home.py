@@ -79,6 +79,8 @@ class Home:
         for video in video_list:
             try:
                 title = norm_str(video.title)
+                if len(title) > 50:
+                    title = title[:50]
                 if title.strip() == '':
                     title = f'无标题'
                 path = f'{user_path}/{title}_{video.awemeId}'
