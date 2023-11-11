@@ -24,7 +24,8 @@ class Search:
         params['X-Bogus'] = xs
         video_list = []
         while len(video_list) < number:
-            response = requests.get(self.search_url, headers=self.headers, cookies=self.info['cookies'], params=params)
+            post_url = self.search_url + '?' + splice_url(params)
+            response = requests.get(post_url, headers=self.headers, cookies=self.info['cookies'])
             res = response.json()
             for item in res['data']:
                 if item['type'] == 1:
@@ -55,7 +56,8 @@ class Search:
         params['X-Bogus'] = xs
         index = 0
         while index < number:
-            response = requests.get(self.search_url, headers=self.headers, cookies=self.info['cookies'], params=params)
+            post_url = self.search_url + '?' + splice_url(params)
+            response = requests.get(post_url, headers=self.headers, cookies=self.info['cookies'])
             res = response.json()
             for item in res['data']:
                 if item['type'] == 1:
