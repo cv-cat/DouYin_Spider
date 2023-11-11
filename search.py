@@ -82,6 +82,8 @@ class Search:
             title = norm_str(video.title)
             if title.strip() == '':
                 title = f'无标题'
+            if len(title) > 50:
+                title = title[:50]
             path = f'./search_datas/{video.nickname}_{video.sec_uid}/{title}_{video.awemeId}'
             exist = check_and_create_path(path)
             if exist and not need_cover:
