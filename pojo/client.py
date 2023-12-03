@@ -18,14 +18,14 @@ class Client():
             USER_DIR_PATH = f"C:\\Users\\{getpass.getuser()}\\AppData\Local\Google\Chrome\\User Data"
             browser = await p.chromium.launch_persistent_context(
                 user_data_dir=USER_DIR_PATH,
-                headless=self.headless,
+                headless=True,
                 args=[
                     '--disable-blink-features=AutomationControlled',
                     '--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
                 ],
                 channel='chrome'
             )
-            page = await browser.new_page()
+            page = browser.pages[0]
             await page.goto(url)
             page_cookies = await page.context.cookies()
             await browser.close()
@@ -59,7 +59,7 @@ class Client():
 def parse_args():
     description = "你可以调整端口传递url字段和port字段和headless字段"
     parser = argparse.ArgumentParser(description=description)
-    parser.add_argument('--url', type=str, help='url', default='https://live.douyin.com/31267501116')
+    parser.add_argument('--url', type=str, help='url', default='https://live.douyin.com/567789235524')
     parser.add_argument('--port', type=int, help='port', default=9999)
     args = parser.parse_args()
     return args
