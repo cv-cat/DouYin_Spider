@@ -33,30 +33,32 @@ def get_socket_template():
 
 def get_emit_template():
     return """
-            ,window.res_dy = replacement,
+            ,window.res_dy = replacement_1,
                 !function () {
-                    if(typeof(t[0]) == "string"){
+                    if(typeof(replacement_1[0]) == "string"){
                         return
                     }
                     console.log(window.res_dy);
-                    if(e == "#sync#ChatMessage" || e== "#sync#GiftMessage"){
-                        sendMessage(window.res_dy)
+                    if(replacement_2 == "#sync#ChatMessage" || et== "#sync#GiftMessage"){
+                        sendMessage(window.res_dy);
                     }
                 }()
             """
 
 js_dict = None
-pattern = re.compile('null==\(r=this\._debug\)\|\|r\.call\(this,e,\.\.\.(.*?)\),this')
+pattern_1 = re.compile('null==\(.*?=this\._debug\)\|\|.*?\.call\(this,.*?,\.\.\.(.*?)\),this')
+pattern_2 = re.compile('\.call\(this,"emit_error",(.*?),(.*?)\)')
 async def handle_response(response):
     url = response.url
     if url.endswith('.js'):
         js_text = await response.text()
         if 'emit_error' in js_text:
             js_name = urlparse(url).path.split('/')[-1]
-            variable = re.findall(pattern, js_text)[0]
-            replacement = re.search(pattern, js_text).group()
+            variable_1 = re.findall(pattern_2, js_text)[0][0]
+            variable_2 = re.findall(pattern_2, js_text)[0][1]
+            replacement = re.search(pattern_1, js_text).group()
             emit_template = get_emit_template()
-            insert = emit_template.replace('replacement', variable)
+            insert = emit_template.replace('replacement_1', variable_1).replace('replacement_2', variable_2)
             insert = replacement + insert
             js_text = js_text.replace(replacement, insert)
             global js_dict
