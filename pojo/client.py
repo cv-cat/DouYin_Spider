@@ -33,13 +33,20 @@ class Client():
 
     async def open_page(self,):
         async with async_playwright() as p:
-            browser = await p.chromium.launch(
+            # browser = await p.chromium.launch(
+            #     headless=self.headless,
+            #     args=[
+            #         '--disable-blink-features=AutomationControlled',
+            #         '--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            #     ],
+            #     channel='chrome'
+            # )
+            browser = await p.firefox.launch(
                 headless=self.headless,
                 args=[
                     '--disable-blink-features=AutomationControlled',
                     '--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
                 ],
-                channel='chrome'
             )
             page = await browser.new_page()
             cookies = await self.get_cookies()
