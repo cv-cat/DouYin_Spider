@@ -15,7 +15,7 @@ class User_Detail():
         self.ip_location = ip_location
 
     def __str__(self):
-        # 每个值都要换行
+        # 每个值都要换行 
         return f'id: {self.id}\n' \
                 f'sec_uid: {self.sec_uid}\n' \
                 f'nickname: {self.nickname}\n' \
