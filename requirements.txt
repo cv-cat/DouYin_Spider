@@ -1,6 +1,9 @@
 asyncio
 aiofiles
-playwright
+loguru
+python-dotenv
+retry
+openpyxl
 urllib3
 PyExecJS
 requests
