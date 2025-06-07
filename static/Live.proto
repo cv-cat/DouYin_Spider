@@ -1,0 +1,194 @@
+syntax = "proto3";
+
+message HeadersList {
+    string key = 1;
+    string value = 2;
+}
+
+message PushFrame {
+    uint64 seqId = 1;
+    uint64 logId = 2;
+    uint64 service = 3;
+    uint64 method = 4;
+    repeated HeadersList headersList = 5;
+    string payloadEncoding = 6;
+    string payloadType = 7;
+    bytes payload = 8;
+    string logIdNew = 9;
+}
+
+message Message {
+    string method = 1;
+    bytes payload = 2;
+    int64 msgId = 3;
+    int32 msgType = 4;
+    int64 offset = 5;
+    bool needWrdsStore = 6;
+    int64 wrdsVersion = 7;
+    string wrdsSubKey = 8;
+}
+
+message LiveResponse {
+    repeated Message messagesList = 1;
+    string cursor = 2;
+    uint64 fetchInterval = 3;
+    uint64 now = 4;
+    string internalExt = 5;
+    uint32 fetchType = 6;
+    map<string, string> routeParams = 7;
+    uint64 heartbeatDuration = 8;
+    bool needAck = 9;
+    string pushServer = 10;
+    string liveCursor = 11;
+    bool historyNoMore = 12;
+    string proxyServer = 13;
+}
+message Image {
+    Content content = 8;
+}
+message Content {
+    string name = 1;
+    string font_color = 2;
+    int64 level = 3;
+    string alternative_text = 4;
+}
+message User {
+    int64 id = 1;
+    int64 short_id = 2;
+    string nickname = 3;
+    int32 gender = 4;
+    string signature = 5;
+    int32 level = 6;
+    int64 birthday = 7;
+    string telephone = 8;
+    bool verified = 12;
+    int32 experience = 13;
+    string city = 14;
+    int32 status = 15;
+    int64 create_time = 16;
+    int64 modify_time = 17;
+    int32 secret = 18;
+    string share_qrcode_uri = 19;
+    int32 income_share_percent = 20;
+    repeated Image badge_image_list = 21;
+    string special_id = 26;
+    int64 top_vip_no = 31;
+    int64 pay_score = 34;
+    int64 ticket_count = 35;
+    int32 link_mic_stats = 37;
+    string display_id = 38;
+    bool with_commerce_permission = 39;
+    bool with_fusion_shop_entry = 40;
+    int64 total_recharge_diamond_count = 41;
+    string verified_content = 43;
+    repeated User top_fans = 45;
+    string sec_uid = 46;
+    int32 user_role = 47;
+    int32 authorization_info = 54;
+    int32 adversary_authorization_info = 55;
+    int32 adversary_user_status = 58;
+    repeated int64 commerce_webcast_config_ids = 60;
+    string location_city = 63;
+    string remark_name = 65;
+    int32 mystery_man = 66;
+    string web_rid = 67;
+    string desensitized_nickname = 68;
+    bool is_anonymous = 71;
+    int32 consume_diamond_level = 72;
+    string webcast_uid = 73;
+    bool allow_be_located = 1001;
+    bool allow_find_by_contacts = 1002;
+    bool allow_others_download_video = 1003;
+    bool allow_others_download_when_sharing_video = 1004;
+    bool allow_share_show_profile = 1005;
+    bool allow_show_in_gossip = 1006;
+    bool allow_show_my_action = 1007;
+    bool allow_strange_comment = 1008;
+    bool allow_unfollower_comment = 1009;
+    bool allow_use_linkmic = 1010;
+    string bg_img_url = 1013;
+    string birthday_description = 1014;
+    bool birthday_valid = 1015;
+    int32 block_status = 1016;
+    int32 comment_restrict = 1017;
+    string constellation = 1018;
+    int32 disable_ichat = 1019;
+    int64 enable_ichat_img = 1020;
+    int32 exp = 1021;
+    int64 fan_ticket_count = 1022;
+    bool fold_stranger_chat = 1023;
+    int64 follow_status = 1024;
+    bool hotsoon_verified = 1025;
+    string hotsoon_verified_reason = 1026;
+    int32 ichat_restrict_type = 1027;
+    string id_str = 1028;
+    bool is_follower = 1029;
+    bool is_following = 1030;
+    bool need_profile_guide = 1031;
+    int64 pay_scores = 1032;
+    bool push_comment_status = 1033;
+    bool push_digg = 1034;
+    bool push_follow = 1035;
+    bool push_friend_action = 1036;
+    bool push_ichat = 1037;
+    bool push_status = 1038;
+    bool push_video_post = 1039;
+    bool push_video_recommend = 1040;
+    bool verified_mobile = 1042;
+    string verified_reason = 1043;
+    bool with_car_management_permission = 1044;
+    int32 age_range = 1045;
+    int64 watch_duration_month = 1046;
+}
+
+message ChatMessage {
+    User user = 2;
+    string content = 3;
+    bool visibleToSender = 4;
+}
+
+message GiftStruct {
+    int64 id = 5;
+    string name = 16;
+}
+
+message GiftMessage {
+    string giftId = 2;
+    int64 comboCount = 6;
+    User user = 7;
+    User toUser = 8;
+    GiftStruct gift = 15;
+}
+
+message MemberMessage {
+    User user = 2;
+    int64 memberCount = 3;
+}
+
+message LikeMessage {
+    int64 count = 2;
+    int64 total = 3;
+    int64 color = 4;
+    User user = 5;
+    string icon = 6;
+}
+
+message RoomStatsMessage {
+    string displayShort = 2;
+    string displayMiddle = 3;
+    string displayLong = 4;
+    int64 displayValue = 5;
+    int64 displayVersion = 6;
+    bool incremental = 7;
+    bool isHidden = 8;
+    int64 total = 9;
+    int64 displayType = 10;
+}
+
+message SocialMessage {
+    User user = 2;
+    int64 shareType = 3;
+    int64 action = 4;
+    string shareTarget = 5;
+    uint64 followCount = 6;
+}

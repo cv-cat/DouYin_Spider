@@ -1,11 +1,33 @@
+<div align="center">
+    <a href="https://www.python.org/">
+        <img src="https://img.shields.io/badge/python-3.7%2B-blue" alt="Python 3.7+">
+    </a>
+    <a href="https://nodejs.org/zh-cn/">
+        <img src="https://img.shields.io/badge/nodejs-18%2B-blue" alt="NodeJS 18+">
+    </a>
+</div>
+
 # 🎶DouYin_Spider
 
-**联系作者获取直播监控，其他Api(评论、直播商品等)，定制需求**
+**✨ 专业的抖音数据采集解决方案，支持笔记爬取，保存格式为excel或者media**
 
-抖音，抖音爬虫，抖音视频、图片、主页、搜索、用户信息爬取，抖音直播监控
+**⚠️ 任何涉及数据注入的操作都是不被允许的，本项目仅供学习交流使用，如有违反，后果自负**
 
-如需定制内容，csv、数据库、WebUI界面等请联系作者
+## 🌟 功能特性
 
+- ✅ **多维度数据采集**
+  - 用户主页信息
+  - 笔记详细内容
+  - 智能搜索结果抓取
+- 🚀 **高性能架构**
+  - 自动重试机制
+- 🔒 **安全稳定**
+  - 抖音最新API适配
+  - 异常处理机制
+  - proxy代理
+- 🎨 **便捷管理**
+  - 结构化目录存储
+  - 格式化输出（JSON/EXCEL/MEDIA）
 
 ## 🎨效果图
 ### 处理后的所有用户
@@ -16,30 +38,45 @@
 ![image](https://github.com/cv-cat/DouYin_Spider/assets/94289429/16cfc027-6186-4914-bca4-901f886a9b82)
 ### 某个直播时的具体弹幕发言和礼物数据
 ![image](https://github.com/cv-cat/DouYin_Spider/assets/94289429/e2cde1f1-6309-44fe-8aa3-bca2821bf30d)
-### 图形化界面
-![image](https://github.com/cv-cat/DouYin_Spider/assets/94289429/9f44f934-3558-4dca-8ff5-3d1171fc7ef2)
+### 保存的excel
 
 
-## ⛳运行环境
-Python环境>=3.7
-NodeJS环境>=16
+
+## 🛠️ 快速开始
+### ⛳运行环境
+- Python 3.7+
+- Node.js 18+
+
+### 🎯安装依赖
 ```
 pip install -r requirements.txt
-python -m playwright install
+npm install
 ```
 
-## 🎯运行方法
+### 🎨配置文件
+这里以小红书的cookie获取为例
 
+注意有两个env文件，一个是打开www.douyin.com这个域名获取的，另一个是打开live.douyin.com这个域名获取的，第一个用于爬虫，第二个用于直播间监听
+
+配置文件在项目根目录.env文件中，将下图自己的登录cookie放入其中，cookie获取➡️在浏览器f12打开控制台，点击网络，点击fetch，找一个接口点开
+![image](https://github.com/user-attachments/assets/6a7e4ecb-0432-4581-890a-577e0eae463d)
+
+复制cookie到.env文件中（注意！登录抖音后的cookie才是有效的，不登陆没有用）
+![image](https://github.com/user-attachments/assets/5e62bc35-d758-463e-817c-7dcaacbee13c)
+
+
+
+### 🚀运行项目
 ```
-多用户下载（下载用户列表所有的视频\图集）
-python home.py
-多笔记下载（下载(视频\图集)列表里所有的(视频\图集)）
-python one.py
-下载搜索内容
-python search.py
-监听抖音直播间弹幕 and 礼物
-python live.py
+python main.py
+python dy_live/server.py
 ```
+
+### 🗝️注意事项
+- main.py中的代码是爬虫的入口，可以根据自己的需求进行修改
+- dy_apis/douyin_apis.py 中的代码包含了所有的api接口，可以根据自己的需求进行修改
+- dy_live/server.py 中的代码包含了直播间监听的接口，可以根据自己的需求进行修改
+
 
 ## 🍥日志
    
@@ -54,23 +91,29 @@ python live.py
 | 23/10/28 | - 遇到验证码请手动点击！Fix Some Bugs。 |
 | 23/11/11 | - 修复了很多很多大家的bug~~，关于v.dy格式的url正在处理 |
 | 23/12/22 | - 修复了直播间监控 |
+| 25/06/07 | - 开放所有之前闭源的代码，包括数据爬取和直播间监听 |
 
-## 🧸注意事项
-**本项目仅供学习与交流，侵权必删**
+## 🧸额外说明
+1. 感谢star⭐和follow📰！不时更新
+2. 作者的联系方式在主页里，有问题可以随时联系我
+3. 可以关注下作者的其他项目，欢迎 PR 和 issue
+4. 感谢赞助！如果此项目对您有帮助，请作者喝一杯奶茶~~ （开心一整天😊😊）
+5. thank you~~~
 
-1. home处理的是个人主页 https://www.douyin.com/user/MS4wLjABAAAAEpmH344CkCw2M58T33Q8TuFpdvJsOyaZcbWxAMc6H03wOVFf1Ow4mPP94TDUS4Us
-2. one处理的是(视频\图集)详细页 https://www.douyin.com/user/MS4wLjABAAAAh7MdVA-UbMYLeO3_zhA_Z-Mrkh8cDwBCU_qQqucnrFE?modal_id=7137966302055894306
-3. search处理的是搜索内容
-4. live是监听直播间
-5. 如果经常报错，请删除info.json文件的内容，重新获取cookie！！！
-
-🛹额外说明
-1. 感谢star⭐，不时更新。
-2. 有问题可以加QQ或者微信交流（[992822653](tencent://message/?uin=992822653&Site=qq&Menu=yes)）
-3. 感谢赞助！请作者喝一杯奶茶~~ （开心一整天😊）
-
-![mm_facetoface_collect_qrcode_1696839915907](https://github.com/cv-cat/Spider_XHS/assets/94289429/f8bac4e2-88f1-440c-987a-9803c0a2bbd5)![1696832397](https://github.com/cv-cat/Spider_XHS/assets/94289429/fb7fee7d-7394-4353-b202-165d74a87f54)
+<div align="center">
+  <img src="./author/wx_pay.png" width="400px" alt="微信赞赏码"> 
+  <img src="./author/zfb_pay.jpg" width="400px" alt="支付宝收款码">
+</div>
 
 
+## 📈 Star 趋势
+<a href="https://www.star-history.com/#cv-cat/DouYin_Spider&Date">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=cv-cat/DouYin_Spider&type=Date&theme=dark" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=cv-cat/DouYin_Spider&type=Date" />
+   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=cv-cat/DouYin_Spider&type=Date" />
+ </picture>
+</a>
+## Star History
 
 

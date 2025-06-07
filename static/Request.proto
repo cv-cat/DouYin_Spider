@@ -1,0 +1,89 @@
+syntax = "proto3";
+
+message ExtValue {
+    string key = 1;
+    string value = 2;
+}
+
+message Request {
+    int32 cmd = 1;
+    int64 sequence_id = 2;
+    string sdk_version = 3;
+    string token = 4;
+    int32 refer = 5;
+    int64 inbox_type = 6;
+    string build_number = 7;
+    RequestBody body = 8;
+    string device_id = 9;
+    string channel = 10;
+    string device_platform = 11;
+    string device_type = 12;
+    string os_version = 13;
+    string version_code = 14;
+    map<string, string> headers = 15;
+    int32 config_id = 16;
+    TokenInfo token_info = 17;
+    int32 auth_type = 18;
+    string biz = 21;
+    string access = 22;
+    string ts_sign = 23;
+    string sdk_cert = 24;
+    string reuqest_sign = 25;
+}
+
+message RequestBody {
+    oneof body {
+        SendMessageRequestBody send_message_body = 100;
+        CreateConversationV2RequestBody create_conversation_v2_body = 609;
+        GetConversationInfoListV2RequestBody get_conversation_info_list_v2_body = 610;
+    }
+}
+
+message SendMessageRequestBody {
+    string conversation_id = 1;
+    int32 conversation_type = 2;
+    int64 conversation_short_id = 3;
+    string content = 4;
+    repeated ExtValue ext = 5;
+    int32 message_type = 6;
+    string ticket = 7;
+    string client_message_id = 8;
+    repeated int64 mentioned_users = 9;
+    bool ignore_badge_count = 10;
+    ReferencedMessageInfo ref_msg_info = 11;
+}
+
+message ReferencedMessageInfo {
+    int64 original_message_id = 1;
+    string original_message_sender = 2;
+    int64 original_message_timestamp = 3;
+}
+
+message TokenInfo {
+    int32 mark_id = 1;
+    int32 type = 2;
+    int32 app_id = 3;
+    int64 user_id = 4;
+    int64 timestamp = 5;
+}
+
+message CreateConversationV2RequestBody {
+    int32 conversation_type = 1;
+    repeated int64 participants = 2;
+    bool persistent = 3;
+    string idempotent_id = 4;
+    string name = 5;
+    string avatar_url = 6;
+    string description = 7;
+    map<string, string> biz_ext = 8;
+}
+
+message GetConversationInfoListV2RequestBody {
+    GetConversationInfoListV2ResponseBodyData data = 1;
+}
+
+message GetConversationInfoListV2ResponseBodyData {
+    string conversation_id = 1;
+    int64 conversation_short_id = 2;
+    int32 conversation_type = 3;
+}
