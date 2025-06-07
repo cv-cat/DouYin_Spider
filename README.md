@@ -1,3 +1,10 @@
+<p align="center">
+  <a href="https://github.com/cv-cat/Spider_XHS" target="_blank" align="center" alt="Go to XHS_Spider Website">
+    <picture>
+      <img width="220" src="https://github.com/user-attachments/assets/0c53df4f-5c5d-4e21-a086-f4ebf8b571a0" alt="Spider_XHS logo">
+    </picture>
+  </a>
+</p>
 <div align="center">
     <a href="https://www.python.org/">
         <img src="https://img.shields.io/badge/python-3.7%2B-blue" alt="Python 3.7+">
@@ -39,6 +46,7 @@
 ### 某个直播时的具体弹幕发言和礼物数据
 ![image](https://github.com/cv-cat/DouYin_Spider/assets/94289429/e2cde1f1-6309-44fe-8aa3-bca2821bf30d)
 ### 保存的excel
+![image](https://github.com/user-attachments/assets/5dfd8fb4-7597-4f54-af6a-9ab8ba766b7c)
 
 
 
