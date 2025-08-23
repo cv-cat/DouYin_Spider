@@ -9,3 +9,4 @@ PyExecJS
 requests
 argparse
 websockets
+beautifulsoup4
