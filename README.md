@@ -80,6 +80,21 @@ python main.py
 python dy_live/server.py
 ```
 
+### 🚀docker 运行项目
+
+```
+# 项目根目录下
+docker build -t douyin-spider:local .
+```
+```powershell
+# 修改完.env 和main.py后
+docker run --rm -it `
+  -v "$((Resolve-Path .\.env).Path):/app/.env" `
+  -v "$((Resolve-Path .\main.py).Path):/app/main.py" `
+  -v "$((Resolve-Path .\datas).Path):/app/datas" `
+  douyin-spider:local
+```
+
 ### 🗝️注意事项
 - main.py中的代码是爬虫的入口，可以根据自己的需求进行修改
 - dy_apis/douyin_apis.py 中的代码包含了所有的api接口，可以根据自己的需求进行修改

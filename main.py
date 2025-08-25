@@ -44,7 +44,7 @@ class Data_Spider():
             work_list.append(work_info)
         for work_info in work_list:
             if save_choice == 'all' or 'media' in save_choice:
-                download_work(work_info, base_path['media'], save_choice)
+                download_work(auth, work_info, base_path['media'], save_choice)
         if save_choice == 'all' or save_choice == 'excel':
             file_path = os.path.abspath(os.path.join(base_path['excel'], f'{excel_name}.xlsx'))
             save_to_xlsx(work_list, file_path)
@@ -74,7 +74,7 @@ class Data_Spider():
             work_info_list.append(work_info)
             logger.info(f'爬取作品信息 {work_info["work_url"]}')
             if save_choice == 'all' or 'media' in save_choice:
-                download_work(work_info, base_path['media'], save_choice)
+                download_work(auth, work_info, base_path['media'], save_choice)
         if save_choice == 'all' or save_choice == 'excel':
             file_path = os.path.abspath(os.path.join(base_path['excel'], f'{excel_name}.xlsx'))
             save_to_xlsx(work_info_list, file_path)
@@ -104,7 +104,7 @@ class Data_Spider():
             work_info = handle_work_info(work_info['aweme_info'])
             work_info_list.append(work_info)
             if save_choice == 'all' or 'media' in save_choice:
-                download_work(work_info, base_path['media'], save_choice)
+                download_work(auth, work_info, base_path['media'], save_choice)
         if save_choice == 'all' or save_choice == 'excel':
             file_path = os.path.abspath(os.path.join(base_path['excel'], f'{excel_name}.xlsx'))
             save_to_xlsx(work_info_list, file_path)
