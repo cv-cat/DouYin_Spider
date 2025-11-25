@@ -21,6 +21,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
+RUN npm config set strict-ssl false
+RUN npm install --no-audit
 EXPOSE 5000
 
 ENV PYTHONUNBUFFERED=1

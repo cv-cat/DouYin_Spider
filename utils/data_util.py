@@ -6,6 +6,7 @@ import openpyxl
 import requests
 from loguru import logger
 from retry import retry
+from dy_apis.douyin_api import DouyinAPI
 
 
 def norm_str(str):
@@ -168,7 +169,7 @@ def save_wrok_detail(work, path):
 
 
 @retry(tries=3, delay=1)
-def download_work(work_info, path, save_choice):
+def download_work(auth, work_info, path, save_choice):
     work_id = work_info['work_id']
     user_id = work_info['user_id']
     title = work_info['title']
@@ -188,7 +189,8 @@ def download_work(work_info, path, save_choice):
             download_media(save_path, f'image_{img_index}', img_url, 'image')
     elif work_type == '视频' and save_choice in ['media', 'media-video', 'all']:
         download_media(save_path, 'cover', work_info['video_cover'], 'image')
-        download_media(save_path, 'video', work_info['video_addr'], 'video')
+        DouyinAPI.download_work_media(auth, save_path, 'video', work_info['video_addr'], work_id)
+        # download_media(save_path, 'video', work_info['video_addr'], 'video')
     logger.info(f'作品 {work_info["work_id"]} 下载完成，保存路径: {save_path}')
     return save_path
 

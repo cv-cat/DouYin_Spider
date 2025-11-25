@@ -1,20 +1,14 @@
 import json
-import random
 import re
-import time
 import urllib
 import uuid
 
 import requests
 requests.packages.urllib3.disable_warnings()
 from bs4 import BeautifulSoup
-from protobuf_to_dict import protobuf_to_dict
 
-import static.Response_pb2 as ResponseProto
 from builder.header import HeaderBuilder, HeaderType
 from builder.params import Params
-from builder.proto import ProtoBuilder
-from utils.dy_util import splice_url, generate_a_bogus, generate_msToken, trans_cookies
 
 
 
@@ -104,6 +98,53 @@ class DouyinAPI:
         resp = requests.get(f'{DouyinAPI.douyin_url}{api}', headers=headers.get(), cookies=auth.cookie,
                             params=params.get(), verify=False)
         return json.loads(resp.text)
+
+    @staticmethod
+    def download_work_media(auth, path, name, url, aweme_id):
+        new_url = f'{url}&__vid={aweme_id}'
+        headers = HeaderBuilder().build(HeaderType.GET)
+        headers.set_referer(url)
+        params = Params()
+        params.add_param("device_platform", "webapp")
+        params.add_param("aid", "6383")
+        params.add_param("channel", "channel_pc_web")
+        params.add_param("aweme_id", aweme_id)
+        params.add_param("update_version_code", "170400")
+        params.add_param("pc_client_type", "1")
+        params.add_param("version_code", "190500")
+        params.add_param("version_name", "19.5.0")
+        params.add_param("cookie_enabled", "true")
+        params.add_param("screen_width", "1707")
+        params.add_param("screen_height", "960")
+        params.add_param("browser_language", "zh-CN")
+        params.add_param("browser_platform", "Win32")
+        params.add_param("browser_name", "Edge")
+        params.add_param("browser_version", "125.0.0.0")
+        params.add_param("browser_online", "true")
+        params.add_param("engine_name", "Blink")
+        params.add_param("engine_version", "125.0.0.0")
+        params.add_param("os_name", "Windows")
+        params.add_param("os_version", "10")
+        params.add_param("cpu_core_num", "32")
+        params.add_param("device_memory", "8")
+        params.add_param("platform", "PC")
+        params.add_param("downlink", "4.75")
+        params.add_param("effective_type", "4g")
+        params.add_param("round_trip_time", "150")
+        params.with_web_id(auth, url)
+        params.add_param("msToken", auth.msToken)
+        params.with_a_bogus()
+        params.add_param("verifyFp", auth.cookie['s_v_web_id'])
+        params.add_param("fp", auth.cookie['s_v_web_id'])
+        res = requests.get(new_url, headers=headers.get(), cookies=auth.cookie,
+                           params=params.get(), verify=False, stream=True)
+        # res = requests.get(new_url, cookies=auth.cookie)
+        size = 0
+        chunk_size = 1024 * 1024
+        with open(path + '/' + name + '.mp4', mode="wb") as f:
+            for data in res.iter_content(chunk_size=chunk_size):
+                f.write(data)
+                size += len(data)
 
     @staticmethod
     def get_work_info(auth, url: str) -> dict:
