@@ -126,6 +126,7 @@ python dy_live/server.py
 
 ## 🍔 交流群
 过期请加作者主页wx
+update: 群聊已超过wx限制人数，只能通过邀请加入群聊，主页有wx
 
 <img width="1000" height="1450" alt="5355a0f82398ee2052f2e659328d737b" src="./author/group.jpg" />
 
