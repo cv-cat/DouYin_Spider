@@ -129,7 +129,7 @@ python dy_live/server.py
 
 ps: 群聊已超过wx限制人数，只能通过邀请加入群聊，主页有wx
 
-![ed941f21291bc682786cd98a7de660f6](https://github.com/user-attachments/assets/5ab0ec18-7088-446b-885d-2490a5fda489)
+<img width="411" height="612" alt="image" src="https://github.com/user-attachments/assets/d805ac3d-206e-412b-b151-6bb121a7c5f1" />
 
 
 
