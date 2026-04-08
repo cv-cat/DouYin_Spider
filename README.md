@@ -127,10 +127,9 @@ python dy_live/server.py
 ## 🍔 交流群
 如果你对爬虫和ai agent感兴趣，请加作者主页wx通过邀请加入群聊
 
-ps: 群1、2已超过wx限制人数500，请加群3
+ps: 群123已超过wx限制人数500，请加群4
 
-![06f69d67ff814b84e122bb32d123075b](https://github.com/user-attachments/assets/411eb15e-ea02-44e3-ae53-ff8f21d3f460)
-
+![06f69d67ff814b84e122bb32d123075b](https://github.com/cv-cat/Spider_XHS/blob/master/author/group4_2026_04_08)
 
 
 
