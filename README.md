@@ -1,7 +1,7 @@
 <p align="center">
-  <a href="https://github.com/cv-cat/Spider_XHS" target="_blank" align="center" alt="Go to XHS_Spider Website">
+  <a href="https://github.com/cv-cat/Douyin_Spider" target="_blank" align="center" alt="Go to Douyin_Spider Website">
     <picture>
-      <img width="220" src="https://github.com/user-attachments/assets/0c53df4f-5c5d-4e21-a086-f4ebf8b571a0" alt="Spider_XHS logo">
+      <img width="220" src="./author/logo.jpg" alt="Douyin_Spider logo">
     </picture>
   </a>
 </p>
@@ -18,7 +18,12 @@
 
 **✨ 专业的抖音数据采集与交互解决方案，支持数据爬取、直播间监听、私信收发等功能**
 
-**⚠️ 任何涉及数据注入的操作都是不被允许的，本项目仅供学习交流使用，如有违反，后果自负**
+大模型时代，自动化是每个开发者都绕不开的课题。
+当你想让 AI Agent 真正落地到抖音——自动处理私信、感知直播间动态、驱动内容互动——第一道墙往往不是模型能力，而是**平台通信能力的缺失**。
+
+本项目做的事很简单：把这道墙拆掉。
+
+**⚠️ 严禁用于发布不良信息、违法内容！本项目仅供学习与技术研究使用，如有侵权请联系作者删除，后果自负。**
 
 ## 🌟 功能特性
 
