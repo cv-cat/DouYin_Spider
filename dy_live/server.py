@@ -103,11 +103,15 @@ class DouyinLive:
         user_id = room_info['user_id']
         ttwid = room_info['ttwid']
         params = Params()
+
+        res = DouyinAPI.get_webcast_detail(self.auth_, str(user_id), room_id, f"https://live.douyin.com/{self.live_id}")
+        frame = Live_pb2.LiveResponse()
+        frame.ParseFromString(res)
         (params
          .add_param('app_name', 'douyin_web')
          .add_param('version_code', '180800')
-         .add_param('webcast_sdk_version', '1.0.14-beta.0')
-         .add_param('update_version_code', '1.0.14-beta.0')
+         .add_param('webcast_sdk_version', '1.0.15')
+         .add_param('update_version_code', '1.0.15')
          .add_param('compress', 'gzip')
          .add_param('device_platform', 'web')
          .add_param('cookie_enabled', 'true')
@@ -120,6 +124,8 @@ class DouyinLive:
                     HeaderBuilder.ua.split('Mozilla/')[-1])
          .add_param('browser_online', 'true')
          .add_param('tz_name', 'Etc/GMT-8')
+         .add_param('cursor', str(frame.cursor))
+         .add_param('internal_ext', frame.internalExt)
          .add_param('host', 'https://live.douyin.com')
          .add_param('aid', '6383')
          .add_param('live_id', '1')
@@ -136,7 +142,7 @@ class DouyinLive:
          .add_param('heartbeatDuration', '0')
          .add_param('signature', generate_signature(room_id, user_id))
          )
-        wss_url = f"wss://webcast5-ws-web-lf.douyin.com/webcast/im/push/v2/?{urlencode(params.get())}"
+        wss_url = f"wss://webcast100-ws-web-hl.douyin.com/webcast/im/push/v2/?{urlencode(params.get())}"
         self.ws = WebSocketApp(
             url=wss_url,
             header={
@@ -147,7 +153,7 @@ class DouyinLive:
                 'Cache-Control': 'no-cache',
                 'Connection': 'Upgrade',
             },
-            cookie=f"ttwid={ttwid};",
+            cookie=self.auth_.cookie_str,
             on_message=self.on_message,
             on_error=self.on_error,
             on_close=self.on_close,
@@ -162,6 +168,6 @@ class DouyinLive:
 
 if __name__ == '__main__':
     common_util.load_env()
-    live_id = "81804234251"
+    live_id = "571821134948"
     live = DouyinLive(live_id, common_util.dy_live_auth)
     live.start_ws()

@@ -750,27 +750,53 @@ class DouyinAPI:
         :return: 直播间ID, 用户ID, ttwid
         """
         url = "https://live.douyin.com/" + live_id
-        headers = HeaderBuilder().build(HeaderType.GET)
-        res = requests.get(url, headers=headers.get(), cookies=auth_.cookie, verify=False)
+        headers = {
+            "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+            "accept-language": "zh-CN,zh;q=0.9,zh-TW;q=0.8,en;q=0.7,ja;q=0.6",
+            "cache-control": "no-cache",
+            "pragma": "no-cache",
+            "priority": "u=0, i",
+            "referer": "https://live.douyin.com/?from_nav=1",
+            "sec-ch-ua": "\"Not)A;Brand\";v=\"8\", \"Chromium\";v=\"138\", \"Google Chrome\";v=\"138\"",
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": "\"Windows\"",
+            "sec-fetch-dest": "empty",
+            "sec-fetch-mode": "navigate",
+            "sec-fetch-site": "same-origin",
+            "upgrade-insecure-requests": "1",
+            "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36"
+        }
+        res = requests.get(url, headers=headers, cookies=auth_.cookie, verify=False)
         ttwid = res.cookies.get_dict()['ttwid']
         soup = BeautifulSoup(res.text, 'html.parser')
         scripts = soup.select('script[nonce]')
+        # print(res.text)
         for script in scripts:
             if script.string is not None and 'roomId' in script.string:
                 try:
-                    room_id = re.findall(r'\\"roomId\\":\\"(\d+)\\"', script.string)[0]
                     user_id = re.findall(r'\\"user_unique_id\\":\\"(\d+)\\"', script.string)[0]
+                    room_id = re.findall(r'\\"roomId\\":\\"(\d+)\\"', script.string)[0]
+                    user_unique_id = re.findall(r'\\"user_unique_id\\":\\"(\d+)\\"', script.string)[0]
                     room_info = re.findall(r'\\"roomInfo\\":\{\\"room\\":\{\\"id_str\\":\\".*?\\",\\"status\\":(.*?),\\"status_str\\":\\".*?\\",\\"title\\":\\"(.*?)\\"', script.string)[0]
+                    # "anchor\":{\"id_str\":\"3998258005032616\",\
+                    anchor_id = re.findall(r'\\"anchor\\":\{\\"id_str\\":\\"(\d+)\\"', script.string)[0]
+                    # , \"sec_uid\":\"M
+                    sec_uid = re.findall(r'\\"sec_uid\\":\\"(.*?)\\"', script.string)[0]
                     room_status = room_info[0]
                     room_title = room_info[1]
-                    return {
+                    res = {
                         "room_id": room_id,
                         "user_id": user_id,
+                        "user_unique_id": user_unique_id,
+                        "anchor_id": anchor_id,
+                        "sec_uid": sec_uid,
                         "ttwid": ttwid,
                         # 2 是直播中 4 是未开播
                         "room_status": room_status,
                         "room_title": room_title
                     }
+                    print(res)
+                    return res
                 except Exception as e:
                     pass
         return None, None, None
@@ -1438,6 +1464,468 @@ class DouyinAPI:
 
 
 
+    @staticmethod
+    def get_rank_list(auth, room_id: str, anchor_id: str, sec_anchor_id: str):
+        headers = HeaderBuilder().build(HeaderType.GET)
+        refer = "https://live.douyin.com"
+        headers.set_referer(refer)
+        url = "https://live.douyin.com/webcast/ranklist/audience/"
+        params = Params()
+
+        # params = {
+        #     "aid": "6383",
+        #     "app_name": "douyin_web",
+        #     "live_id": "1",
+        #     "device_platform": "web",
+        #     "language": "zh-CN",
+        #     "enter_from": "web_live",
+        #     "cookie_enabled": "true",
+        #     "screen_width": "2560",
+        #     "screen_height": "1600",
+        #     "browser_language": "zh-CN",
+        #     "browser_platform": "Win32",
+        #     "browser_name": "Chrome",
+        #     "browser_version": "138.0.0.0",
+        #     "webcast_sdk_version": "2450",
+        #     "room_id": "7527483067720583955",
+        #     "anchor_id": "3998258005032616",
+        #     "sec_anchor_id": "MS4wLjABAAAA2F3NX6RiboGdfcX98Hpp3JESCY-Z8Tw8jQD8aqs25qhdnQSvMyyAbVvnLq5NT_rN",
+        #     "ignoreToast": "true",
+        #     "rank_type": "30",
+        #     "update_scene": "rank_message",
+        #     "msToken": "-HpOqCxjx1MRFQP00onCIVOe7UekYXQKcayCMuaffyovdtusmV13ZavT6mmX24sWMlGVdZza4F-MWiGt6iddfmElCqbOu59e-RiUXuBfYxqkbM-OZRHlLQn6dcDCagr8olEfvFxMvSye3lYz4-_pvuAkUQjA-a8oShkGqRiUXlrD",
+        #     "a_bogus": "OXsfhHXEd2WbedKSYCY5t53lU8DlNsuyFBiQbinue5Cuch0bDmPtknebJxow1Mjo5SpziCl77EUMbxxb0VXi11HpqmkvS8JWbTICVh8LgqqRTFisEHRTewgEHJebWOJEm5ojJ1k3ItmP2EA4L1riUQAjCAaj4Qkp/rrRda4aNItggzs9FNqxuxSDOXFNBRI4YE=="
+        # }
+        params.add_param("aid", "6383")
+        params.add_param("app_name", "douyin_web")
+        params.add_param("live_id", "1")
+        params.add_param("device_platform", "web")
+        params.add_param("language", "zh-CN")
+        params.add_param("enter_from", "web_live")
+        params.add_param("cookie_enabled", "true")
+        params.add_param("screen_width", "2560")
+        params.add_param("screen_height", "1600")
+        params.add_param("browser_language", "zh-CN")
+        params.add_param("browser_platform", "Win32")
+        params.add_param("browser_name", "Chrome")
+        params.add_param("browser_version", "138.0.0.0")
+        params.add_param("webcast_sdk_version", "2450")
+        params.add_param("room_id", room_id)
+        params.add_param("anchor_id", anchor_id)
+        params.add_param("sec_anchor_id", sec_anchor_id)
+        params.add_param("ignoreToast", "true")
+        params.add_param("rank_type", "30")
+        params.add_param("update_scene", "rank_message")
+        params.add_param("msToken", auth.msToken)
+        params.with_a_bogus()
+        response = requests.get(url, headers=headers.get(), params=params.get(),
+                           cookies=auth.cookie, verify=False)
+
+        print(response.text)
+        print(response)
+        return response.json()
+
+    @staticmethod
+    def get_webcast_detail(auth, user_id, room_id, url: str):
+        api = f"/webcast/im/fetch/"
+        headers = HeaderBuilder().build(HeaderType.FORM)
+        headers.set_header("origin", DouyinAPI.live_url)
+        headers.set_referer(url)
+        headers.with_csrf(auth.cookie_str)
+        params = Params()
+        params.add_param("resp_content_type", "protobuf")
+        params.add_param("did_rule", "3")
+        params.add_param("device_id", "")
+        params.add_param("app_name", "douyin_web")
+        params.add_param("endpoint", "live_pc")
+        params.add_param("support_wrds", "1")
+        params.add_param("user_unique_id", str(user_id))
+        params.add_param("identity", "audience")
+        params.add_param("need_persist_msg_count", "15")
+        params.add_param("insert_task_id", "")
+        params.add_param("live_reason", "")
+        params.add_param("room_id", room_id)
+        params.add_param("version_code", "180800")
+        params.add_param("last_rtt", "0")
+        params.add_param("live_id", "1")
+        params.add_param("aid", "6383")
+        params.add_param("fetch_rule", "1")
+        params.add_param("cursor", "")
+        params.add_param("internal_ext", "")
+        params.add_param("device_platform", "web")
+        params.add_param("cookie_enabled", "true")
+        params.add_param("screen_width", "2560")
+        params.add_param("screen_height", "1440")
+        params.add_param("browser_language", "en")
+        params.add_param("browser_platform", "Win32")
+        params.add_param("browser_name", "Mozilla")
+        params.add_param("browser_version",
+                         "5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36")
+        params.add_param("browser_online", "true")
+        params.add_param("tz_name", "Asia/Shanghai")
+        params.add_param("msToken", auth.msToken)
+        params.with_a_bogus()
+        res = requests.get(f'{DouyinAPI.live_url}{api}', headers=headers.get(), params=params.get(),
+                           cookies=auth.cookie, verify=False)
+        return res.content
+
+    @staticmethod
+    def diggLiveRoom(auth, room_id: str, count: str = '1'):
+        api = "/webcast/room/like/"
+        headers = HeaderBuilder().build(HeaderType.FORM)
+        refer = f"https://live.douyin.com/{room_id}"
+        headers.set_header("origin", DouyinAPI.douyin_url)
+        headers.with_csrf(auth.cookie_str)
+        headers.set_referer(refer)
+        params = Params()
+        params.add_param("aid", '6383')
+        params.add_param("app_name", 'douyin_web')
+        params.add_param("live_id", '1')
+        params.add_param("device_platform", 'web')
+        params.add_param("language", 'zh-CN')
+        params.add_param("enter_from", 'web_live')
+        params.add_param("cookie_enabled", 'true')
+        params.add_param("screen_width", '2560')
+        params.add_param("screen_height", '1440')
+        params.add_param("browser_language", 'zh-CN')
+        params.add_param("browser_platform", 'Win32')
+        params.add_param("browser_name", 'Edge')
+        params.add_param("browser_version", '130.0.0.0')
+        params.add_param("room_id", room_id)
+        params.add_param("count", count)
+        params.add_param("msToken", auth.msToken)
+        data = {
+        }
+        params.with_a_bogus(data)
+        res = requests.post(f'{DouyinAPI.live_url}{api}', headers=headers.get(), params=params.get(),
+                            cookies=auth.cookie, data=data, verify=False)
+        return res.json()
+
+    @staticmethod
+    def sendMsgInRoom(auth, room_id: str, content: str = ''):
+        api = "/webcast/room/chat/"
+        headers = HeaderBuilder().build(HeaderType.GET)
+        refer = f"https://live.douyin.com/{room_id}"
+        headers.set_header("Origin", DouyinAPI.douyin_url)
+        headers.with_bd(api, auth)
+        headers.with_csrf(auth.cookie_str)
+        headers.set_referer(refer)
+        params = Params()
+        params.add_param("aid", '6383')
+        params.add_param("app_name", 'douyin_web')
+        params.add_param("live_id", '1')
+        params.add_param("device_platform", 'web')
+        params.add_param("language", 'zh-CN')
+        params.add_param("enter_from", 'web_others_homepage')
+        params.add_param("cookie_enabled", 'true')
+        params.add_param("screen_width", '2560')
+        params.add_param("screen_height", '1440')
+        params.add_param("browser_language", 'zh-CN')
+        params.add_param("browser_platform", 'Win32')
+        params.add_param("browser_name", 'Edge')
+        params.add_param("browser_version", '130.0.0.0')
+        params.add_param("room_id", room_id)
+        params.add_param("content", content)
+        params.add_param("type", '0')
+        params.add_param("msToken", auth.msToken)
+        params.with_a_bogus()
+        res = requests.get(f'{DouyinAPI.live_url}{api}', headers=headers.get(), params=params.get(),
+                           cookies=auth.cookie, verify=False)
+        return res.json()
+
+    @staticmethod
+    def publish_comment(auth, aweme_id: str, content: str = '', reply_id="", **kwargs):
+        """
+        发布评论
+        :param auth: DouyinAuth object.
+        :param aweme_id: 视频ID.
+        :param content: 评论内容.
+        :param reply_id: 回复评论ID.
+        :return: JSON.
+        """
+        api = "/aweme/v1/web/comment/publish"
+        headers = HeaderBuilder().build(HeaderType.FORM)
+        refer = f"https://www.douyin.com/discover?modal_id={aweme_id}"
+        headers.set_header("Origin", DouyinAPI.douyin_url)
+        headers.with_bd(api, auth)
+        headers.with_csrf(auth.cookie_str)
+        headers.set_referer(refer)
+        params = Params()
+        params.add_param("app_name", 'aweme')
+        params.add_param("enter_from", 'discover')
+        params.add_param("previous_page", 'discover')
+        params.add_param("device_platform", 'webapp')
+        params.add_param("aid", '6383')
+        params.add_param("channel", 'channel_pc_web')
+        params.add_param("pc_client_type", '1')
+        params.add_param("update_version_code", '170400')
+        params.add_param("version_code", '170400')
+        params.add_param("version_name", '17.4.0')
+        params.add_param("cookie_enabled", 'true')
+        params.add_param("screen_width", '1707')
+        params.add_param("screen_height", '960')
+        params.add_param("browser_language", 'zh-CN')
+        params.add_param("browser_platform", 'Win32')
+        params.add_param("browser_name", 'Edge')
+        params.add_param("browser_version", '125.0.0.0')
+        params.add_param("browser_online", 'true')
+        params.add_param("engine_name", 'Blink')
+        params.add_param("engine_version", '125.0.0.0')
+        params.add_param("os_name", 'Windows')
+        params.add_param("os_version", '10')
+        params.add_param("cpu_core_num", '32')
+        params.add_param("device_memory", '8')
+        params.add_param("platform", 'PC')
+        params.add_param("downlink", '10')
+        params.add_param("effective_type", '4g')
+        params.add_param("round_trip_time", '100')
+        params.with_web_id(auth, refer)
+        params.add_param("msToken", auth.msToken)
+        data = {
+            "aweme_id": aweme_id,
+            "comment_send_celltime": random.randint(1000, 20000),
+            "comment_video_celltime": random.randint(1000, 20000),
+        }
+        if reply_id != "":
+            data["reply_id"] = reply_id
+        data["text"] = content
+        data["text_extra"] = []
+        params.with_a_bogus(data)
+        params.add_param("verifyFp", auth.cookie['s_v_web_id'])
+        params.add_param("fp", auth.cookie['s_v_web_id'])
+        res = requests.post(f'{DouyinAPI.douyin_url}{api}', headers=headers.get(), params=params.get(),
+                            cookies=auth.cookie, data=data, verify=False)
+        return res.json()
+
+    @staticmethod
+    def create_conversation(auth, to_user_id: int, **kwargs):
+        """
+        创建私信对话.
+        :param auth: DouyinAuth object.
+        :param to_user_id: 私信对话接收者ID.
+        :return: 私信对话ID.
+        """
+        url = "https://imapi.douyin.com/v2/conversation/create"
+        requestProto = ProtoBuilder.build_create_conversation_request(auth, to_user_id, auth.get_uid())
+        headers = HeaderBuilder().build(HeaderType.PROTOBUF)
+        headers.set_header('referer', 'https://www.douyin.com/')
+
+        resp = requests.post(
+            url,
+            headers=headers.get(),
+            cookies=auth.cookie,
+            data=requestProto.SerializeToString(),
+            verify=False
+        )
+        responseProto = ResponseProto.Response()
+        responseProto.ParseFromString(resp.content)
+        resp_json = protobuf_to_dict(responseProto)
+        conversation = resp_json['body']['create_conversation_v2_body']['conversation_info_list'][0]
+        conversation_id = conversation['conversation_id']
+        conversation_short_id, ticket = conversation['conversation_short_id'], conversation['ticket']
+        return conversation_id, conversation_short_id, ticket
+
+    @staticmethod
+    def get_conversation_list(auth, aweme_id: str, **kwargs) -> list:
+        pass
+
+    @staticmethod
+    def send_msg(auth, conversation_id, conversation_short_id, ticket, content: str, **kwargs) -> bool:
+        """
+        发送私信.
+        :param auth: DouyinAuth object.
+        :param conversation_id: 私信对话ID.
+        :param conversation_short_id: 私信对话短ID.
+        :param ticket: 私信对话票据.
+        :param content: 私信内容.
+        :return: True 发送成功 False 发送失败
+        """
+        url = 'https://imapi.douyin.com/v1/message/send'
+        headers = HeaderBuilder().build(HeaderType.PROTOBUF)
+        headers.set_header('referer', 'https://www.douyin.com/')
+        requestProto = ProtoBuilder.build_send_message_request(auth, conversation_id, conversation_short_id, ticket,
+                                                               content)
+        params = {
+            'verifyFp': auth.cookie['s_v_web_id'],
+            'fp': auth.cookie['s_v_web_id'],
+            'msToken': generate_msToken()
+        }
+        query = splice_url(params)
+        abogus = generate_a_bogus(query)
+        params['a_bogus'] = abogus
+        resp = requests.post(url, params=params, headers=headers.get(), verify=False, cookies=auth.cookie,
+                             data=requestProto.SerializeToString())
+        responseProto = ResponseProto.Response()
+        responseProto.ParseFromString(resp.content)
+        resp_json = protobuf_to_dict(responseProto)
+        print(resp_json)
+
+    @staticmethod
+    def get_device_id(auth, **kwargs) -> str:
+        """
+        获取设备ID.
+        :param auth: DouyinAuth object.
+        :return: 设备ID.
+        """
+        url = "https://www.douyin.com/aweme/v1/web/query/user"
+        headers = HeaderBuilder().build(HeaderType.GET)
+        refer = "https://www.douyin.com/discover"
+        headers.set_header("referer", refer)
+        params = Params()
+        (params
+         .with_platform()
+         .add_param("publish_video_strategy_type", "2")
+         .with_web_id(auth, refer)
+         .with_ms_token()
+         .add_param('verifyFp', auth.cookie['s_v_web_id'])
+         .add_param('fp', auth.cookie['s_v_web_id'])
+         .with_a_bogus()
+         )
+        resp = requests.get(url, params=params.get(), verify=False, headers=headers.get(), cookies=auth.cookie)
+        resp_json = json.loads(resp.text)
+        return resp_json['id']
+
+    @staticmethod
+    def digg(auth, aweme_id: str, digg_type: str = '1', **kwargs) -> bool:
+        """
+        点赞视频.
+        :param auth: DouyinAuth object.
+        :param aweme_id: 视频ID.
+        :param digg_type: 点赞类型, 1: 点赞, 0: 取消点赞.
+        :return: 0 点赞成功 1 取消点赞成功
+        """
+        api = '/aweme/v1/web/commit/item/digg/'
+        url = f'{DouyinAPI.douyin_url}{api}'
+        refer = f'{DouyinAPI.douyin_url}/discover?modal_id={aweme_id}'
+        headers = HeaderBuilder.build(HeaderType.FORM)
+        headers.set_header("Host", DouyinAPI.douyin_url.split("https://")[-1])
+        headers.with_bd(api, auth)
+        headers.with_csrf(auth.cookie_str)
+        headers.set_header("origin", DouyinAPI.douyin_url)
+        headers.set_header("referer", refer)
+        params = Params()
+        params.with_platform()
+        params.with_ms_token()
+        params.with_web_id(auth, refer)
+        params.add_param('verifyFp', auth.cookie['s_v_web_id'])
+        params.add_param('fp', auth.cookie['s_v_web_id'])
+        params.with_a_bogus()
+        data = {
+            'aweme_id': aweme_id,
+            'item_type': '0',
+            'type': digg_type,
+        }
+        resp = requests.post(url, params=params.get(), headers=headers.get(), cookies=auth.cookie, data=data,
+                             verify=False)
+        print(resp.text)
+        resp_json = json.loads(resp.text)
+        return resp_json['is_digg'] == 0
+
+    @staticmethod
+    def search_some_video_work(auth, query: str, num: int = 16, sort_type: str = '0', publish_time: str = '0',
+                               filter_duration="", search_range="0", **kwargs) -> tuple:
+        """
+        搜索视频频道作品.
+        :param auth: DouyinAuth object.
+        :param query: 搜索关键字.
+        :param num: 搜索结果数量.
+        :param sort_type: 排序方式 0 综合排序 1 最多点赞 2 最新发布.
+        :param publish_time: 发布时间 0 不限 1 一天内 7 一周内 180 半年内.
+        :param filter_duration: 视频时长 空字符串 不限 0-1 一分钟内 1-5 1-5分钟内 5-10000 5分钟以上
+        :param search_range: 搜索范围 0 不限 3 关注的人 1 最近看过 2 还未看过
+        :return: 作品列表, 引导词.
+        """
+        offset = "0"
+        count = "25"
+        search_id = ""
+        video_work_list = []
+        while True:
+            search_id, guide_search_words, res_json = DouyinAPI.search_video_work(auth, query, offset, count, sort_type,
+                                                                                  publish_time, filter_duration,
+                                                                                  search_range, search_id)
+            video_works = res_json["data"]
+            video_work_list.extend(video_works)
+            if res_json["has_more"] != 1 or len(video_work_list) >= num:
+                break
+            offset = str(int(offset) + int(count))
+        if len(video_work_list) > num:
+            video_work_list = video_work_list[:num]
+        return video_work_list, guide_search_words
+
+    @staticmethod
+    def search_video_work(auth, query: str, offset: str = '0', count: str = '16', sort_type: str = '0',
+                          publish_time: str = '0', filter_duration="", search_range="0", search_id="", **kwargs):
+        """
+        搜索视频频道作品.
+        :param auth: DouyinAuth object.
+        :param query: 搜索关键字.
+        :param offset: 搜索结果偏移量.
+        :param count: 搜索结果数量.
+        :param sort_type: 排序方式 0 综合排序 1 最多点赞 2 最新发布.
+        :param publish_time: 发布时间 0 不限 1 一天内 7 一周内 180 半年内.
+        :param filter_duration: 视频时长 空字符串 不限 0-1 一分钟内 1-5 1-5分钟内 5-10000 5分钟以上
+        :param search_range: 搜索范围 0 不限 3 关注的人 1 最近看过 2 还未看过
+        :return: 下个搜索ID, 引导词, JSON数据.
+        """
+        api = "/aweme/v1/web/search/item/"
+        headers = HeaderBuilder().build(HeaderType.GET)
+        refer = f'https://www.douyin.com/search/{urllib.parse.quote(query)}?aid={uuid.uuid4()}&type=video'
+        headers.set_referer(refer)
+        params = Params()
+        params.add_param("device_platform", 'webapp')
+        params.add_param("aid", '6383')
+        params.add_param("channel", 'channel_pc_web')
+        params.add_param("search_channel", 'aweme_video_web')
+        params.add_param("enable_history", '1')
+        params.add_param("sort_type", sort_type)
+        params.add_param("publish_time", publish_time)
+        params.add_param("filter_duration", filter_duration)
+        params.add_param("search_range", search_range)
+        params.add_param("keyword", query)
+        params.add_param("search_source", 'normal_search')
+        params.add_param("query_correct_type", '1')
+        params.add_param("is_filter_search", '1')
+        params.add_param("from_group_id", '')
+        params.add_param("offset", offset)
+        params.add_param("count", count)
+        params.add_param("need_filter_settings", '1' if offset == '0' else '0')
+        if search_id != "":
+            params.add_param("search_id", search_id)
+        params.add_param("list_type", 'single')
+        params.add_param("update_version_code", '170400')
+        params.add_param("pc_client_type", '1')
+        params.add_param("version_code", '170400')
+        params.add_param("version_name", '17.4.0')
+        params.add_param("cookie_enabled", 'true')
+        params.add_param("screen_width", '1707')
+        params.add_param("screen_height", '960')
+        params.add_param("browser_language", 'zh-CN')
+        params.add_param("browser_platform", 'Win32')
+        params.add_param("browser_name", 'Edge')
+        params.add_param("browser_version", '125.0.0.0')
+        params.add_param("browser_online", 'true')
+        params.add_param("engine_name", 'Blink')
+        params.add_param("engine_version", '125.0.0.0')
+        params.add_param("os_name", 'Windows')
+        params.add_param("os_version", '10')
+        params.add_param("cpu_core_num", '32')
+        params.add_param("device_memory", '8')
+        params.add_param("platform", 'PC')
+        params.add_param("downlink", '10')
+        params.add_param("effective_type", '4g')
+        params.add_param("round_trip_time", '50')
+        params.with_web_id(auth, refer)
+        params.add_param("msToken", auth.msToken)
+        params.with_a_bogus()
+        params.add_param("verifyFp", auth.cookie['s_v_web_id'])
+        params.add_param("fp", auth.cookie['s_v_web_id'])
+        resp = requests.get(f'{DouyinAPI.douyin_url}{api}', headers=headers.get(), cookies=auth.cookie,
+                            params=params.get(), verify=False)
+        search_id = resp.headers["X-Tt-Logid"]
+        json_data = resp.json()
+        return search_id, json_data["guide_search_words"], json_data
+
+
 if __name__ == '__main__':
     web_protect_str = r''
     keys_str = r''
@@ -1449,13 +1937,25 @@ if __name__ == '__main__':
     auth_ = DouyinAuth()
     auth_.perepare_auth(cookies_str, web_protect_str, keys_str)
 
-    res = DouyinAPI.search_live(auth_, "三角洲")
-    # print(res)
-    for i in res['data']:
-        print(i['lives']['author']['nickname'])
-        live_id = re.findall(r'"web_rid":"(.*?)",', str(i['lives']))[0]
-        live_url = f'https://live.douyin.com/{live_id}'
-        print(live_url)
+    live_url = "https://live.douyin.com/852953608964"
+    live_id = "852953608964"
+    res = DouyinAPI.get_live_info(auth_, live_id)
+    print(res)
+
+    room_id = res['room_id']
+    anchor_id = res['anchor_id']
+    sec_anchor_id = res['sec_uid']
+    DouyinAPI.get_rank_list(auth_, room_id, anchor_id, sec_anchor_id)
+
+
+
+    # res = DouyinAPI.search_live(auth_, "三角洲")
+    # # print(res)
+    # for i in res['data']:
+    #     print(i['lives']['author']['nickname'])
+    #     live_id = re.findall(r'"web_rid":"(.*?)",', str(i['lives']))[0]
+    #     live_url = f'https://live.douyin.com/{live_id}'
+    #     print(live_url)
 
     # my_uid = DouyinAPI.get_my_uid(auth_)
     # print(my_uid)
