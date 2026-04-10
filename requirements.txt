@@ -7,5 +7,10 @@ openpyxl
 urllib3
 PyExecJS
 requests
+beautifulsoup4
+protobuf
+protobuf-to-dict
 argparse
 websockets
+websocket-client
+py-mini-racer

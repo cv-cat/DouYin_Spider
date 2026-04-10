@@ -35,6 +35,8 @@
   - 消息通知 / 收藏列表 / 推荐流
 - 🎙️ **直播间实时监听**
   - 弹幕消息 / 礼物（含送礼对象）/ 进场 / 关注 / 点赞 / 房间热度
+  - 支持**登录态**与**游客态**两种监听模式
+  - 游客态支持：完整直播链接 / `v.douyin.com` 短链 / 纯房间号
   - 直播间发送弹幕消息
   - 直播间点赞
 - 💬 **抖音私信收发**
@@ -80,6 +82,11 @@ pip install -r requirements.txt
 npm install
 ```
 
+直播监听新增依赖已包含在 `requirements.txt` 中，主要包括：
+
+- `websocket-client`
+- `py-mini-racer`
+
 ### 🎨配置文件
 这里以小红书的cookie获取为例
 
@@ -91,6 +98,11 @@ npm install
 复制cookie到.env文件中（注意！登录抖音后的cookie才是有效的，不登陆没有用）
 ![image](https://github.com/user-attachments/assets/60291f3f-9b69-423f-8b11-167278d44639)
 
+**补充说明：**
+
+- **登录态监听**：依赖 `.env` 中的 `DY_LIVE_COOKIES`
+- **游客态监听**：默认**不强制依赖** `.env`，可直接监听公开直播间
+- 如需提高游客态兼容性，可额外传入 `sessionid`
 
 
 ### 🚀运行项目
@@ -98,8 +110,21 @@ npm install
 # 数据爬取
 python main.py
 
-# 直播间监听（弹幕 / 礼物 / 点赞等）
-python dy_live/server.py
+# 直播间监听 - 游客态（推荐先试这个）
+python dy_live/server.py --mode guest --room 819071703613
+
+# 等价写法（模块方式启动）
+python -m dy_live.server --mode guest --room 819071703613
+
+# 直播间监听 - 游客态（支持完整链接 / 短链）
+python dy_live/server.py --mode guest --room "https://live.douyin.com/819071703613"
+python dy_live/server.py --mode guest --room "https://v.douyin.com/xxxxxx/"
+
+# 直播间监听 - 游客态（可选传 sessionid）
+python dy_live/server.py --mode guest --room 819071703613 --sessionid YOUR_SESSIONID
+
+# 直播间监听 - 登录态
+python dy_live/server.py --mode auth --room 819071703613
 
 # 抖音私信实时接收
 python dy_apis/douyin_recv_msg.py
@@ -108,8 +133,21 @@ python dy_apis/douyin_recv_msg.py
 ### 🗝️注意事项
 - `main.py` 是爬虫入口，可根据需求自行修改调用
 - `dy_apis/douyin_api.py` 包含全部 API 接口封装，含直播间点赞、发消息、私信收发等
-- `dy_live/server.py` 包含直播间 WebSocket 监听逻辑
+- `dy_live/server.py` 现在支持双模式：
+  - `--mode guest`：游客态监听
+  - `--mode auth`：登录态监听
+- `dy_live/room_resolver.py` 负责解析直播间输入，支持短链、完整链接、纯房间号
+- `dy_live/guest_live.py` 为新增游客态直播监听核心
 - `dy_apis/douyin_recv_msg.py` 包含抖音私信 WebSocket 实时接收逻辑
+- 游客态模式当前已覆盖常见消息：
+  - 弹幕
+  - 礼物
+  - 进场
+  - 点赞
+  - 关注
+  - 房间统计
+- 若想减少游客态输出中的未处理消息提示，可加：
+  - `--quiet-unknown`
 
 
 ## 🍥日志
@@ -127,6 +165,7 @@ python dy_apis/douyin_recv_msg.py
 | 23/12/22 | - 修复了直播间监控 |
 | 25/06/07 | - 开放所有之前闭源的代码，包括数据爬取和直播间监听 |
 | 26/04/09 | - 修复直播间礼物信息接收（含送礼对象）；新增直播间点赞、直播间发弹幕；新增抖音私信实时接收（WebSocket）与主动发送功能 |
+| 26/04/10 | - 新增游客态直播间监听模式；支持直播链接 / 短链 / 房间号解析；接入新的 `dy_live/guest_live.py` 与 `dy_live/room_resolver.py` |
 
 ## 🤝 欢迎贡献 PR
 

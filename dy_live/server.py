@@ -1,16 +1,21 @@
+import os
+import sys
+import argparse
 import gzip
 import threading
 import time
 from urllib.parse import urlencode
 
+CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.dirname(CURRENT_DIR)
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
+
 from websocket import WebSocketApp
 
 import static.Live_pb2 as Live_pb2
-from dy_apis.douyin_api import DouyinAPI
-from builder.header import HeaderBuilder
-from builder.params import Params
-import utils.common_util as common_util
-from utils.dy_util import generate_signature
+from dy_live.guest_live import DouyinGuestLive
+from dy_live.room_resolver import LiveRoomResolver
 
 
 class DouyinLive:
@@ -98,6 +103,11 @@ class DouyinLive:
         print("### ===closed=== ###\033[m")
 
     def start_ws(self):
+        from dy_apis.douyin_api import DouyinAPI
+        from builder.header import HeaderBuilder
+        from builder.params import Params
+        from utils.dy_util import generate_signature
+
         room_info = DouyinAPI.get_live_info(self.auth_, self.live_id)
         room_id = room_info['room_id']
         user_id = room_info['user_id']
@@ -167,7 +177,33 @@ class DouyinLive:
 
 
 if __name__ == '__main__':
-    common_util.load_env()
-    live_id = "571821134948"
-    live = DouyinLive(live_id, common_util.dy_live_auth)
-    live.start_ws()
+    parser = argparse.ArgumentParser(description="抖音直播监听入口")
+    parser.add_argument("--mode", choices=["auth", "guest"], default="guest", help="监听模式")
+    parser.add_argument("--room", default="118465410901", help="直播间链接、短链或房间号")
+    parser.add_argument("--sessionid", default="", help="游客态可选 sessionid")
+    parser.add_argument(
+        "--quiet-unknown",
+        action="store_true",
+        help="游客态不打印未处理消息类型",
+    )
+    args = parser.parse_args()
+
+    resolver = LiveRoomResolver()
+    room_info = resolver.resolve(args.room)
+
+    if args.mode == "guest":
+        live = DouyinGuestLive(
+            room_input=args.room,
+            room_info=room_info,
+            session_id=args.sessionid,
+            print_unknown=not args.quiet_unknown,
+        )
+        live.start()
+    else:
+        import utils.common_util as common_util
+
+        common_util.load_env()
+        if not common_util.dy_live_auth:
+            raise RuntimeError("登录态模式缺少 DY_LIVE_COOKIES")
+        live = DouyinLive(room_info.web_rid, common_util.dy_live_auth)
+        live.start_ws()
