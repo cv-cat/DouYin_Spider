@@ -163,9 +163,10 @@ python dy_apis/douyin_recv_msg.py
 ## 🍔 交流群
 如果你对爬虫和ai agent感兴趣，请加作者主页wx通过邀请加入群聊
 
-ps: 请加群5，人满或者过期issue|wx提醒
+ps: 请加群6，人满或者过期 issue | wx 提醒
 
-![06f69d67ff814b84e122bb32d123075b](https://github.com/cv-cat/Spider_XHS/blob/master/author/group5.jpg)
+![group5](https://github.com/cv-cat/Spider_XHS/blob/master/author/group6.jpg)
+
 
 
 
