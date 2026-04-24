@@ -9,6 +9,11 @@ def load_env():
     load_dotenv()
     cookies_dy = os.getenv('DY_COOKIES')
     cookies_live = os.getenv('DY_LIVE_COOKIES')
+    
+    # 检查 DY_COOKIES 是否为空
+    if not cookies_dy:
+        raise ValueError("环境变量 DY_COOKIES 为空，请设置有效的抖音cookies")
+    
     from builder.auth import DouyinAuth
     dy_auth = DouyinAuth()
     dy_auth.perepare_auth(cookies_dy, "", "")
