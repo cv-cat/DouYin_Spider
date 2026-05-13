@@ -91,6 +91,94 @@ npm install
 复制cookie到.env文件中（注意！登录抖音后的cookie才是有效的，不登陆没有用）
 ![image](https://github.com/user-attachments/assets/60291f3f-9b69-423f-8b11-167278d44639)
 
+### 🔐 自动化 Cookie 管理（可选）
+
+如果你不想手动从浏览器复制 Cookie，可以使用 [SigCLI](https://github.com/sigcli/sigcli) 自动化管理：
+
+```bash
+# 安装
+npm install -g @sigcli/cli && sig init
+```
+
+在 `~/.sig/config.yaml` 的 `providers:` 下添加：
+
+```yaml
+douyin:
+    domains:
+        - www.douyin.com
+    entryUrl: https://www.douyin.com
+    validateUrl: https://www.douyin.com/aweme/v1/web/notice/count/
+    validateRule: "res.body.status_code === 0"
+    strategy: browser
+    loginMode: visible
+    ttl: 2h
+    extract:
+        - from: cookies
+          as: cookie
+          match: '*'
+    apply:
+        - in: header
+          name: Cookie
+          value: ${cookie}
+
+douyin-live:
+    domains:
+        - live.douyin.com
+    entryUrl: https://live.douyin.com
+    validateUrl: https://www.douyin.com/aweme/v1/web/notice/count/
+    validateRule: "res.body.status_code === 0"
+    strategy: browser
+    loginMode: visible
+    ttl: 2h
+    extract:
+        - from: cookies
+          as: cookie
+          match: '*'
+    apply:
+        - in: header
+          name: Cookie
+          value: ${cookie}
+```
+
+```bash
+# 一次性登录（浏览器扫码）
+sig login douyin
+sig login douyin-live
+
+# 方式一（推荐）：将 Cookie 写入 .env
+echo "DY_COOKIES='$(sig get douyin --no-redaction --format value)'" > .env
+echo "DY_LIVE_COOKIES='$(sig get douyin-live --no-redaction --format value)'" >> .env
+python main.py
+
+# 方式二：通过环境变量注入
+export DY_COOKIES=$(sig get douyin --no-redaction --format value)
+export DY_LIVE_COOKIES=$(sig get douyin-live --no-redaction --format value)
+python main.py
+python dy_live/server.py
+```
+
+**在 Python 代码中使用（SDK）：**
+
+```bash
+pip install sigcli-sdk
+```
+
+```python
+from sigcli_sdk import SigClient
+
+client = SigClient()
+dy_cookie = client.get_credential("douyin").values["cookie"]
+live_cookie = client.get_credential("douyin-live").values["cookie"]
+```
+
+SigCLI 的优势：
+
+- 无需手动打开 DevTools 复制 Cookie
+- Cookie 过期后自动检测失效（通过 `validateRule` 检测 `status_code`）
+- 使用原生 Edge/Chrome + CDP 登录，无爬虫特征
+- 加密存储，支持多账号
+- 支持远程/无头环境（`sig sync`）
+
 
 
 ### 🚀运行项目
