@@ -1,6 +1,7 @@
 # coding=utf-8
 import json
 import os
+import sys
 from loguru import logger
 
 from dy_apis.douyin_api import DouyinAPI
@@ -44,7 +45,7 @@ class Data_Spider():
             work_list.append(work_info)
         for work_info in work_list:
             if save_choice == 'all' or 'media' in save_choice:
-                download_work(work_info, base_path['media'], save_choice)
+                download_work(auth, work_info, base_path['media'], save_choice)
         if save_choice == 'all' or save_choice == 'excel':
             file_path = os.path.abspath(os.path.join(base_path['excel'], f'{excel_name}.xlsx'))
             save_to_xlsx(work_list, file_path)
@@ -74,7 +75,7 @@ class Data_Spider():
             work_info_list.append(work_info)
             logger.info(f'爬取作品信息 {work_info["work_url"]}')
             if save_choice == 'all' or 'media' in save_choice:
-                download_work(work_info, base_path['media'], save_choice)
+                download_work(auth, work_info, base_path['media'], save_choice)
         if save_choice == 'all' or save_choice == 'excel':
             file_path = os.path.abspath(os.path.join(base_path['excel'], f'{excel_name}.xlsx'))
             save_to_xlsx(work_info_list, file_path)
@@ -104,7 +105,7 @@ class Data_Spider():
             work_info = handle_work_info(work_info['aweme_info'])
             work_info_list.append(work_info)
             if save_choice == 'all' or 'media' in save_choice:
-                download_work(work_info, base_path['media'], save_choice)
+                download_work(auth, work_info, base_path['media'], save_choice)
         if save_choice == 'all' or save_choice == 'excel':
             file_path = os.path.abspath(os.path.join(base_path['excel'], f'{excel_name}.xlsx'))
             save_to_xlsx(work_info_list, file_path)
@@ -117,6 +118,20 @@ if __name__ == '__main__':
         感谢star和follow
     """
 
+    # 打印 Docker 运行方案
+    logger.info("=" * 80)
+    logger.info("🐳 Docker 运行方案:")
+    logger.info("=" * 80)
+    logger.info("1. 运行 Docker 容器:")
+    logger.info("   docker run --rm -it \\")
+    logger.info("     -v \"$((Resolve-Path .\\datas).Path):/app/datas\" \\")
+    logger.info("     -e DY_COOKIES=\"$env:DY_COOKIES\" \\")
+    logger.info("     -e DOUYIN_WORKS=\"$env:DOUYIN_WORKS\" \\")
+    logger.info("     -e DOUYIN_USER_URL=\"$env:DOUYIN_USER_URL\" \\")
+    logger.info("     douyin-spider:local")
+    logger.info("=" * 80)
+    logger.info("")
+
     auth, base_path = init()
 
     data_spider = Data_Spider()
@@ -124,24 +139,36 @@ if __name__ == '__main__':
     # save_choice 为 excel 或者 all 时，excel_name 不能为空
 
 
-    # 1 爬取列表的所有作品信息 作品链接 如下所示 注意此url会过期！
-    works = [
-        r'https://www.douyin.com/user/MS4wLjABAAAAv2Jr7Ngl7lQMjp4fw0AxtXkaHOgI_UL8aBJGGDSaU1g?from_tab_name=main&modal_id=7445533736877264178',
-    ]
-    data_spider.spider_some_work(auth, works, base_path, 'all', 'test')
-
-    # 2 爬取用户的所有作品信息 用户链接 如下所示 注意此url会过期！
-    user_url = 'https://www.douyin.com/user/MS4wLjABAAAAULqT-SrJDT7RqeoxeGg1hB14Ia5UI9Pm66kzKmI1ITD2Fo3bUhqYePBaztkzj7U5?from_tab_name=main&relation=0&vid=7227654252435361061'
-    data_spider.spider_user_all_work(auth, user_url, base_path, 'all')
+    # 1 爬取列表的所有作品信息 作品链接 从环境变量获取
+    works_env = os.getenv('DOUYIN_WORKS', '')
+    works = []
+    if works_env:
+        works = [url.strip() for url in works_env.split(',') if url.strip()]
+    
+    # 2 爬取用户的所有作品信息 用户链接 从环境变量获取
+    user_url = os.getenv('DOUYIN_USER_URL', '')
+    
+    # 检查环境变量是否为空
+    if not works and not user_url:
+        logger.error("环境变量 DOUYIN_WORKS 和 DOUYIN_USER_URL 都为空，请设置至少一个环境变量")
+        sys.exit(1)
+    
+    # 如果works不为空，则爬取作品列表
+    if works:
+        data_spider.spider_some_work(auth, works, base_path, 'all', 'test')
+    
+    # 如果user_url不为空，则爬取用户所有作品
+    if user_url:
+        data_spider.spider_user_all_work(auth, user_url, base_path, 'all')
 
     # 3 搜索指定关键词的作品
-    query = "榴莲"
-    require_num = 20  # 搜索的数量
-    sort_type = '0'  # 排序方式 0 综合排序, 1 最多点赞, 2 最新发布
-    publish_time = '0'  # 发布时间 0 不限, 1 一天内, 7 一周内, 180 半年内
-    filter_duration = ""  # 视频时长 空字符串 不限, 0-1 一分钟内, 1-5 1-5分钟内, 5-10000 5分钟以上
-    search_range = "0"  # 搜索范围 0 不限, 1 最近看过, 2 还未看过, 3 关注的人
-    content_type = "0"  # 内容形式 0 不限, 1 视频, 2 图文
+    # query = "榴莲"
+    # require_num = 20  # 搜索的数量
+    # sort_type = '0'  # 排序方式 0 综合排序, 1 最多点赞, 2 最新发布
+    # publish_time = '0'  # 发布时间 0 不限, 1 一天内, 7 一周内, 180 半年内
+    # filter_duration = ""  # 视频时长 空字符串 不限, 0-1 一分钟内, 1-5 1-5分钟内, 5-10000 5分钟以上
+    # search_range = "0"  # 搜索范围 0 不限, 1 最近看过, 2 还未看过, 3 关注的人
+    # content_type = "0"  # 内容形式 0 不限, 1 视频, 2 图文
 
-    data_spider.spider_some_search_work(auth, query, require_num, base_path, 'all', sort_type, publish_time, filter_duration, search_range, content_type)
+    # data_spider.spider_some_search_work(auth, query, require_num, base_path, 'all', sort_type, publish_time, filter_duration, search_range, content_type)
 
