@@ -91,6 +91,25 @@ npm install
 复制cookie到.env文件中（注意！登录抖音后的cookie才是有效的，不登陆没有用）
 ![image](https://github.com/user-attachments/assets/60291f3f-9b69-423f-8b11-167278d44639)
 
+#### 新增环境变量配置
+
+除了cookies配置外，还需要配置以下环境变量来控制爬虫行为：
+
+**必需环境变量：**
+- `DY_COOKIES`: 抖音登录后的cookies（用于认证，不能为空）
+
+**可选环境变量：**
+- `DOUYIN_WORKS`: 要爬取的作品链接列表，多个URL用逗号分隔
+  ```
+  DOUYIN_WORKS=https://www.douyin.com/video/123,https://www.douyin.com/video/456
+  ```
+- `DOUYIN_USER_URL`: 要爬取的用户主页链接
+  ```
+  DOUYIN_USER_URL=https://www.douyin.com/user/MS4wLjABAAAA...
+  ```
+
+**注意：** `DOUYIN_WORKS` 和 `DOUYIN_USER_URL` 至少需要设置其中一个，否则程序会报错退出。
+
 
 
 ### 🚀运行项目
@@ -103,6 +122,22 @@ python dy_live/server.py
 
 # 抖音私信实时接收
 python dy_apis/douyin_recv_msg.py
+```
+
+### 🚀docker 运行项目
+
+```
+# 项目根目录下
+docker build -t douyin-spider:local .
+```
+```powershell
+# 修改完.env 和main.py后
+docker run --rm -it `
+  -v "$((Resolve-Path .\datas).Path):/app/datas" `
+  -e DY_COOKIES="$env:DY_COOKIES" `
+  -e DOUYIN_WORKS="$env:DOUYIN_WORKS" `
+  -e DOUYIN_USER_URL="$env:DOUYIN_USER_URL" `
+  douyin-spider:local
 ```
 
 ### 🗝️注意事项
