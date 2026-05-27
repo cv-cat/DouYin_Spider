@@ -1726,8 +1726,28 @@ class DouyinAPI:
         return conversation_id, conversation_short_id, ticket
 
     @staticmethod
-    def get_conversation_list(auth, aweme_id: str, **kwargs) -> list:
-        pass
+    def get_conversation_list(auth,to_user_id: int,conversation_short_id:int, **kwargs) -> list:
+        import blackboxprotobuf
+        url = "https://imapi.douyin.com/v2/conversation/get_info_list"
+        requestProto = ProtoBuilder.build_get_conversation_list_info_request(auth, to_user_id, auth.get_uid(), conversation_short_id)
+        headers = HeaderBuilder().build(HeaderType.PROTOBUF)
+        headers.set_header('referer', 'https://www.douyin.com/')
+
+        resp = requests.post(
+            url,
+            headers=headers.get(),
+            cookies=auth.cookie,
+            data=requestProto.SerializeToString(),
+            verify=False
+        )
+        try:
+            # 方式1: 直接解码（自动推断消息结构）
+            deserialized_data, message_type = blackboxprotobuf.decode_message(resp.content)
+            secure_uid = deserialized_data['6']['610']['1']['50']['13'].decode('utf-8')
+            print(f"secure_uid:{secure_uid}")
+            return secure_uid
+        except Exception as e:
+            pass
 
     @staticmethod
     def send_msg(auth, conversation_id, conversation_short_id, ticket, content: str, **kwargs) -> bool:
