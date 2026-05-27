@@ -1727,6 +1727,7 @@ class DouyinAPI:
 
     @staticmethod
     def get_conversation_list(auth,to_user_id: int,conversation_short_id:int, **kwargs) -> list:
+        import blackboxprotobuf
         url = "https://imapi.douyin.com/v2/conversation/get_info_list"
         requestProto = ProtoBuilder.build_get_conversation_list_info_request(auth, to_user_id, auth.get_uid(), conversation_short_id)
         headers = HeaderBuilder().build(HeaderType.PROTOBUF)
