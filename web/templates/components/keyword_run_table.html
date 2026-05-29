@@ -24,11 +24,18 @@
         <td>
           {% if run.status == "verification_required" %}
           需要人工验证
+          {% elif run.status == "running" %}
+          运行中
           {% else %}
           {{ run.status }}
           {% endif %}
         </td>
-        <td>{{ run.processed_count }}/{{ run.total_count }}</td>
+        <td>
+          {{ run.processed_count }}/{{ run.total_count }}
+          {% if run.status == "running" and run.total_count %}
+          <div>{{ ((run.processed_count / run.total_count) * 100) | round(0) }}%</div>
+          {% endif %}
+        </td>
         <td>{{ run.lead_count }}</td>
         <td>{{ run.summary }}</td>
       </tr>

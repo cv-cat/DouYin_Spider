@@ -182,6 +182,22 @@ def tasks_page(request: Request):
                 (task["task_id"],),
             ).fetchone()
             task["traceback"] = log_row["message"] if log_row else ""
+            task["progress_text"] = ""
+            task["progress_summary"] = task["summary"] or ""
+            run_row = conn.execute(
+                "select run_id, keyword, status, processed_count, total_count, lead_count, high_intent_count, summary "
+                "from keyword_runs where task_id = ? order by created_at desc limit 1",
+                (task["task_id"],),
+            ).fetchone()
+            if run_row:
+                run = dict(run_row)
+                task["run_id"] = run["run_id"]
+                task["run_keyword"] = run["keyword"]
+                task["run_status"] = run["status"]
+                task["progress_text"] = f'{run["processed_count"]}/{run["total_count"]}'
+                task["progress_summary"] = run["summary"]
+                task["lead_count"] = run["lead_count"]
+                task["high_intent_count"] = run["high_intent_count"]
             tasks.append(task)
     template_name = "components/task_rows.html" if partial == "rows" else "tasks.html"
     return request.app.state.templates.TemplateResponse(

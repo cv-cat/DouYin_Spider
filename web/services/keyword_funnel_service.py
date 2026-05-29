@@ -66,7 +66,7 @@ class KeywordFunnelService:
             conn.commit()
 
         def runner():
-            self._update_run(run_id, "running", 0, 0, 0, "collecting leads")
+            self._update_run(run_id, "running", 0, 0, 0, "准备开始采集")
             try:
                 lead_count, high_intent_count = self._collect_leads(run_id, keyword, require_num, include_comments, comment_limit)
                 run = self._get_run(run_id) or {}
@@ -159,40 +159,88 @@ class KeywordFunnelService:
     def _collect_leads(self, run_id, keyword, require_num, include_comments, comment_limit):
         items = self.crawl_service.search_general(keyword, str(require_num), "0", "0")
         total_count = len(items)
-        self._update_progress(run_id, 0, total_count, 0, f"found {total_count} works", high_intent_count=0)
-        leads = []
+        self._update_progress(run_id, 0, total_count, 0, f"已找到 {total_count} 条作品，准备开始处理", high_intent_count=0)
         seen = set()
+        inserted_total = 0
+        high_intent_total = 0
         for index, item in enumerate(items, start=1):
+            self._update_progress(
+                run_id,
+                index - 1,
+                total_count,
+                inserted_total,
+                f"正在处理第 {index}/{total_count} 条作品：提取作者",
+                high_intent_count=high_intent_total,
+            )
             author_lead = self._extract_author_lead(keyword, item)
             if author_lead and author_lead["dedupe_key"] not in seen:
                 seen.add(author_lead["dedupe_key"])
-                leads.append(author_lead)
+                inserted_count, high_intent_count = self._insert_leads(run_id, [author_lead])
+                inserted_total += inserted_count
+                high_intent_total += high_intent_count
+                self._update_progress(
+                    run_id,
+                    index - 1,
+                    total_count,
+                    inserted_total,
+                    f"正在处理第 {index}/{total_count} 条作品：已新增 {inserted_total} 条线索，准备抓取评论",
+                    high_intent_count=high_intent_total,
+                )
 
             if not include_comments:
+                self._update_progress(
+                    run_id,
+                    index,
+                    total_count,
+                    inserted_total,
+                    f"已完成 {index}/{total_count} 条作品，累计 {inserted_total} 条线索",
+                    high_intent_count=high_intent_total,
+                )
                 continue
 
             aweme = item.get("aweme_info") or item
             aweme_id = str(aweme.get("aweme_id") or "")
             work_url = aweme.get("share_url") or self._build_work_url(aweme_id)
             if not work_url:
+                self._update_progress(
+                    run_id,
+                    index,
+                    total_count,
+                    inserted_total,
+                    f"第 {index}/{total_count} 条作品缺少地址，已跳过",
+                    high_intent_count=high_intent_total,
+                )
                 continue
+            self._update_progress(
+                run_id,
+                index - 1,
+                total_count,
+                inserted_total,
+                f"正在处理第 {index}/{total_count} 条作品：抓取评论",
+                high_intent_count=high_intent_total,
+            )
             comments = self.crawl_service.invoke("get_work_all_out_comment", {"work_url": work_url})
             if comment_limit > 0:
                 comments = comments[:comment_limit]
+            item_comment_leads = []
             for comment in comments:
                 comment_lead = self._extract_comment_lead(keyword, comment, aweme_id, work_url)
                 if comment_lead and comment_lead["dedupe_key"] not in seen:
                     seen.add(comment_lead["dedupe_key"])
-                    leads.append(comment_lead)
+                    item_comment_leads.append(comment_lead)
+            if item_comment_leads:
+                inserted_count, high_intent_count = self._insert_leads(run_id, item_comment_leads)
+                inserted_total += inserted_count
+                high_intent_total += high_intent_count
             self._update_progress(
                 run_id,
                 index,
                 total_count,
-                len(leads),
-                f"processing {index}/{total_count}",
-                high_intent_count=self._count_high_intent(leads),
+                inserted_total,
+                f"已完成 {index}/{total_count} 条作品，累计 {inserted_total} 条线索",
+                high_intent_count=high_intent_total,
             )
-        return self._insert_leads(run_id, leads)
+        return inserted_total, high_intent_total
 
     def _send_bulk_messages(self, run_id, content, limit_value):
         query = "select * from keyword_leads where run_id = ? and message_status = 'pending' order by id asc"
@@ -393,9 +441,6 @@ class KeywordFunnelService:
                 ("failed", error_message, lead_id),
             )
             conn.commit()
-
-    def _count_high_intent(self, leads):
-        return sum(1 for lead in leads if lead.get("grade") in {"S", "A"})
 
     def _build_work_url(self, aweme_id):
         if not aweme_id:

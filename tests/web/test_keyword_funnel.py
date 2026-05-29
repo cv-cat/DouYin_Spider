@@ -123,6 +123,11 @@ class VerifyBlockedCrawlService(DummyCrawlService):
         raise VerificationRequiredError("搜索关键词“装机” 时命中抖音验证，请先在浏览器完成验证后重试")
 
 
+class CommentExplodesCrawlService(DummyCrawlService):
+    def invoke(self, operation, payload):
+        raise RuntimeError("comment fetch exploded")
+
+
 def test_collect_task_persists_unique_author_and_comment_leads(tmp_path):
     service = KeywordFunnelService(
         tmp_path / "web-ui.sqlite3",
@@ -407,3 +412,29 @@ def test_keyword_run_table_surfaces_verification_required_message(tmp_path):
     assert response.status_code == 200
     assert "需要人工验证" in response.text
     assert "请先在浏览器完成验证后重试" in response.text
+
+
+def test_collect_persists_found_author_before_comment_failure(tmp_path):
+    service = KeywordFunnelService(
+        tmp_path / "web-ui.sqlite3",
+        DummyTaskManager(),
+        CommentExplodesCrawlService(),
+        DummyIMService(),
+    )
+
+    try:
+        service.queue_collect("装机", require_num="5", include_comments=True, comment_limit="10")
+    except RuntimeError:
+        pass
+
+    with connect_db(tmp_path / "web-ui.sqlite3") as conn:
+        run_row = conn.execute(
+            "select status, lead_count, summary from keyword_runs order by created_at desc limit 1"
+        ).fetchone()
+        lead_rows = conn.execute(
+            "select nickname, source_type from keyword_leads order by id"
+        ).fetchall()
+
+    assert run_row["status"] == "failed"
+    assert run_row["lead_count"] == 1
+    assert [dict(row) for row in lead_rows] == [{"nickname": "Alice", "source_type": "search"}]
