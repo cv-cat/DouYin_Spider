@@ -1,3 +1,6 @@
+import os
+
+import requests
 from fastapi.testclient import TestClient
 
 from web.app import create_app
@@ -69,3 +72,32 @@ def test_tasks_page_shows_keyword_run_progress(tmp_path):
     assert response.status_code == 200
     assert "0/10" in response.text
     assert "正在处理第 1/10 条作品：抓取评论" in response.text
+
+
+def test_create_app_bypasses_system_proxy_by_default(monkeypatch, tmp_path):
+    monkeypatch.setenv("HTTP_PROXY", "http://127.0.0.1:1082")
+    monkeypatch.setenv("HTTPS_PROXY", "http://127.0.0.1:1082")
+    monkeypatch.delenv("NO_PROXY", raising=False)
+    monkeypatch.delenv("no_proxy", raising=False)
+
+    create_app({"DB_PATH": str(tmp_path / "web-ui.sqlite3")})
+
+    assert os.environ["NO_PROXY"] == "*"
+    assert os.environ["no_proxy"] == "*"
+    assert requests.utils.get_environ_proxies("https://www.douyin.com/aweme/v1/web/comment/list/") == {}
+
+
+def test_create_app_can_keep_system_proxy_when_enabled(monkeypatch, tmp_path):
+    monkeypatch.setenv("HTTP_PROXY", "http://127.0.0.1:1082")
+    monkeypatch.setenv("HTTPS_PROXY", "http://127.0.0.1:1082")
+    monkeypatch.delenv("NO_PROXY", raising=False)
+    monkeypatch.delenv("no_proxy", raising=False)
+
+    create_app({"DB_PATH": str(tmp_path / "web-ui.sqlite3"), "USE_SYSTEM_PROXY": "1"})
+
+    assert os.environ.get("NO_PROXY") is None
+    assert os.environ.get("no_proxy") is None
+    assert requests.utils.get_environ_proxies("https://www.douyin.com/aweme/v1/web/comment/list/") == {
+        "http": "http://127.0.0.1:1082",
+        "https": "http://127.0.0.1:1082",
+    }

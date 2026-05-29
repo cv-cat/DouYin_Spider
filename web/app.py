@@ -1,3 +1,5 @@
+import os
+
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -22,8 +24,16 @@ from web.tasks.broker import EventBroker
 from web.tasks.manager import TaskManager
 
 
+def _configure_proxy_behavior(config: WebConfig):
+    if config.use_system_proxy:
+        return
+    os.environ["NO_PROXY"] = "*"
+    os.environ["no_proxy"] = "*"
+
+
 def create_app(overrides=None) -> FastAPI:
     config = WebConfig(overrides)
+    _configure_proxy_behavior(config)
     app = FastAPI(title="DouYin_Spider Web UI", debug=True)
     with connect_db(config.db_path) as conn:
         init_db(conn)
