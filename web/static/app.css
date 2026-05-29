@@ -5,6 +5,56 @@ body {
   color: #1c1917;
 }
 
+#app-toast-stack {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 9999;
+  display: grid;
+  gap: 12px;
+  width: min(360px, calc(100vw - 32px));
+}
+
+.app-toast {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  align-items: start;
+  padding: 14px 16px;
+  border-radius: 14px;
+  box-shadow: 0 16px 40px rgba(28, 25, 23, 0.2);
+  border: 1px solid rgba(28, 25, 23, 0.08);
+}
+
+.app-toast-info {
+  background: #fff7ed;
+  color: #7c2d12;
+}
+
+.app-toast-warning {
+  background: #fffbeb;
+  color: #92400e;
+}
+
+.app-toast-error {
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+.app-toast-copy {
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.45;
+}
+
+.app-toast-close {
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
 .shell-header {
   display: flex;
   justify-content: space-between;

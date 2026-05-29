@@ -26,18 +26,18 @@ class TaskManager:
                 (task_id, task_type, "running", started_at, summary, ""),
             )
             conn.commit()
-        self.executor.submit(self._run_task, task_id, runner)
+        self.executor.submit(self._run_task, task_id, task_type, runner)
         return task_id
 
-    def _run_task(self, task_id, runner):
+    def _run_task(self, task_id, task_type, runner):
         try:
             result = runner()
-            self._finish(task_id, "success", json.dumps({"result": result}, ensure_ascii=False), "")
+            self._finish(task_id, task_type, "success", json.dumps({"result": result}, ensure_ascii=False), "")
         except Exception as exc:
             self._append_log(task_id, "error", traceback.format_exc())
-            self._finish(task_id, "failed", "", f"{type(exc).__name__}: {exc}")
+            self._finish(task_id, task_type, "failed", "", f"{type(exc).__name__}: {exc}")
 
-    def _finish(self, task_id, status, summary, error_summary):
+    def _finish(self, task_id, task_type, status, summary, error_summary):
         finished_at = datetime.now(UTC).isoformat()
         with connect_db(self.db_path) as conn:
             conn.execute(
@@ -46,7 +46,16 @@ class TaskManager:
             )
             conn.commit()
         if self.broker:
-            self.broker.publish("tasks", {"task_id": task_id, "status": status})
+            self.broker.publish(
+                "tasks",
+                {
+                    "task_id": task_id,
+                    "task_type": task_type,
+                    "status": status,
+                    "summary": summary,
+                    "error_summary": error_summary,
+                },
+            )
 
     def _append_log(self, task_id, level, message):
         with connect_db(self.db_path) as conn:

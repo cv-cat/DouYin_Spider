@@ -8,6 +8,7 @@ def test_core_pages_load(client):
         response = client.get(path)
         assert response.status_code == 200
     assert "DouYin_Spider Web UI" in client.get("/").text
+    assert 'id="app-toast-stack"' in client.get("/").text
 
 
 def test_create_app_is_independent_from_cwd(monkeypatch, tmp_path):

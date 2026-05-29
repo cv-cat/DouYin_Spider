@@ -10,7 +10,13 @@
   </thead>
   <tbody>
     {% for task in tasks %}
-    <tr>
+    <tr
+      data-task-id="{{ task['task_id'] }}"
+      data-task-type="{{ task['task_type'] }}"
+      data-task-status="{{ task['status'] }}"
+      data-task-summary="{{ task['summary'] or '' }}"
+      data-task-error="{{ task['error_summary'] or task['traceback'] or '' }}"
+    >
       <td>{{ task["task_id"] }}</td>
       <td>{{ task["task_type"] }}</td>
       <td>{{ task["status"] }}</td>

@@ -12,7 +12,13 @@
     </thead>
     <tbody>
       {% for run in runs %}
-      <tr>
+      <tr
+        data-run-id="{{ run.run_id }}"
+        data-run-keyword="{{ run.keyword }}"
+        data-run-status="{{ run.status }}"
+        data-run-summary="{{ run.summary }}"
+        data-run-updated-at="{{ run.updated_at }}"
+      >
         <td><a href="/keyword-funnel?run_id={{ run.run_id }}"><code>{{ run.run_id }}</code></a></td>
         <td>{{ run.keyword }}</td>
         <td>
