@@ -15,3 +15,9 @@ websocket-client
 aiohttp
 playwright
 qrcode
+fastapi
+jinja2
+uvicorn
+python-multipart
+httpx
+pytest

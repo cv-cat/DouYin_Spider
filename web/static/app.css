@@ -1,0 +1,29 @@
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+  background: #f4efe5;
+  color: #1c1917;
+}
+
+.shell-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 28px;
+  background: linear-gradient(135deg, #f97316, #fb7185);
+  color: #fff7ed;
+}
+
+.shell-header a {
+  color: inherit;
+  margin-left: 16px;
+  text-decoration: none;
+}
+
+.panel {
+  margin: 24px;
+  padding: 20px;
+  border-radius: 16px;
+  background: #fffaf0;
+  box-shadow: 0 12px 32px rgba(28, 25, 23, 0.08);
+}
