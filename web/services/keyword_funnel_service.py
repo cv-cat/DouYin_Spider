@@ -2,6 +2,7 @@ from datetime import UTC, datetime
 import json
 import uuid
 
+from web.services.crawl_service import VerificationRequiredError
 from web.db import connect_db, init_db
 from web.services.lead_scoring_service import LeadScoringService
 
@@ -80,6 +81,18 @@ class KeywordFunnelService:
                     high_intent_count=high_intent_count,
                 )
                 return {"run_id": run_id, "lead_count": lead_count, "high_intent_count": high_intent_count}
+            except VerificationRequiredError as exc:
+                run = self._get_run(run_id) or {}
+                self._update_run(
+                    run_id,
+                    "verification_required",
+                    int(run.get("lead_count", 0)),
+                    int(run.get("processed_count", 0)),
+                    int(run.get("total_count", 0)),
+                    str(exc),
+                    high_intent_count=int(run.get("high_intent_count", 0)),
+                )
+                raise
             except Exception as exc:
                 run = self._get_run(run_id) or {}
                 self._update_run(

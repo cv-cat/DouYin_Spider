@@ -4,6 +4,10 @@ from dy_apis.douyin_api import DouyinAPI
 from main import Data_Spider
 
 
+class VerificationRequiredError(RuntimeError):
+    pass
+
+
 class CrawlService:
     def __init__(self, config, session_service, task_manager):
         self.config = config
@@ -25,16 +29,30 @@ class CrawlService:
         return self.api.get_user_info(self._auth(), user_url)
 
     def search_general(self, query, require_num, sort_type, publish_time, filter_duration="", search_range="", content_type=""):
-        return self.api.search_some_general_work(
-            self._auth(),
-            query,
-            int(require_num),
-            sort_type,
-            publish_time,
-            filter_duration,
-            search_range,
-            content_type,
-        )
+        auth = self._auth()
+        target = int(require_num)
+        offset = "0"
+        work_list = []
+        while True:
+            payload = self.api.search_general_work(
+                auth,
+                query,
+                sort_type,
+                publish_time,
+                offset,
+                filter_duration,
+                search_range,
+                content_type,
+            )
+            self._raise_if_verification_required(payload, f"搜索关键词“{query}”")
+            works = payload.get("data") or []
+            work_list.extend(works)
+            if payload.get("has_more") != 1 or len(work_list) >= target:
+                break
+            offset = str(int(offset) + len(works))
+        if len(work_list) > target:
+            work_list = work_list[:target]
+        return work_list
 
     def queue_user_export(self, user_url, save_choice="all"):
         base_path = {
@@ -232,3 +250,12 @@ class CrawlService:
         if operation not in dispatch:
             raise ValueError(f"Unsupported crawl operation: {operation}")
         return dispatch[operation]()
+
+    def _raise_if_verification_required(self, payload, action_name):
+        if not isinstance(payload, dict):
+            return
+        search_nil_info = payload.get("search_nil_info") or {}
+        search_nil_type = str(search_nil_info.get("search_nil_type") or "").strip().lower()
+        status_msg = str(payload.get("status_msg") or "").strip().lower()
+        if search_nil_type == "verify_check" or "verify" in status_msg or "captcha" in status_msg:
+            raise VerificationRequiredError(f"{action_name} 时命中抖音验证，请先在浏览器完成验证后重试")

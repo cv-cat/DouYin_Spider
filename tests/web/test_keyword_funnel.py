@@ -1,6 +1,7 @@
 from fastapi.testclient import TestClient
 
 from web.db import connect_db
+from web.services.crawl_service import VerificationRequiredError
 from web.services.keyword_funnel_service import KeywordFunnelService
 
 
@@ -106,6 +107,20 @@ class DummyIMService:
     def send_message(self, conversation_id, conversation_short_id, ticket, content):
         self.sent.append((conversation_id, conversation_short_id, ticket, content))
         return {"detail": {"status": "ok"}}
+
+
+class VerifyBlockedCrawlService(DummyCrawlService):
+    def search_general(
+        self,
+        query,
+        require_num,
+        sort_type,
+        publish_time,
+        filter_duration="",
+        search_range="",
+        content_type="",
+    ):
+        raise VerificationRequiredError("搜索关键词“装机” 时命中抖音验证，请先在浏览器完成验证后重试")
 
 
 def test_collect_task_persists_unique_author_and_comment_leads(tmp_path):
@@ -326,3 +341,69 @@ def test_keyword_collect_action_passes_strategy_modes(tmp_path):
         "risk_mode": "safe",
         "outreach_mode": "manual",
     }
+
+
+def test_collect_task_marks_verification_required_for_frontend(tmp_path):
+    service = KeywordFunnelService(
+        tmp_path / "web-ui.sqlite3",
+        DummyTaskManager(),
+        VerifyBlockedCrawlService(),
+        DummyIMService(),
+    )
+
+    try:
+        service.queue_collect("装机", require_num="5", include_comments=False, comment_limit="0")
+    except VerificationRequiredError:
+        pass
+
+    with connect_db(tmp_path / "web-ui.sqlite3") as conn:
+        run_row = conn.execute(
+            "select status, summary from keyword_runs order by created_at desc limit 1"
+        ).fetchone()
+
+    assert run_row["status"] == "verification_required"
+    assert "请先在浏览器完成验证后重试" in run_row["summary"]
+
+
+def test_keyword_run_table_surfaces_verification_required_message(tmp_path):
+    from web.app import create_app
+
+    app = create_app({"DB_PATH": str(tmp_path / "web-ui.sqlite3")})
+    with connect_db(tmp_path / "web-ui.sqlite3") as conn:
+        conn.execute(
+            "insert into keyword_runs("
+            "run_id, task_id, keyword, status, require_num, include_comments, comment_limit, "
+            "source_mode, precision_mode, risk_mode, outreach_mode, total_count, processed_count, lead_count, "
+            "high_intent_count, contacted_count, replied_count, summary, created_at, updated_at"
+            ") values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (
+                "run-verify",
+                "task-verify",
+                "装机",
+                "verification_required",
+                5,
+                0,
+                0,
+                "comments_first",
+                "precision",
+                "safe",
+                "manual",
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                "搜索关键词“装机” 时命中抖音验证，请先在浏览器完成验证后重试",
+                "2026-05-30T00:00:00+00:00",
+                "2026-05-30T00:00:00+00:00",
+            ),
+        )
+        conn.commit()
+
+    client = TestClient(app)
+    response = client.get("/keyword-funnel?partial=runs")
+
+    assert response.status_code == 200
+    assert "需要人工验证" in response.text
+    assert "请先在浏览器完成验证后重试" in response.text
