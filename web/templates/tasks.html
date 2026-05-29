@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="panel">
+  <h2>任务与日志</h2>
+  <div data-task-feed>
+    {% include "components/task_rows.html" %}
+  </div>
+</section>
+{% endblock %}

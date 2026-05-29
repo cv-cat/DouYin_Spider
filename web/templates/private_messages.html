@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="panel">
+  <h2>私信中心</h2>
+  <form hx-post="/actions/im/start" hx-target="#im-result">
+    <button type="submit">启动实时接收</button>
+  </form>
+  <form hx-post="/actions/im/stop" hx-target="#im-result">
+    <button type="submit">停止实时接收</button>
+  </form>
+  <form hx-post="/actions/im/conversation/create" hx-target="#im-result">
+    <input type="text" name="to_user_id" placeholder="to_user_id">
+    <button type="submit">创建会话</button>
+  </form>
+  <form hx-post="/actions/im/conversation/detail" hx-target="#im-result">
+    <input type="text" name="to_user_id" placeholder="to_user_id">
+    <input type="text" name="conversation_short_id" placeholder="conversation_short_id">
+    <button type="submit">查询会话详情</button>
+  </form>
+  <form hx-post="/actions/im/send" hx-target="#im-result">
+    <input type="text" name="conversation_id" placeholder="conversation_id">
+    <input type="text" name="conversation_short_id" placeholder="conversation_short_id">
+    <input type="text" name="ticket" placeholder="ticket">
+    <input type="text" name="content" placeholder="消息内容">
+    <button type="submit">发送私信</button>
+  </form>
+  <div id="im-result"></div>
+  {% include "components/event_feed.html" %}
+</section>
+{% endblock %}

@@ -5,6 +5,7 @@
       <th>类型</th>
       <th>状态</th>
       <th>摘要</th>
+      <th>错误</th>
     </tr>
   </thead>
   <tbody>
@@ -14,6 +15,14 @@
       <td>{{ task["task_type"] }}</td>
       <td>{{ task["status"] }}</td>
       <td>{{ task["summary"] }}</td>
+      <td>
+        {% set error_text = task["traceback"] or task["error_summary"] %}
+        {% include "components/error_panel.html" %}
+      </td>
+    </tr>
+    {% else %}
+    <tr>
+      <td colspan="5">暂无任务。</td>
     </tr>
     {% endfor %}
   </tbody>

@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="panel">
+  <h2>直播监听</h2>
+  <form hx-post="/actions/live/lookup" hx-target="#live-result">
+    <input type="text" name="live_id" placeholder="直播间 short id">
+    <button type="submit">查询房间信息</button>
+  </form>
+  <form hx-post="/actions/live/start" hx-target="#live-result">
+    <input type="text" name="live_id" placeholder="直播间 short id">
+    <button type="submit">启动监听</button>
+  </form>
+  <form hx-post="/actions/live/stop" hx-target="#live-result">
+    <input type="text" name="live_id" placeholder="直播间 short id">
+    <button type="submit">停止监听</button>
+  </form>
+  <form hx-post="/actions/live/send-message" hx-target="#live-result">
+    <input type="text" name="room_id" placeholder="room_id">
+    <input type="text" name="content" placeholder="弹幕内容">
+    <button type="submit">发送弹幕</button>
+  </form>
+  <form hx-post="/actions/live/like" hx-target="#live-result">
+    <input type="text" name="room_id" placeholder="room_id">
+    <input type="text" name="count" value="1">
+    <button type="submit">点赞直播间</button>
+  </form>
+  <div id="live-result"></div>
+  {% include "components/event_feed.html" %}
+</section>
+{% endblock %}

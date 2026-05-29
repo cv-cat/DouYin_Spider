@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 
 from web.config import WebConfig
 from web.db import connect_db, init_db
@@ -7,6 +8,8 @@ from web.routes.actions import router as actions_router
 from web.routes.pages import router as pages_router
 from web.routes.streams import router as streams_router
 from web.services.crawl_service import CrawlService
+from web.services.im_service import IMService
+from web.services.live_service import LiveService
 from web.services.login_service import LoginService
 from web.services.session_service import SessionService
 from web.services.settings_service import SettingsService
@@ -16,7 +19,7 @@ from web.tasks.manager import TaskManager
 
 def create_app(overrides=None) -> FastAPI:
     config = WebConfig(overrides)
-    app = FastAPI(title="DouYin_Spider Web UI")
+    app = FastAPI(title="DouYin_Spider Web UI", debug=True)
     with connect_db(config.db_path) as conn:
         init_db(conn)
     app.state.config = config
@@ -25,8 +28,11 @@ def create_app(overrides=None) -> FastAPI:
     app.state.settings_service = SettingsService(config.db_path)
     app.state.session_service = SessionService(config.db_path)
     app.state.crawl_service = CrawlService(config, app.state.session_service, app.state.task_manager)
+    app.state.live_service = LiveService(config.db_path, app.state.session_service, app.state.task_manager, app.state.broker)
+    app.state.im_service = IMService(config.db_path, app.state.session_service, app.state.task_manager, app.state.broker)
     app.state.login_service = LoginService(config.db_path, app.state.task_manager, app.state.broker)
-    app.mount("/static", StaticFiles(directory="web/static"), name="static")
+    app.state.templates = Jinja2Templates(directory=str(config.templates_dir))
+    app.mount("/static", StaticFiles(directory=str(config.static_dir)), name="static")
     app.include_router(pages_router)
     app.include_router(streams_router)
     app.include_router(actions_router)

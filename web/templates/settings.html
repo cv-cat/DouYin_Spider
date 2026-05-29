@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="panel">
+  <h2>设置</h2>
+  <form hx-post="/actions/settings" hx-target="#settings-result">
+    <input type="text" name="media_dir" value="{{ settings_data.get('media_dir', '') }}" placeholder="media_dir">
+    <input type="text" name="excel_dir" value="{{ settings_data.get('excel_dir', '') }}" placeholder="excel_dir">
+    <input type="number" name="port" value="{{ settings_data.get('port', 8000) }}">
+    <button type="submit">保存</button>
+  </form>
+  <p>端口修改需要重启服务生效。</p>
+  <div id="settings-result"></div>
+</section>
+{% endblock %}

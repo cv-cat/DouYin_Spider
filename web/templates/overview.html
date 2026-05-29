@@ -2,7 +2,12 @@
 {% block content %}
 <section class="panel">
   <h2>概览</h2>
-  <p>本机地址固定为 127.0.0.1。</p>
-  <pre>{{ settings_data }}</pre>
+  <p>本机地址固定为 {{ host }}:{{ port }}。</p>
+  <ul>
+    <li>登录状态: {{ auth_status }}</li>
+    <li>活跃直播监听: {{ live_count }}</li>
+    <li>活跃私信接收: {{ im_count }}</li>
+    <li>失败任务数: {{ failed_count }}</li>
+  </ul>
 </section>
 {% endblock %}

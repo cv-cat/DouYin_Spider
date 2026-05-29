@@ -18,8 +18,12 @@ class DouyinRecvMsg:
     appKey = "e1bd35ec9db7b8d846de66ed140b1ad9"
     fpId = '9'
 
-    def __init__(self, auth: DouyinAuth, auto_reconnect=True):
+    def __init__(self, auth: DouyinAuth, auto_reconnect=True, event_sink=None, error_sink=None, close_sink=None):
         self.auto_reconnect = auto_reconnect
+        self.event_sink = event_sink
+        self.error_sink = error_sink
+        self.close_sink = close_sink
+        self._stopped = False
         self.auth = auth
         self.ws = None
         deviceId = DouyinAPI.get_device_id(auth=self.auth)
@@ -35,6 +39,17 @@ class DouyinRecvMsg:
          .add_param("access_key", accessKey)
          )
         self.url = f"wss://frontier-im.douyin.com/ws/v2?{params.toString()}"
+
+    def emit(self, payload):
+        if self.event_sink:
+            self.event_sink(payload)
+            return
+        print(payload)
+
+    def stop(self):
+        self._stopped = True
+        if self.ws:
+            self.ws.close()
 
     def on_open(self, ws):
         print("WebSocket connection open.")
@@ -52,32 +67,76 @@ class DouyinRecvMsg:
             index = response.body.new_message_notify.message.index_in_conversation
             content = json.loads(content)
             if msg_type == 7:
-                print(f'【消息编号:{index}】【聊天室ID:{conversation_id}】【来自:{sender}】文本消息:{content["text"]}')
+                self.emit({
+                    "event_type": "text",
+                    "conversation_id": conversation_id,
+                    "index": index,
+                    "sender": sender,
+                    "content": content["text"],
+                })
             elif msg_type == 5:
-                print(f'【消息编号:{index}】【聊天室ID:{conversation_id}】【来自:{sender}】用户表情包消息:{content["url"]["url_list"][0]}')
+                self.emit({
+                    "event_type": "emoji",
+                    "conversation_id": conversation_id,
+                    "index": index,
+                    "sender": sender,
+                    "content": content["url"]["url_list"][0],
+                })
             elif msg_type == 17:
-                print(f'【消息编号:{index}】【聊天室ID:{conversation_id}】【来自:{sender}】语音信息:{content["resource_url"]["url_list"][0]}')
+                self.emit({
+                    "event_type": "voice",
+                    "conversation_id": conversation_id,
+                    "index": index,
+                    "sender": sender,
+                    "content": content["resource_url"]["url_list"][0],
+                })
             elif msg_type == 27:
-                print(f'【消息编号:{index}】【聊天室ID:{conversation_id}】【来自:{sender}】图片信息:{content["resource_url"]["origin_url_list"][0]}')
+                self.emit({
+                    "event_type": "image",
+                    "conversation_id": conversation_id,
+                    "index": index,
+                    "sender": sender,
+                    "content": content["resource_url"]["origin_url_list"][0],
+                })
             elif msg_type == 8:
-                print(f'【消息编号:{index}】【聊天室ID:{conversation_id}】【来自:{sender}】分享视频信息:视频ID{content["itemId"]}')
+                self.emit({
+                    "event_type": "share",
+                    "conversation_id": conversation_id,
+                    "index": index,
+                    "sender": sender,
+                    "content": content["itemId"],
+                })
             elif msg_type == 50001:
-                print(f'对方已读，消息标号:{content["read_index"]}')
+                self.emit({
+                    "event_type": "read",
+                    "conversation_id": conversation_id,
+                    "index": index,
+                    "sender": sender,
+                    "content": content["read_index"],
+                })
         elif frame.payloadType == 'text/json':
-            print(json.loads(frame.payload))
+            self.emit(json.loads(frame.payload))
 
     def on_error(self, ws, error):
-        print("\033[31m### error ###")
-        print(error)
-        print("### ===error=== ###\033[m")
-        if type(error) == ConnectionRefusedError or type(
-                error) == websocket._exceptions.WebSocketConnectionClosedException and self.auto_reconnect:
+        if self.error_sink:
+            self.error_sink(error)
+        else:
+            print("\033[31m### error ###")
+            print(error)
+            print("### ===error=== ###\033[m")
+        if (
+            isinstance(error, ConnectionRefusedError)
+            or isinstance(error, websocket._exceptions.WebSocketConnectionClosedException)
+        ) and self.auto_reconnect and not self._stopped:
             self.start()
 
     def on_close(self, ws, close_status_code, close_msg):
-        print("\033[31m### closed ###")
-        print(f"status_code: {close_status_code}, msg: {close_msg}")
-        print("### ===closed=== ###\033[m")
+        if self.close_sink:
+            self.close_sink({"status_code": close_status_code, "message": close_msg})
+        else:
+            print("\033[31m### closed ###")
+            print(f"status_code: {close_status_code}, msg: {close_msg}")
+            print("### ===closed=== ###\033[m")
 
     def start(self):
         self.ws = WebSocketApp(

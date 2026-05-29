@@ -14,13 +14,29 @@ from utils.dy_util import generate_signature
 
 
 class DouyinLive:
-    def __init__(self, live_id, auth_):
+    def __init__(self, live_id, auth_, event_sink=None, error_sink=None, close_sink=None, restart_on_close=True):
         self.auth_ = auth_
         self.live_id = live_id
+        self.event_sink = event_sink
+        self.error_sink = error_sink
+        self.close_sink = close_sink
+        self.restart_on_close = restart_on_close
+        self._stopped = False
         self.ws = None
 
+    def emit(self, payload):
+        if self.event_sink:
+            self.event_sink(payload)
+            return
+        print(payload)
+
+    def stop(self):
+        self._stopped = True
+        if self.ws:
+            self.ws.close()
+
     def ping(self, ws):
-        while True:
+        while not self._stopped:
             frame = Live_pb2.PushFrame()
             frame.payloadType = "hb"
             try:
@@ -52,50 +68,78 @@ class DouyinLive:
                 if item.method == 'WebcastGiftMessage':
                     message = Live_pb2.GiftMessage()
                     message.ParseFromString(item.payload)
-                    # print(f'\033[1;37;40m[礼物]SEC_UID = {message.user.sec_uid} - {message.user.nickname}\033[m 送出 \033[4;30;44m{message.gift.name}\033[m x {message.comboCount}')
-                    # 谁给谁送了什么礼物
-                    print(f'\033[1;37;40m[礼物]SEC_UID = {message.user.sec_uid} - {message.user.nickname}\033[m 送给 \033[1;37;40m{message.toUser.sec_uid} - {message.toUser.nickname}\033[m \033[4;30;44m{message.gift.name}\033[m x {message.comboCount}')
+                    self.emit({
+                        "event_type": "gift",
+                        "user": message.user.nickname,
+                        "to_user": message.toUser.nickname,
+                        "gift": message.gift.name,
+                        "combo": message.comboCount,
+                    })
                 elif item.method == "WebcastChatMessage":
                     message = Live_pb2.ChatMessage()
                     message.ParseFromString(item.payload)
-                    # 用户等级
-                    # print(message.user.badge_image_list[0])
-                    print(f'\033[1;37;40m[消息]SEC_UID = {message.user.sec_uid} - {message.user.nickname}\033[m : \033[4;30;44m{message.content}\033[m')
+                    self.emit({
+                        "event_type": "chat",
+                        "user": message.user.nickname,
+                        "content": message.content,
+                    })
                 elif item.method == "WebcastMemberMessage":
                     message = Live_pb2.MemberMessage()
                     message.ParseFromString(item.payload)
-                    print(f'\033[1;37;40m[进入]SEC_UID = {message.user.sec_uid} - {message.user.nickname}\033[m 进入直播间')
+                    self.emit({
+                        "event_type": "member",
+                        "user": message.user.nickname,
+                    })
                 elif item.method == "WebcastLikeMessage":
                     message = Live_pb2.LikeMessage()
                     message.ParseFromString(item.payload)
-                    print(f'\033[1;37;40m[点赞]SEC_UID = {message.user.sec_uid} - {message.user.nickname}\033[m 点赞了 {message.count} 次')
-                    print(f'\033[1;37;40m[点赞]点赞总数 = {message.total}\033[m')
+                    self.emit({
+                        "event_type": "like",
+                        "user": message.user.nickname,
+                        "count": message.count,
+                        "total": message.total,
+                    })
                 elif item.method == "WebcastSocialMessage":
                     message = Live_pb2.SocialMessage()
                     message.ParseFromString(item.payload)
                     if message.action == 1:
-                        print(f'\033[1;37;40m[关注]SEC_UID = {message.user.sec_uid} - {message.user.nickname}\033[m 关注主播')
+                        self.emit({
+                            "event_type": "follow",
+                            "user": message.user.nickname,
+                        })
                 elif item.method == "WebcastRoomStatsMessage":
                     message = Live_pb2.RoomStatsMessage()
                     message.ParseFromString(item.payload)
-                    print(f'\033[1;37;40m[房间信息] {message.displayLong}')
+                    self.emit({
+                        "event_type": "room_stats",
+                        "display": message.displayLong,
+                    })
 
             # s = zlib.decompress(decode_str).decode()
         except Exception as e:
-            print('error')
-            print(str(e))
+            if self.error_sink:
+                self.error_sink(e)
+            else:
+                print('error')
+                print(str(e))
 
     def on_error(self, ws, error):
-        print("\033[31m### error ###")
-        print(error)
-        print("### ===error=== ###\033[m")
+        if self.error_sink:
+            self.error_sink(error)
+        else:
+            print("\033[31m### error ###")
+            print(error)
+            print("### ===error=== ###\033[m")
 
     def on_close(self, ws, close_status_code, close_msg):
-        # 此处判断是否需要重连 判断直播间是否关闭
-        self.start_ws()
-        print("\033[31m### closed ###")
-        print(f"status_code: {close_status_code}, msg: {close_msg}")
-        print("### ===closed=== ###\033[m")
+        if self.close_sink:
+            self.close_sink({"status_code": close_status_code, "message": close_msg})
+        if not self._stopped and self.restart_on_close:
+            self.start_ws()
+        else:
+            print("\033[31m### closed ###")
+            print(f"status_code: {close_status_code}, msg: {close_msg}")
+            print("### ===closed=== ###\033[m")
 
     def start_ws(self):
         room_info = DouyinAPI.get_live_info(self.auth_, self.live_id)

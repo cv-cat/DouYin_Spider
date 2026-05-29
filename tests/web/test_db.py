@@ -15,3 +15,12 @@ def test_init_db_creates_expected_tables(tmp_path):
         "im_receivers",
         "event_feed",
     }.issubset(set(list_tables(db_path)))
+
+
+def test_connect_db_creates_parent_directory(tmp_path):
+    db_path = tmp_path / "nested" / "web-ui.sqlite3"
+
+    with connect_db(db_path) as conn:
+        init_db(conn)
+
+    assert db_path.exists()
