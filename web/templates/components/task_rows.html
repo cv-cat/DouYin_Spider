@@ -1,0 +1,20 @@
+<table class="task-table">
+  <thead>
+    <tr>
+      <th>任务ID</th>
+      <th>类型</th>
+      <th>状态</th>
+      <th>摘要</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for task in tasks %}
+    <tr>
+      <td>{{ task["task_id"] }}</td>
+      <td>{{ task["task_type"] }}</td>
+      <td>{{ task["status"] }}</td>
+      <td>{{ task["summary"] }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
