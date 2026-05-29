@@ -6,10 +6,37 @@
     <input type="text" name="work_url" placeholder="作品链接">
     <button type="submit">查询作品</button>
   </form>
+  <form hx-post="/actions/crawl/user" hx-target="#crawl-result">
+    <input type="text" name="user_url" placeholder="用户主页链接">
+    <button type="submit">查询用户信息</button>
+  </form>
   <form hx-post="/actions/crawl/user-all" hx-target="#crawl-result">
     <input type="text" name="user_url" placeholder="用户主页链接">
     <input type="hidden" name="save_choice" value="all">
     <button type="submit">后台导出用户全部作品</button>
+  </form>
+  <form hx-post="/actions/crawl/search" hx-target="#crawl-result">
+    <input type="text" name="query" placeholder="搜索关键词">
+    <input type="number" name="require_num" value="5" min="1">
+    <input type="text" name="sort_type" value="0" placeholder="排序 0/1/2">
+    <input type="text" name="publish_time" value="0" placeholder="发布时间 0/1/7/180">
+    <button type="submit">通用搜索</button>
+  </form>
+  <form hx-post="/actions/crawl/digg" hx-target="#crawl-result">
+    <input type="text" name="aweme_id" placeholder="作品 aweme_id">
+    <input type="text" name="digg_type" value="1" placeholder="1 点赞 / 0 取消">
+    <button type="submit">点赞作品</button>
+  </form>
+  <form hx-post="/actions/crawl/comment" hx-target="#crawl-result">
+    <input type="text" name="aweme_id" placeholder="作品 aweme_id">
+    <input type="text" name="content" placeholder="评论内容">
+    <input type="text" name="reply_id" placeholder="reply_id，可留空">
+    <button type="submit">发表评论</button>
+  </form>
+  <form hx-post="/actions/crawl/collect" hx-target="#crawl-result">
+    <input type="text" name="aweme_id" placeholder="作品 aweme_id">
+    <input type="text" name="action" value="1" placeholder="1 收藏 / 0 取消">
+    <button type="submit">收藏作品</button>
   </form>
   <div id="crawl-result"></div>
 </section>

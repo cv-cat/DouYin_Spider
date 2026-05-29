@@ -48,7 +48,7 @@ class LoginService:
             auth = self.sessions.load_auth("douyin")
             if auth is None:
                 raise RuntimeError("Missing phone-login bootstrap cookie")
-            result, auth = api.dyPhoneLogin(phone_num, code, auth)
+            result, auth = api.dyPhoneVerificationCodeLogin(auth, phone_num, code)
             self.sessions.save_cookie("douyin", auth.cookie_str, status="phone-login-success")
             return result
 

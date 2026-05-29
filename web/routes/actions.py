@@ -40,6 +40,58 @@ def crawl_user_all(request: Request, user_url: str = Form(...), save_choice: str
     return HTMLResponse(f"user export task queued: {task_id}")
 
 
+@router.post("/crawl/user", response_class=HTMLResponse)
+def crawl_user(request: Request, user_url: str = Form(...)):
+    payload = request.app.state.crawl_service.lookup_user(user_url)
+    return HTMLResponse(f"<pre>{payload}</pre>")
+
+
+@router.post("/crawl/search", response_class=HTMLResponse)
+def crawl_search(
+    request: Request,
+    query: str = Form(...),
+    require_num: str = Form(...),
+    sort_type: str = Form("0"),
+    publish_time: str = Form("0"),
+    filter_duration: str = Form(""),
+    search_range: str = Form(""),
+    content_type: str = Form(""),
+):
+    payload = request.app.state.crawl_service.search_general(
+        query,
+        require_num,
+        sort_type,
+        publish_time,
+        filter_duration,
+        search_range,
+        content_type,
+    )
+    return HTMLResponse(f"<pre>{payload}</pre>")
+
+
+@router.post("/crawl/digg", response_class=HTMLResponse)
+def crawl_digg(request: Request, aweme_id: str = Form(...), digg_type: str = Form("1")):
+    payload = request.app.state.crawl_service.digg(aweme_id, digg_type)
+    return HTMLResponse(f"<pre>{payload}</pre>")
+
+
+@router.post("/crawl/comment", response_class=HTMLResponse)
+def crawl_comment(
+    request: Request,
+    aweme_id: str = Form(...),
+    content: str = Form(...),
+    reply_id: str = Form(""),
+):
+    payload = request.app.state.crawl_service.publish_comment(aweme_id, content, reply_id)
+    return HTMLResponse(f"<pre>{payload}</pre>")
+
+
+@router.post("/crawl/collect", response_class=HTMLResponse)
+def crawl_collect(request: Request, aweme_id: str = Form(...), action: str = Form("1")):
+    payload = request.app.state.crawl_service.collect_aweme(aweme_id, action)
+    return HTMLResponse(f"<pre>{payload}</pre>")
+
+
 @router.post("/live/lookup", response_class=HTMLResponse)
 def lookup_live_room(request: Request, live_id: str = Form(...)):
     payload = request.app.state.live_service.lookup_room(live_id)
