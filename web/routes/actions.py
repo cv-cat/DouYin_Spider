@@ -26,3 +26,15 @@ def request_phone_code(request: Request, phone_num: str = Form(...)):
 def confirm_phone_login(request: Request, phone_num: str = Form(...), code: str = Form(...)):
     task_id = request.app.state.login_service.finish_phone_login(phone_num, code)
     return HTMLResponse(f"Phone login confirm task queued: {task_id}")
+
+
+@router.post("/crawl/work", response_class=HTMLResponse)
+def crawl_work(request: Request, work_url: str = Form(...)):
+    payload = request.app.state.crawl_service.lookup_work(work_url)
+    return HTMLResponse(f"<pre>{payload}</pre>")
+
+
+@router.post("/crawl/user-all", response_class=HTMLResponse)
+def crawl_user_all(request: Request, user_url: str = Form(...), save_choice: str = Form("all")):
+    task_id = request.app.state.crawl_service.queue_user_export(user_url, save_choice)
+    return HTMLResponse(f"user export task queued: {task_id}")

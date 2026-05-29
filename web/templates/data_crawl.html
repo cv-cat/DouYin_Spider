@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="panel">
+  <h2>数据抓取</h2>
+  <form hx-post="/actions/crawl/work" hx-target="#crawl-result">
+    <input type="text" name="work_url" placeholder="作品链接">
+    <button type="submit">查询作品</button>
+  </form>
+  <form hx-post="/actions/crawl/user-all" hx-target="#crawl-result">
+    <input type="text" name="user_url" placeholder="用户主页链接">
+    <input type="hidden" name="save_choice" value="all">
+    <button type="submit">后台导出用户全部作品</button>
+  </form>
+  <div id="crawl-result"></div>
+</section>
+{% endblock %}

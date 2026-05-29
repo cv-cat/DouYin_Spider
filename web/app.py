@@ -6,6 +6,7 @@ from web.db import connect_db, init_db
 from web.routes.actions import router as actions_router
 from web.routes.pages import router as pages_router
 from web.routes.streams import router as streams_router
+from web.services.crawl_service import CrawlService
 from web.services.login_service import LoginService
 from web.services.session_service import SessionService
 from web.services.settings_service import SettingsService
@@ -23,6 +24,7 @@ def create_app(overrides=None) -> FastAPI:
     app.state.task_manager = TaskManager(config.db_path, broker=app.state.broker)
     app.state.settings_service = SettingsService(config.db_path)
     app.state.session_service = SessionService(config.db_path)
+    app.state.crawl_service = CrawlService(config, app.state.session_service, app.state.task_manager)
     app.state.login_service = LoginService(config.db_path, app.state.task_manager, app.state.broker)
     app.mount("/static", StaticFiles(directory="web/static"), name="static")
     app.include_router(pages_router)

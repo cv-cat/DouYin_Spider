@@ -30,3 +30,12 @@ def login_center(request: Request):
             "douyin_auth": sessions.load_auth("douyin"),
         },
     )
+
+
+@router.get("/data-crawl", response_class=HTMLResponse)
+def data_crawl_page(request: Request):
+    return templates.TemplateResponse(
+        request=request,
+        name="data_crawl.html",
+        context={"title": "数据抓取"},
+    )
