@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="panel">
+  <h2>接口工具</h2>
+  <p>这里集中暴露底层未放进常规页面的抓取类接口，返回原始结构，适合本机调试。</p>
+</section>
+
+{% for group in crawl_tool_groups %}
+<section class="panel">
+  <h3>{{ group["title"] }}</h3>
+  {% for item in group["items"] %}
+  <details class="panel">
+    <summary>{{ item["label"] }}</summary>
+    <form hx-post="/actions/toolbox/crawl" hx-target="#toolbox-result">
+      <input type="hidden" name="operation" value="{{ item['operation'] }}">
+      {% for field in item["fields"] %}
+        {% if field.get("kind") == "textarea" %}
+      <textarea
+        name="{{ field['name'] }}"
+        rows="4"
+        placeholder="{{ field['placeholder'] }}"
+      >{{ field.get("value", "") }}</textarea>
+        {% else %}
+      <input
+        type="{{ field.get('type', 'text') }}"
+        name="{{ field['name'] }}"
+        placeholder="{{ field['placeholder'] }}"
+        value="{{ field.get('value', '') }}"
+      >
+        {% endif %}
+      {% endfor %}
+      <button type="submit">执行 {{ item["operation"] }}</button>
+    </form>
+  </details>
+  {% endfor %}
+</section>
+{% endfor %}
+
+{% for group in live_tool_groups %}
+<section class="panel">
+  <h3>{{ group["title"] }}</h3>
+  {% for item in group["items"] %}
+  <details class="panel">
+    <summary>{{ item["label"] }}</summary>
+    <form hx-post="/actions/toolbox/live" hx-target="#toolbox-result">
+      <input type="hidden" name="operation" value="{{ item['operation'] }}">
+      {% for field in item["fields"] %}
+      <input
+        type="{{ field.get('type', 'text') }}"
+        name="{{ field['name'] }}"
+        placeholder="{{ field['placeholder'] }}"
+        value="{{ field.get('value', '') }}"
+      >
+      {% endfor %}
+      <button type="submit">执行 {{ item["operation"] }}</button>
+    </form>
+  </details>
+  {% endfor %}
+</section>
+{% endfor %}
+
+<section class="panel">
+  <div id="toolbox-result"></div>
+</section>
+{% endblock %}

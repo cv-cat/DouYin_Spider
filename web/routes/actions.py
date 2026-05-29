@@ -12,20 +12,44 @@ def save_manual_cookie(request: Request, scope: str = Form(...), cookie_str: str
 
 @router.post("/login/qr", response_class=HTMLResponse)
 def start_qr_login(request: Request):
-    task_id = request.app.state.login_service.start_qr_login()
-    return HTMLResponse(f"QR login task queued: {task_id}")
+    qr_state = request.app.state.login_service.begin_qr_login()
+    return request.app.state.templates.TemplateResponse(
+        request=request,
+        name="components/login_qr_status.html",
+        context={"qr_state": qr_state},
+    )
+
+
+@router.post("/login/qr/poll", response_class=HTMLResponse)
+def poll_qr_login(request: Request, session_id: str = Form(...)):
+    qr_state = request.app.state.login_service.poll_qr_login(session_id)
+    return request.app.state.templates.TemplateResponse(
+        request=request,
+        name="components/login_qr_status.html",
+        context={"qr_state": qr_state},
+    )
 
 
 @router.post("/login/phone/request-code", response_class=HTMLResponse)
 def request_phone_code(request: Request, phone_num: str = Form(...)):
-    task_id = request.app.state.login_service.start_phone_code_request(phone_num)
-    return HTMLResponse(f"Phone code task queued: {task_id}")
+    phone_state = request.app.state.login_service.request_phone_code(phone_num)
+    return request.app.state.templates.TemplateResponse(
+        request=request,
+        name="components/login_phone_status.html",
+        context={"phone_num": phone_num, "phone_state": phone_state},
+    )
 
 
 @router.post("/login/phone/confirm", response_class=HTMLResponse)
 def confirm_phone_login(request: Request, phone_num: str = Form(...), code: str = Form(...)):
     task_id = request.app.state.login_service.finish_phone_login(phone_num, code)
     return HTMLResponse(f"Phone login confirm task queued: {task_id}")
+
+
+@router.post("/login/persist", response_class=HTMLResponse)
+def persist_login_record(request: Request, scope: str = Form(...)):
+    result = request.app.state.login_service.persist_login_record(scope)
+    return HTMLResponse(f"<pre>{result}</pre>")
 
 
 @router.post("/crawl/work", response_class=HTMLResponse)
@@ -90,6 +114,44 @@ def crawl_comment(
 def crawl_collect(request: Request, aweme_id: str = Form(...), action: str = Form("1")):
     payload = request.app.state.crawl_service.collect_aweme(aweme_id, action)
     return HTMLResponse(f"<pre>{payload}</pre>")
+
+
+@router.post("/crawl/works-export", response_class=HTMLResponse)
+def crawl_works_export(
+    request: Request,
+    works_text: str = Form(...),
+    save_choice: str = Form("all"),
+    excel_name: str = Form(""),
+):
+    task_id = request.app.state.crawl_service.queue_works_export(works_text, save_choice, excel_name)
+    return HTMLResponse(f"works export task queued: {task_id}")
+
+
+@router.post("/crawl/search-export", response_class=HTMLResponse)
+def crawl_search_export(
+    request: Request,
+    query: str = Form(...),
+    require_num: str = Form(...),
+    save_choice: str = Form("all"),
+    sort_type: str = Form("0"),
+    publish_time: str = Form("0"),
+    filter_duration: str = Form(""),
+    search_range: str = Form(""),
+    content_type: str = Form(""),
+    excel_name: str = Form(""),
+):
+    task_id = request.app.state.crawl_service.queue_search_export(
+        query,
+        require_num,
+        save_choice,
+        sort_type,
+        publish_time,
+        filter_duration,
+        search_range,
+        content_type,
+        excel_name,
+    )
+    return HTMLResponse(f"search export task queued: {task_id}")
 
 
 @router.post("/live/lookup", response_class=HTMLResponse)
@@ -173,3 +235,21 @@ def save_settings(
         {"media_dir": media_dir, "excel_dir": excel_dir, "port": port}
     )
     return HTMLResponse("settings saved; restart app to apply port change")
+
+
+@router.post("/toolbox/crawl", response_class=HTMLResponse)
+async def toolbox_crawl(request: Request):
+    form = dict(await request.form())
+    operation = form.pop("operation")
+    payload = {key: value for key, value in form.items() if value != ""}
+    result = request.app.state.crawl_service.invoke(operation, payload)
+    return HTMLResponse(f"<pre>{result}</pre>")
+
+
+@router.post("/toolbox/live", response_class=HTMLResponse)
+async def toolbox_live(request: Request):
+    form = dict(await request.form())
+    operation = form.pop("operation")
+    payload = {key: value for key, value in form.items() if value != ""}
+    result = request.app.state.live_service.invoke(operation, payload)
+    return HTMLResponse(f"<pre>{result}</pre>")

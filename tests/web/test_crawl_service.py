@@ -103,3 +103,59 @@ def test_collect_action_returns_payload(tmp_path):
 
     assert response.status_code == 200
     assert "123" in response.text
+
+
+def test_works_export_action_returns_task_id(tmp_path):
+    app = create_app({"DB_PATH": str(tmp_path / "web-ui.sqlite3")})
+
+    class DummyCrawlService:
+        def queue_works_export(self, works_text, save_choice="all", excel_name=""):
+            return "task-works"
+
+    app.state.crawl_service = DummyCrawlService()
+    client = TestClient(app)
+
+    response = client.post(
+        "/actions/crawl/works-export",
+        data={"works_text": "https://www.douyin.com/video/1", "save_choice": "all", "excel_name": "demo"},
+    )
+
+    assert response.status_code == 200
+    assert "task-works" in response.text
+
+
+def test_search_export_action_returns_task_id(tmp_path):
+    app = create_app({"DB_PATH": str(tmp_path / "web-ui.sqlite3")})
+
+    class DummyCrawlService:
+        def queue_search_export(
+            self,
+            query,
+            require_num,
+            save_choice,
+            sort_type,
+            publish_time,
+            filter_duration="",
+            search_range="",
+            content_type="",
+            excel_name="",
+        ):
+            return "task-search"
+
+    app.state.crawl_service = DummyCrawlService()
+    client = TestClient(app)
+
+    response = client.post(
+        "/actions/crawl/search-export",
+        data={
+            "query": "测试",
+            "require_num": "5",
+            "save_choice": "all",
+            "sort_type": "0",
+            "publish_time": "0",
+            "excel_name": "demo",
+        },
+    )
+
+    assert response.status_code == 200
+    assert "task-search" in response.text

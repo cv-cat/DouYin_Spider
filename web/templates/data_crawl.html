@@ -38,6 +38,21 @@
     <input type="text" name="action" value="1" placeholder="1 收藏 / 0 取消">
     <button type="submit">收藏作品</button>
   </form>
+  <form hx-post="/actions/crawl/works-export" hx-target="#crawl-result">
+    <textarea name="works_text" rows="4" placeholder="每行一个作品链接"></textarea>
+    <input type="text" name="save_choice" value="all" placeholder="all/media/excel">
+    <input type="text" name="excel_name" placeholder="excel 名称">
+    <button type="submit">批量导出作品链接列表</button>
+  </form>
+  <form hx-post="/actions/crawl/search-export" hx-target="#crawl-result">
+    <input type="text" name="query" placeholder="搜索关键词">
+    <input type="number" name="require_num" value="10" min="1">
+    <input type="text" name="save_choice" value="all" placeholder="all/media/excel">
+    <input type="text" name="sort_type" value="0" placeholder="排序 0/1/2">
+    <input type="text" name="publish_time" value="0" placeholder="发布时间 0/1/7/180">
+    <input type="text" name="excel_name" placeholder="excel 名称">
+    <button type="submit">搜索并后台导出</button>
+  </form>
   <div id="crawl-result"></div>
 </section>
 {% endblock %}

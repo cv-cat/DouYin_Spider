@@ -63,3 +63,41 @@ class LiveService:
                 ("stopped", datetime.now(UTC).isoformat(), live_id),
             )
             conn.commit()
+
+    def invoke(self, operation, payload):
+        auth = self._auth()
+        dispatch = {
+            "get_live_production": lambda: DouyinAPI.get_live_production(
+                auth,
+                payload["url"],
+                payload["room_id"],
+                payload["author_id"],
+                payload.get("offset", "0"),
+            ),
+            "get_all_live_production": lambda: DouyinAPI.get_all_live_production(
+                auth,
+                payload["url"],
+            ),
+            "get_live_production_detail": lambda: DouyinAPI.get_live_production_detail(
+                auth,
+                payload["url"],
+                payload["ec_promotion_id"],
+                payload["sec_author_id"],
+                payload["live_room_id"],
+            ),
+            "get_rank_list": lambda: DouyinAPI.get_rank_list(
+                auth,
+                payload["room_id"],
+                payload["anchor_id"],
+                payload["sec_anchor_id"],
+            ),
+            "get_webcast_detail": lambda: DouyinAPI.get_webcast_detail(
+                auth,
+                payload["user_id"],
+                payload["room_id"],
+                payload["url"],
+            ),
+        }
+        if operation not in dispatch:
+            raise ValueError(f"Unsupported live operation: {operation}")
+        return dispatch[operation]()

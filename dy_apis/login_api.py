@@ -97,8 +97,7 @@ class DYLoginApi:
         resp = requests.get(self.base_url + api, headers=headers.get(), cookies=auth.cookie, params=params.get(), verify=False)
         return json.loads(resp.text)
 
-    # 手机验证码登录
-    def dyGeneratePhoneVerificationCode(self, phone_num, auth):
+    def _build_phone_verification_request(self, phone_num, auth):
         api = "send_activation_code/v2/"
         headers = {
             "accept": "application/json, text/javascript",
@@ -132,6 +131,11 @@ class DYLoginApi:
         params.add_param("device_platform", "web_app")
         params.add_param("msToken", auth.cookie['msToken'])
         data = generateSecretPhoneNum(phone_num)
+        return api, headers, params, data
+
+    # 手机验证码登录
+    def dyGeneratePhoneVerificationCode(self, phone_num, auth, interactive=True):
+        api, headers, params, data = self._build_phone_verification_request(phone_num, auth)
         params.with_a_bogus(data)
         response = requests.post(self.base_url + api, headers=headers, cookies=auth.cookie, params=params.get(), data=data, verify=False)
         res_json = json.loads(response.text)
@@ -141,8 +145,18 @@ class DYLoginApi:
 
         firstLoginRes = json.loads(response.text)
         iframeTemplate = self.generateIframe(auth.cookie, firstLoginRes)
+        if not interactive:
+            return {
+                "status": "captcha_required",
+                "iframe_html": iframeTemplate,
+                "raw": firstLoginRes,
+            }
         print(iframeTemplate)
         input('过滑块')
+        return self.retryPhoneVerificationCode(phone_num, auth)
+
+    def retryPhoneVerificationCode(self, phone_num, auth):
+        api, headers, params, data = self._build_phone_verification_request(phone_num, auth)
         # 过验证码后
         params.add_param("fp", auth.cookie['s_v_web_id'])
         params.add_param("verifyFp", auth.cookie['s_v_web_id'])

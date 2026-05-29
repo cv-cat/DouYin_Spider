@@ -1,0 +1,19 @@
+<section class="panel">
+  <h3>验证码状态</h3>
+  {% if phone_state.get("status") == "captcha_required" %}
+  <p>发送验证码前需要先完成滑块验证。完成后点下面按钮重试。</p>
+  <div>{{ phone_state["iframe_html"] | safe }}</div>
+  <form hx-post="/actions/login/phone/request-code" hx-target="#login-result">
+    <input type="hidden" name="phone_num" value="{{ phone_num }}">
+    <button type="submit">已完成滑块，重试发送验证码</button>
+  </form>
+  {% else %}
+  <pre>{{ phone_state }}</pre>
+  {% endif %}
+  {% if phone_state.get("raw") %}
+  <details>
+    <summary>原始返回</summary>
+    <pre>{{ phone_state["raw"] }}</pre>
+  </details>
+  {% endif %}
+</section>

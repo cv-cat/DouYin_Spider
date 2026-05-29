@@ -1,0 +1,32 @@
+<section
+  class="panel"
+  {% if not qr_state.get("done") %}
+  hx-post="/actions/login/qr/poll"
+  hx-trigger="load delay:2s, every 5s"
+  hx-target="this"
+  hx-swap="outerHTML"
+  hx-vals='{"session_id":"{{ qr_state["session_id"] }}"}'
+  {% endif %}
+>
+  <h3>扫码状态</h3>
+  {% if qr_state.get("status") == "pending" %}
+  <img src="{{ qr_state['qr_image_data_url'] }}" alt="登录二维码" style="max-width: 240px;">
+  <p>等待扫码与手机确认。</p>
+  <details>
+    <summary>二维码原始链接</summary>
+    <pre>{{ qr_state["verify_url"] }}</pre>
+  </details>
+  {% elif qr_state.get("status") == "3" %}
+  <p>二维码登录成功，Cookie 已保存到 `douyin` scope。</p>
+  {% elif qr_state.get("status") == "missing" %}
+  <p>二维码会话已失效，请重新生成。</p>
+  {% else %}
+  <p>当前扫码状态：{{ qr_state["status"] }}</p>
+  {% endif %}
+  {% if qr_state.get("raw") %}
+  <details>
+    <summary>原始返回</summary>
+    <pre>{{ qr_state["raw"] }}</pre>
+  </details>
+  {% endif %}
+</section>

@@ -7,6 +7,11 @@
     <textarea name="cookie_str" rows="6" placeholder="贴入 www.douyin.com cookie"></textarea>
     <button type="submit">保存 Cookie</button>
   </form>
+  <form hx-post="/actions/login/cookies" hx-target="#login-result">
+    <input type="hidden" name="scope" value="live">
+    <textarea name="cookie_str" rows="6" placeholder="贴入 live.douyin.com cookie"></textarea>
+    <button type="submit">保存直播 Cookie</button>
+  </form>
   <form hx-post="/actions/login/qr" hx-target="#login-result">
     <button type="submit">启动二维码登录</button>
   </form>
@@ -18,6 +23,10 @@
     <input type="text" name="phone_num" placeholder="手机号">
     <input type="text" name="code" placeholder="验证码">
     <button type="submit">提交验证码登录</button>
+  </form>
+  <form hx-post="/actions/login/persist" hx-target="#login-result">
+    <input type="hidden" name="scope" value="douyin">
+    <button type="submit">持久化当前登录态</button>
   </form>
   <div id="login-result"></div>
 </section>

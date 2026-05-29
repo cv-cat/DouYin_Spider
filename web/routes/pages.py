@@ -2,6 +2,7 @@ from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse
 
 from web.db import connect_db
+from web.toolbox_catalog import CRAWL_TOOL_GROUPS, LIVE_TOOL_GROUPS
 
 router = APIRouter()
 
@@ -102,4 +103,17 @@ def settings_page(request: Request):
         request=request,
         name="settings.html",
         context={"title": "设置", "settings_data": settings_data},
+    )
+
+
+@router.get("/api-tools", response_class=HTMLResponse)
+def api_tools_page(request: Request):
+    return request.app.state.templates.TemplateResponse(
+        request=request,
+        name="api_tools.html",
+        context={
+            "title": "接口工具",
+            "crawl_tool_groups": CRAWL_TOOL_GROUPS,
+            "live_tool_groups": LIVE_TOOL_GROUPS,
+        },
     )
