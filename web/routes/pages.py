@@ -17,3 +17,16 @@ def overview(request: Request):
             "settings_data": settings_data,
         },
     )
+
+
+@router.get("/login", response_class=HTMLResponse)
+def login_center(request: Request):
+    sessions = request.app.state.session_service
+    return templates.TemplateResponse(
+        request=request,
+        name="login.html",
+        context={
+            "title": "登录中心",
+            "douyin_auth": sessions.load_auth("douyin"),
+        },
+    )
