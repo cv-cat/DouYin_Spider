@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="page-section">
+  <h2>线索池</h2>
+  <p>集中查看截流结果，先按来源、评论内容和状态筛掉无效用户。</p>
+</section>
+
+<section class="page-section">
+  <form hx-get="/lead-pool?partial=table" hx-target="#lead-pool-table" hx-swap="innerHTML">
+    <select name="grade">
+      <option value="">全部等级</option>
+      {% for grade in ["S", "A", "B", "C"] %}
+      <option value="{{ grade }}" {% if filters.grade == grade %}selected{% endif %}>{{ grade }}</option>
+      {% endfor %}
+    </select>
+    <select name="source_type">
+      <option value="">全部来源</option>
+      {% for source in ["comment", "search", "live"] %}
+      <option value="{{ source }}" {% if filters.source_type == source %}selected{% endif %}>{{ source }}</option>
+      {% endfor %}
+    </select>
+    <select name="review_status">
+      <option value="">全部审核状态</option>
+      {% for status in ["priority", "new", "blocked"] %}
+      <option value="{{ status }}" {% if filters.review_status == status %}selected{% endif %}>{{ status }}</option>
+      {% endfor %}
+    </select>
+    <select name="message_status">
+      <option value="">全部消息状态</option>
+      {% for status in ["pending", "sent", "failed", "blocked"] %}
+      <option value="{{ status }}" {% if filters.message_status == status %}selected{% endif %}>{{ status }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit">筛选</button>
+  </form>
+</section>
+
+<div id="lead-pool-table">
+  {% include "components/lead_pool_table.html" %}
+</div>
+{% endblock %}

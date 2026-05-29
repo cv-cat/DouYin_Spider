@@ -1,0 +1,30 @@
+<section class="page-section">
+  <table>
+    <thead>
+      <tr>
+        <th>昵称</th>
+        <th>来源</th>
+        <th>关键词</th>
+        <th>评论内容</th>
+        <th>发送状态</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% if leads %}
+        {% for lead in leads %}
+        <tr>
+          <td>{{ lead.nickname }}</td>
+          <td>{{ lead.source_type }}</td>
+          <td>{{ lead.keyword }}</td>
+          <td>{{ lead.comment_text or "-" }}</td>
+          <td>{{ lead.message_status }}</td>
+        </tr>
+        {% endfor %}
+      {% else %}
+        <tr>
+          <td colspan="5">暂无线索</td>
+        </tr>
+      {% endif %}
+    </tbody>
+  </table>
+</section>

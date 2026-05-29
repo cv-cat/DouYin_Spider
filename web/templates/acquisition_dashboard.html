@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="page-section">
+  <h2>获客仪表盘</h2>
+  <p>这里看今天的线索量、触达进度和来源分布，先聚焦有没有真实高意向客户进入池子。</p>
+</section>
+
+{% include "components/acquisition_metric_cards.html" %}
+{% endblock %}

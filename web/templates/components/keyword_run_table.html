@@ -1,0 +1,30 @@
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>run_id</th>
+        <th>关键词</th>
+        <th>状态</th>
+        <th>进度</th>
+        <th>线索数</th>
+        <th>摘要</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for run in runs %}
+      <tr>
+        <td><a href="/keyword-funnel?run_id={{ run.run_id }}"><code>{{ run.run_id }}</code></a></td>
+        <td>{{ run.keyword }}</td>
+        <td>{{ run.status }}</td>
+        <td>{{ run.processed_count }}/{{ run.total_count }}</td>
+        <td>{{ run.lead_count }}</td>
+        <td>{{ run.summary }}</td>
+      </tr>
+      {% else %}
+      <tr>
+        <td colspan="6">还没有关键词截流任务。</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>

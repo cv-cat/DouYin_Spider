@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="panel">
+  <h2>关键词截流</h2>
+  <p>按关键词搜索作品，抽取作者和评论用户进入线索池，并把来源策略、精度、风控和触达模式一起写入任务。</p>
+  <form hx-post="/actions/keyword-funnel/collect" hx-target="#keyword-funnel-result">
+    <input type="text" name="keyword" placeholder="搜索关键词">
+    <input type="number" name="require_num" value="10" min="1" placeholder="抓取作品数">
+    <select name="source_mode">
+      {% for option in defaults.source_modes %}
+      <option value="{{ option.key }}">{{ option.label }}</option>
+      {% endfor %}
+    </select>
+    <select name="precision_mode">
+      {% for option in defaults.precision_modes %}
+      <option value="{{ option.key }}">{{ option.label }}</option>
+      {% endfor %}
+    </select>
+    <select name="risk_mode">
+      {% for option in defaults.risk_modes %}
+      <option value="{{ option.key }}">{{ option.label }}</option>
+      {% endfor %}
+    </select>
+    <select name="outreach_mode">
+      <option value="manual">人工审核</option>
+      <option value="semi_auto">半自动触达</option>
+      <option value="batch">批量私信</option>
+    </select>
+    <label class="checkbox-row">
+      <input type="checkbox" name="include_comments" checked>
+      <span>额外抓取评论用户</span>
+    </label>
+    <input type="number" name="comment_limit" value="20" min="0" placeholder="每条作品最多读取评论数">
+    <button type="submit">后台采集线索</button>
+  </form>
+  <form hx-post="/actions/keyword-funnel/message" hx-target="#keyword-funnel-result">
+    <input type="text" name="run_id" value="{{ selected_run_id }}" placeholder="run_id">
+    <textarea name="content" rows="3" placeholder="批量私信内容"></textarea>
+    <input type="number" name="limit" value="10" min="1" placeholder="本次发送数量">
+    <button type="submit">批量私信</button>
+  </form>
+  <div id="keyword-funnel-result"></div>
+</section>
+
+<section class="panel">
+  <h3>线索任务</h3>
+  <div id="keyword-run-feed"
+       hx-get="/keyword-funnel?partial=runs{% if selected_run_id %}&run_id={{ selected_run_id }}{% endif %}"
+       hx-trigger="load, every 2s"
+       hx-swap="innerHTML">
+    {% include "components/keyword_run_table.html" %}
+  </div>
+</section>
+
+<section class="panel">
+  <h3>线索池{% if selected_run_id %} - {{ selected_run_id }}{% endif %}</h3>
+  <div id="keyword-lead-feed"
+       hx-get="/keyword-funnel?partial=leads{% if selected_run_id %}&run_id={{ selected_run_id }}{% endif %}"
+       hx-trigger="load, every 2s"
+       hx-swap="innerHTML">
+    {% include "components/keyword_lead_table.html" %}
+  </div>
+</section>
+{% endblock %}

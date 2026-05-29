@@ -1,0 +1,46 @@
+<section class="page-section">
+  <div class="metric-grid">
+    <article class="metric-card">
+      <span class="metric-label">今日新增线索</span>
+      <strong class="metric-value">{{ summary.today_leads }}</strong>
+    </article>
+    <article class="metric-card">
+      <span class="metric-label">线索总数</span>
+      <strong class="metric-value">{{ summary.total_leads }}</strong>
+    </article>
+    <article class="metric-card">
+      <span class="metric-label">运行中任务</span>
+      <strong class="metric-value">{{ summary.running_tasks }}</strong>
+    </article>
+    <article class="metric-card">
+      <span class="metric-label">已成交</span>
+      <strong class="metric-value">{{ summary.paid_count }}</strong>
+    </article>
+  </div>
+</section>
+
+<section class="page-section">
+  <h3>来源分布</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>来源</th>
+        <th>数量</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% if summary.source_counts %}
+        {% for source, count in summary.source_counts.items() %}
+        <tr>
+          <td>{{ source }}</td>
+          <td>{{ count }}</td>
+        </tr>
+        {% endfor %}
+      {% else %}
+        <tr>
+          <td colspan="2">暂无来源统计</td>
+        </tr>
+      {% endif %}
+    </tbody>
+  </table>
+</section>

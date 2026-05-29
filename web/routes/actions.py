@@ -154,6 +154,58 @@ def crawl_search_export(
     return HTMLResponse(f"search export task queued: {task_id}")
 
 
+@router.post("/keyword-funnel/collect", response_class=HTMLResponse)
+def keyword_funnel_collect(
+    request: Request,
+    keyword: str = Form(...),
+    require_num: str = Form("10"),
+    include_comments: str | None = Form(None),
+    comment_limit: str = Form("20"),
+    source_mode: str = Form("comments_first"),
+    precision_mode: str = Form("precision"),
+    risk_mode: str = Form("safe"),
+    outreach_mode: str = Form("manual"),
+):
+    payload = request.app.state.keyword_funnel_service.queue_collect(
+        keyword,
+        require_num,
+        include_comments is not None,
+        comment_limit,
+        source_mode=source_mode,
+        precision_mode=precision_mode,
+        risk_mode=risk_mode,
+        outreach_mode=outreach_mode,
+    )
+    return request.app.state.templates.TemplateResponse(
+        request=request,
+        name="components/keyword_action_result.html",
+        context={
+            "message": f"keyword collect task queued: run_id={payload['run_id']} task_id={payload['task_id']}",
+            "runs": request.app.state.keyword_funnel_service.list_runs(),
+            "leads": request.app.state.keyword_funnel_service.list_leads(),
+        },
+    )
+
+
+@router.post("/keyword-funnel/message", response_class=HTMLResponse)
+def keyword_funnel_message(
+    request: Request,
+    run_id: str = Form(...),
+    content: str = Form(...),
+    limit: str = Form(""),
+):
+    payload = request.app.state.keyword_funnel_service.queue_bulk_message(run_id, content, limit)
+    return request.app.state.templates.TemplateResponse(
+        request=request,
+        name="components/keyword_action_result.html",
+        context={
+            "message": f"keyword message task queued: run_id={payload['run_id']} task_id={payload['task_id']}",
+            "runs": request.app.state.keyword_funnel_service.list_runs(),
+            "leads": request.app.state.keyword_funnel_service.list_leads(run_id),
+        },
+    )
+
+
 @router.post("/live/lookup", response_class=HTMLResponse)
 def lookup_live_room(request: Request, live_id: str = Form(...)):
     payload = request.app.state.live_service.lookup_room(live_id)

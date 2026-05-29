@@ -1,0 +1,38 @@
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>昵称</th>
+        <th>user_id</th>
+        <th>来源</th>
+        <th>等级</th>
+        <th>作品</th>
+        <th>评论内容</th>
+        <th>命中信号</th>
+        <th>风险</th>
+        <th>状态</th>
+        <th>错误</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for lead in leads %}
+      <tr>
+        <td>{{ lead.nickname }}</td>
+        <td><code>{{ lead.user_id }}</code></td>
+        <td>{{ lead.source_type }}</td>
+        <td>{{ lead.grade }}</td>
+        <td><code>{{ lead.source_aweme_id }}</code></td>
+        <td>{{ lead.comment_text }}</td>
+        <td>{{ lead.matched_signals }}</td>
+        <td>{{ lead.risk_flags }}</td>
+        <td>{{ lead.message_status }}</td>
+        <td>{{ lead.message_error }}</td>
+      </tr>
+      {% else %}
+      <tr>
+        <td colspan="9">当前没有线索。</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>

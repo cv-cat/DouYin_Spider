@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="page-section">
+  <h2>转化跟踪</h2>
+  <p>先看触达、回复和成交的基础统计，后续再补状态流转和渠道归因。</p>
+</section>
+
+<section class="page-section">
+  <div class="metric-grid">
+    <article class="metric-card">
+      <span class="metric-label">已触达</span>
+      <strong class="metric-value">{{ summary.contacted_count }}</strong>
+    </article>
+    <article class="metric-card">
+      <span class="metric-label">已回复</span>
+      <strong class="metric-value">{{ summary.replied_count }}</strong>
+    </article>
+    <article class="metric-card">
+      <span class="metric-label">已成交</span>
+      <strong class="metric-value">{{ summary.paid_count }}</strong>
+    </article>
+  </div>
+</section>
+{% endblock %}

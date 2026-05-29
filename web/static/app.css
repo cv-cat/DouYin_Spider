@@ -27,3 +27,66 @@ body {
   background: #fffaf0;
   box-shadow: 0 12px 32px rgba(28, 25, 23, 0.08);
 }
+
+form {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+input,
+textarea,
+button,
+select {
+  font: inherit;
+}
+
+input,
+textarea,
+select {
+  padding: 10px 12px;
+  border: 1px solid #d6d3d1;
+  border-radius: 10px;
+  background: #fffbeb;
+}
+
+button {
+  width: fit-content;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 999px;
+  background: #ea580c;
+  color: #fff7ed;
+  cursor: pointer;
+}
+
+.checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.checkbox-row input {
+  margin: 0;
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #e7e5e4;
+  text-align: left;
+  vertical-align: top;
+}
+
+code {
+  font-size: 0.92em;
+}

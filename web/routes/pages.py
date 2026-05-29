@@ -60,6 +60,106 @@ def live_monitor_page(request: Request):
     )
 
 
+@router.get("/keyword-funnel", response_class=HTMLResponse)
+def keyword_funnel_page(request: Request):
+    selected_run_id = request.query_params.get("run_id", "")
+    partial = request.query_params.get("partial")
+    service = request.app.state.keyword_funnel_service
+    defaults = request.app.state.rules_service.defaults()
+    runs = service.list_runs()
+    leads = service.list_leads(selected_run_id)
+    if partial == "runs":
+        return request.app.state.templates.TemplateResponse(
+            request=request,
+            name="components/keyword_run_table.html",
+            context={"runs": runs, "selected_run_id": selected_run_id},
+        )
+    if partial == "leads":
+        return request.app.state.templates.TemplateResponse(
+            request=request,
+            name="components/keyword_lead_table.html",
+            context={"leads": leads, "selected_run_id": selected_run_id},
+        )
+    return request.app.state.templates.TemplateResponse(
+        request=request,
+        name="keyword_funnel.html",
+        context={
+            "title": "关键词截流",
+            "runs": runs,
+            "leads": leads,
+            "selected_run_id": selected_run_id,
+            "defaults": defaults,
+        },
+    )
+
+
+@router.get("/acquisition-dashboard", response_class=HTMLResponse)
+def acquisition_dashboard_page(request: Request):
+    summary = request.app.state.acquisition_dashboard_service.summary()
+    return request.app.state.templates.TemplateResponse(
+        request=request,
+        name="acquisition_dashboard.html",
+        context={"title": "获客仪表盘", "summary": summary},
+    )
+
+
+@router.get("/lead-pool", response_class=HTMLResponse)
+def lead_pool_page(request: Request):
+    filters = {
+        "grade": request.query_params.get("grade", ""),
+        "source_type": request.query_params.get("source_type", ""),
+        "review_status": request.query_params.get("review_status", ""),
+        "message_status": request.query_params.get("message_status", ""),
+    }
+    leads = request.app.state.keyword_funnel_service.list_leads(**filters)
+    if request.query_params.get("partial") == "table":
+        return request.app.state.templates.TemplateResponse(
+            request=request,
+            name="components/lead_pool_table.html",
+            context={"leads": leads},
+        )
+    return request.app.state.templates.TemplateResponse(
+        request=request,
+        name="lead_pool.html",
+        context={"title": "线索池", "leads": leads, "filters": filters},
+    )
+
+
+@router.get("/outreach-center", response_class=HTMLResponse)
+def outreach_center_page(request: Request):
+    service = request.app.state.outreach_service
+    return request.app.state.templates.TemplateResponse(
+        request=request,
+        name="outreach_center.html",
+        context={
+            "title": "触达中心",
+            "modes": service.list_modes(),
+            "templates": service.list_templates(),
+            "queue": service.queue_preview(),
+        },
+    )
+
+
+@router.get("/conversion-tracking", response_class=HTMLResponse)
+def conversion_tracking_page(request: Request):
+    summary = request.app.state.acquisition_dashboard_service.summary()
+    return request.app.state.templates.TemplateResponse(
+        request=request,
+        name="conversion_tracking.html",
+        context={"title": "转化跟踪", "summary": summary},
+    )
+
+
+@router.get("/rules-center", response_class=HTMLResponse)
+def rules_center_page(request: Request):
+    defaults = request.app.state.rules_service.defaults()
+    return request.app.state.templates.TemplateResponse(
+        request=request,
+        name="rules_center.html",
+        context={"title": "规则中心", "defaults": defaults},
+    )
+
+
 @router.get("/private-messages", response_class=HTMLResponse)
 def private_messages_page(request: Request):
     return request.app.state.templates.TemplateResponse(

@@ -4,7 +4,7 @@ from web.app import create_app
 
 
 def test_core_pages_load(client):
-    for path in ["/", "/login", "/data-crawl", "/live-monitor", "/private-messages", "/tasks", "/settings"]:
+    for path in ["/", "/login", "/data-crawl", "/keyword-funnel", "/live-monitor", "/private-messages", "/tasks", "/settings"]:
         response = client.get(path)
         assert response.status_code == 200
     assert "DouYin_Spider Web UI" in client.get("/").text

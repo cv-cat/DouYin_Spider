@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="page-section">
+  <h2>触达中心</h2>
+  <p>这里先提供三档触达模式和待发送队列预览，后续再接模板和频控。</p>
+</section>
+
+<section class="page-section">
+  <div class="metric-grid">
+    {% for mode in modes %}
+    <article class="metric-card">
+      <span class="metric-label">{{ mode.label }}</span>
+      <strong class="metric-value">{{ mode.key }}</strong>
+    </article>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="page-section">
+  <h3>默认话术模板</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>模板</th>
+        <th>分类</th>
+        <th>内容</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for template in templates %}
+      <tr>
+        <td>{{ template.title }}</td>
+        <td>{{ template.category }}</td>
+        <td>{{ template.body }}</td>
+      </tr>
+      {% else %}
+      <tr>
+        <td colspan="3">暂无模板</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+{% include "components/outreach_queue_table.html" %}
+{% endblock %}
