@@ -4,7 +4,10 @@ import json
 import websocket
 from websocket import WebSocketApp
 
-from douyin_api import DouyinAPI
+try:
+    from dy_apis.douyin_api import DouyinAPI
+except ImportError:
+    from douyin_api import DouyinAPI
 from builder.auth import DouyinAuth
 from builder.header import HeaderBuilder
 from builder.params import Params

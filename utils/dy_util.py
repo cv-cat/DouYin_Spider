@@ -22,14 +22,22 @@ else:
     basedir = path.dirname(__file__)
 
 
-try:
-    node_modules = path.join(basedir, 'static', 'node_modules')
-    login_path = path.join(basedir, 'static', 'login.js')
-    login_js = execjs.compile(open(login_path, 'r', encoding='utf-8').read(), cwd=node_modules)
-except:
-    node_modules = path.join(basedir, '..', 'static', 'node_modules')
-    login_path = path.join(basedir, '..', 'static', 'login.js')
-    login_js = execjs.compile(open(login_path, 'r', encoding='utf-8').read(), cwd=node_modules)
+def _resolve_static_paths():
+    candidates = [
+        basedir,
+        path.abspath(path.join(basedir, '..')),
+    ]
+    for candidate in candidates:
+        static_dir = path.join(candidate, 'static')
+        node_modules_dir = path.join(candidate, 'node_modules')
+        if path.isdir(static_dir) and path.isdir(node_modules_dir):
+            return static_dir, node_modules_dir
+    raise FileNotFoundError(f'Can not find static/node_modules from {basedir}')
+
+
+static_dir, node_modules = _resolve_static_paths()
+login_path = path.join(static_dir, 'login.js')
+login_js = execjs.compile(open(login_path, 'r', encoding='utf-8').read(), cwd=node_modules)
 
 
 def generateSecretPhoneNum(phone):
@@ -39,18 +47,10 @@ def generateSecretCode(phone, code):
     sign = login_js.call('generateSecretCode', phone, code)
     return sign
 
-try:
-    node_modules = path.join(basedir, 'node_modules')
-    dy_path = path.join(basedir, 'static', 'dy_ab.js')
-    dy_js = execjs.compile(open(dy_path, 'r', encoding='utf-8').read(), cwd=node_modules)
-    sign_path = path.join(basedir, 'static', 'dy_live_sign.js')
-    sign_js = execjs.compile(open(sign_path, 'r', encoding='utf-8').read(), cwd=node_modules)
-except:
-    node_modules = path.join(basedir, '..', 'node_modules')
-    dy_path = path.join(basedir, '..', 'static', 'dy_ab.js')
-    dy_js = execjs.compile(open(dy_path, 'r', encoding='utf-8').read(), cwd=node_modules)
-    sign_path = path.join(basedir, '..', 'static', 'dy_live_sign.js')
-    sign_js = execjs.compile(open(sign_path, 'r', encoding='utf-8').read(), cwd=node_modules)
+dy_path = path.join(static_dir, 'dy_ab.js')
+dy_js = execjs.compile(open(dy_path, 'r', encoding='utf-8').read(), cwd=node_modules)
+sign_path = path.join(static_dir, 'dy_live_sign.js')
+sign_js = execjs.compile(open(sign_path, 'r', encoding='utf-8').read(), cwd=node_modules)
 
 
 def trans_cookies(cookies_str):

@@ -10,3 +10,8 @@ requests
 argparse
 websockets
 protobuf3_to_dict
+beautifulsoup4
+websocket-client
+aiohttp
+playwright
+qrcode
