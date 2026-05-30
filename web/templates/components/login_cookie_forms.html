@@ -1,12 +1,20 @@
 <div id="login-cookie-forms">
-  <form hx-post="/actions/login/cookies" hx-target="#login-result">
-    <input type="hidden" name="scope" value="douyin">
-    <textarea name="cookie_str" rows="6" placeholder="贴入 www.douyin.com cookie">{{ douyin_auth.cookie_str if douyin_auth else '' }}</textarea>
-    <button type="submit">保存 Cookie</button>
-  </form>
-  <form hx-post="/actions/login/cookies" hx-target="#login-result">
-    <input type="hidden" name="scope" value="live">
-    <textarea name="cookie_str" rows="6" placeholder="贴入 live.douyin.com cookie">{{ live_auth.cookie_str if live_auth else '' }}</textarea>
-    <button type="submit">保存直播 Cookie</button>
-  </form>
+  <div class="ops-stack">
+    <div class="ops-form-card">
+      <h4>Douyin Cookie</h4>
+      <form hx-post="/actions/login/cookies" hx-target="#login-result">
+        <input type="hidden" name="scope" value="douyin">
+        <textarea name="cookie_str" rows="6" placeholder="贴入 www.douyin.com cookie">{{ douyin_auth.cookie_str if douyin_auth else '' }}</textarea>
+        <button type="submit">保存 Cookie</button>
+      </form>
+    </div>
+    <div class="ops-form-card">
+      <h4>直播 Cookie</h4>
+      <form hx-post="/actions/login/cookies" hx-target="#login-result">
+        <input type="hidden" name="scope" value="live">
+        <textarea name="cookie_str" rows="6" placeholder="贴入 live.douyin.com cookie">{{ live_auth.cookie_str if live_auth else '' }}</textarea>
+        <button type="submit">保存直播 Cookie</button>
+      </form>
+    </div>
+  </div>
 </div>

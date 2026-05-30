@@ -1,5 +1,5 @@
 <section
-  class="panel"
+  class="ops-form-card"
   {% if not browser_state.get("done") %}
   hx-post="/actions/login/browser/poll"
   hx-trigger="load delay:2s, every 3s"

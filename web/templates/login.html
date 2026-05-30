@@ -1,27 +1,91 @@
 {% extends "base.html" %}
 {% block content %}
-<section class="panel">
-  <h2>登录中心</h2>
-  {% include "components/login_cookie_forms.html" %}
-  <form hx-post="/actions/login/browser" hx-target="#login-result">
-    <button type="submit">一键网页登录并自动保存 Cookie</button>
-  </form>
-  <form hx-post="/actions/login/qr" hx-target="#login-result">
-    <button type="submit">启动二维码登录</button>
-  </form>
-  <form hx-post="/actions/login/phone/request-code" hx-target="#login-result">
-    <input type="text" name="phone_num" placeholder="手机号">
-    <button type="submit">发送验证码</button>
-  </form>
-  <form hx-post="/actions/login/phone/confirm" hx-target="#login-result">
-    <input type="text" name="phone_num" placeholder="手机号">
-    <input type="text" name="code" placeholder="验证码">
-    <button type="submit">提交验证码登录</button>
-  </form>
-  <form hx-post="/actions/login/persist" hx-target="#login-result">
-    <input type="hidden" name="scope" value="douyin">
-    <button type="submit">持久化当前登录态</button>
-  </form>
-  <div id="login-result"></div>
+<section class="ops-shell ops-shell-dashboard">
+  <section class="ops-hero">
+    <div class="ops-hero-copy">
+      <span class="ops-kicker">AUTH CONTROL</span>
+      <h2>登录中心</h2>
+      <p>这里负责把 `douyin` 和 `live` 两套登录态都补齐。要稳定跑搜索、评论、直播、私信，先把这里打通。</p>
+    </div>
+    <div class="ops-stat-strip">
+      <article class="ops-stat-card">
+        <span>Douyin Cookie</span>
+        <strong>{{ "ok" if douyin_auth else "missing" }}</strong>
+      </article>
+      <article class="ops-stat-card">
+        <span>Live Cookie</span>
+        <strong>{{ "ok" if live_auth else "missing" }}</strong>
+      </article>
+      <article class="ops-stat-card">
+        <span>搜索预热</span>
+        <strong>内置</strong>
+      </article>
+      <article class="ops-stat-card">
+        <span>验证保存</span>
+        <strong>手动确认</strong>
+      </article>
+    </div>
+  </section>
+
+  <section class="ops-two-column">
+    <section class="ops-panel">
+      <div class="ops-panel-head">
+        <h3>Cookie 面板</h3>
+        <span>手工贴入或自动回填</span>
+      </div>
+      {% include "components/login_cookie_forms.html" %}
+    </section>
+
+    <section class="ops-panel">
+      <div class="ops-panel-head">
+        <h3>登录动作</h3>
+        <span>浏览器、二维码、手机验证码</span>
+      </div>
+      <div class="ops-stack">
+        <div class="ops-form-card">
+          <h4>网页登录</h4>
+          <p>会打开外部 Chromium 窗口，依次预热首页、搜索页和直播页。你手动验证后，再回这里点确认保存。</p>
+          <form hx-post="/actions/login/browser" hx-target="#login-result">
+            <button type="submit">一键网页登录并自动保存 Cookie</button>
+          </form>
+        </div>
+        <div class="ops-form-card">
+          <h4>二维码登录</h4>
+          <form hx-post="/actions/login/qr" hx-target="#login-result">
+            <button type="submit">启动二维码登录</button>
+          </form>
+        </div>
+        <div class="ops-form-card">
+          <h4>手机验证码登录</h4>
+          <div class="ops-form-split">
+            <form hx-post="/actions/login/phone/request-code" hx-target="#login-result">
+              <input type="text" name="phone_num" placeholder="手机号">
+              <button type="submit">发送验证码</button>
+            </form>
+            <form hx-post="/actions/login/phone/confirm" hx-target="#login-result">
+              <input type="text" name="phone_num" placeholder="手机号">
+              <input type="text" name="code" placeholder="验证码">
+              <button type="submit">提交验证码登录</button>
+            </form>
+          </div>
+        </div>
+        <div class="ops-form-card">
+          <h4>持久化当前会话</h4>
+          <form hx-post="/actions/login/persist" hx-target="#login-result">
+            <input type="hidden" name="scope" value="douyin">
+            <button type="submit">持久化当前登录态</button>
+          </form>
+        </div>
+      </div>
+    </section>
+  </section>
+
+  <section class="ops-panel">
+    <div class="ops-panel-head">
+      <h3>登录结果</h3>
+      <span>错误、验证、保存都会显示在这里</span>
+    </div>
+    <div id="login-result" class="ops-result-shell"></div>
+  </section>
 </section>
 {% endblock %}

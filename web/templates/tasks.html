@@ -1,9 +1,40 @@
 {% extends "base.html" %}
 {% block content %}
-<section class="panel">
-  <h2>任务与日志</h2>
-  <div data-task-feed>
-    {% include "components/task_rows.html" %}
-  </div>
+<section class="ops-shell ops-shell-funnel">
+  <section class="ops-hero">
+    <div class="ops-hero-copy">
+      <span class="ops-kicker">TASK OPS</span>
+      <h2>任务与日志</h2>
+      <p>这里看所有后台任务的当前状态、进度、摘要和最近错误。关键词截流任务会把进度和 run 状态一并映射进来。</p>
+    </div>
+    <div class="ops-stat-strip">
+      <article class="ops-stat-card">
+        <span>当前任务数</span>
+        <strong>{{ tasks|length }}</strong>
+      </article>
+      <article class="ops-stat-card">
+        <span>失败任务</span>
+        <strong>{{ tasks|selectattr("status", "equalto", "failed")|list|length }}</strong>
+      </article>
+      <article class="ops-stat-card">
+        <span>运行中</span>
+        <strong>{{ tasks|selectattr("status", "equalto", "running")|list|length }}</strong>
+      </article>
+      <article class="ops-stat-card">
+        <span>截流任务</span>
+        <strong>{{ tasks|selectattr("task_type", "equalto", "keyword.collect")|list|length }}</strong>
+      </article>
+    </div>
+  </section>
+
+  <section class="ops-panel ops-surface-table">
+    <div class="ops-panel-head">
+      <h3>任务列表</h3>
+      <span>会自动轮询更新</span>
+    </div>
+    <div data-task-feed>
+      {% include "components/task_rows.html" %}
+    </div>
+  </section>
 </section>
 {% endblock %}

@@ -1,58 +1,137 @@
 {% extends "base.html" %}
 {% block content %}
-<section class="panel">
-  <h2>数据抓取</h2>
-  <form hx-post="/actions/crawl/work" hx-target="#crawl-result">
-    <input type="text" name="work_url" placeholder="作品链接">
-    <button type="submit">查询作品</button>
-  </form>
-  <form hx-post="/actions/crawl/user" hx-target="#crawl-result">
-    <input type="text" name="user_url" placeholder="用户主页链接">
-    <button type="submit">查询用户信息</button>
-  </form>
-  <form hx-post="/actions/crawl/user-all" hx-target="#crawl-result">
-    <input type="text" name="user_url" placeholder="用户主页链接">
-    <input type="hidden" name="save_choice" value="all">
-    <button type="submit">后台导出用户全部作品</button>
-  </form>
-  <form hx-post="/actions/crawl/search" hx-target="#crawl-result">
-    <input type="text" name="query" placeholder="搜索关键词">
-    <input type="number" name="require_num" value="5" min="1">
-    <input type="text" name="sort_type" value="0" placeholder="排序 0/1/2">
-    <input type="text" name="publish_time" value="0" placeholder="发布时间 0/1/7/180">
-    <button type="submit">通用搜索</button>
-  </form>
-  <form hx-post="/actions/crawl/digg" hx-target="#crawl-result">
-    <input type="text" name="aweme_id" placeholder="作品 aweme_id">
-    <input type="text" name="digg_type" value="1" placeholder="1 点赞 / 0 取消">
-    <button type="submit">点赞作品</button>
-  </form>
-  <form hx-post="/actions/crawl/comment" hx-target="#crawl-result">
-    <input type="text" name="aweme_id" placeholder="作品 aweme_id">
-    <input type="text" name="content" placeholder="评论内容">
-    <input type="text" name="reply_id" placeholder="reply_id，可留空">
-    <button type="submit">发表评论</button>
-  </form>
-  <form hx-post="/actions/crawl/collect" hx-target="#crawl-result">
-    <input type="text" name="aweme_id" placeholder="作品 aweme_id">
-    <input type="text" name="action" value="1" placeholder="1 收藏 / 0 取消">
-    <button type="submit">收藏作品</button>
-  </form>
-  <form hx-post="/actions/crawl/works-export" hx-target="#crawl-result">
-    <textarea name="works_text" rows="4" placeholder="每行一个作品链接"></textarea>
-    <input type="text" name="save_choice" value="all" placeholder="all/media/excel">
-    <input type="text" name="excel_name" placeholder="excel 名称">
-    <button type="submit">批量导出作品链接列表</button>
-  </form>
-  <form hx-post="/actions/crawl/search-export" hx-target="#crawl-result">
-    <input type="text" name="query" placeholder="搜索关键词">
-    <input type="number" name="require_num" value="10" min="1">
-    <input type="text" name="save_choice" value="all" placeholder="all/media/excel">
-    <input type="text" name="sort_type" value="0" placeholder="排序 0/1/2">
-    <input type="text" name="publish_time" value="0" placeholder="发布时间 0/1/7/180">
-    <input type="text" name="excel_name" placeholder="excel 名称">
-    <button type="submit">搜索并后台导出</button>
-  </form>
-  <div id="crawl-result"></div>
+<section class="ops-shell ops-shell-funnel">
+  <section class="ops-hero">
+    <div class="ops-hero-copy">
+      <span class="ops-kicker">CRAWL OPERATIONS</span>
+      <h2>数据抓取</h2>
+      <p>这里保留通用抓取动作，适合查作品、查用户、搜关键词、做批量导出，以及直接调用点赞/评论/收藏动作。</p>
+    </div>
+    <div class="ops-stat-strip">
+      <article class="ops-stat-card">
+        <span>主要模式</span>
+        <strong>直连接口</strong>
+      </article>
+      <article class="ops-stat-card">
+        <span>导出入口</span>
+        <strong>2 类</strong>
+      </article>
+      <article class="ops-stat-card">
+        <span>互动动作</span>
+        <strong>3 项</strong>
+      </article>
+      <article class="ops-stat-card">
+        <span>适用场景</span>
+        <strong>调试/导出</strong>
+      </article>
+    </div>
+  </section>
+
+  <section class="ops-two-column">
+    <section class="ops-panel">
+      <div class="ops-panel-head">
+        <h3>查询与搜索</h3>
+        <span>单次查询优先</span>
+      </div>
+      <div class="ops-stack">
+        <div class="ops-form-card">
+          <h4>查询作品</h4>
+          <form hx-post="/actions/crawl/work" hx-target="#crawl-result">
+            <input type="text" name="work_url" placeholder="作品链接">
+            <button type="submit">查询作品</button>
+          </form>
+        </div>
+        <div class="ops-form-card">
+          <h4>查询用户信息</h4>
+          <form hx-post="/actions/crawl/user" hx-target="#crawl-result">
+            <input type="text" name="user_url" placeholder="用户主页链接">
+            <button type="submit">查询用户信息</button>
+          </form>
+        </div>
+        <div class="ops-form-card">
+          <h4>通用搜索</h4>
+          <form hx-post="/actions/crawl/search" hx-target="#crawl-result">
+            <input type="text" name="query" placeholder="搜索关键词">
+            <div class="ops-inline-fields-compact">
+              <input type="number" name="require_num" value="5" min="1" placeholder="数量">
+              <input type="text" name="sort_type" value="0" placeholder="排序 0/1/2">
+              <input type="text" name="publish_time" value="0" placeholder="发布时间 0/1/7/180">
+            </div>
+            <button type="submit">通用搜索</button>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <section class="ops-panel">
+      <div class="ops-panel-head">
+        <h3>互动与导出</h3>
+        <span>批量动作集中区</span>
+      </div>
+      <div class="ops-stack">
+        <div class="ops-form-card">
+          <h4>用户全部作品导出</h4>
+          <form hx-post="/actions/crawl/user-all" hx-target="#crawl-result">
+            <input type="text" name="user_url" placeholder="用户主页链接">
+            <input type="hidden" name="save_choice" value="all">
+            <button type="submit">后台导出用户全部作品</button>
+          </form>
+        </div>
+        <div class="ops-form-card">
+          <h4>作品互动动作</h4>
+          <div class="ops-form-split">
+            <form hx-post="/actions/crawl/digg" hx-target="#crawl-result">
+              <input type="text" name="aweme_id" placeholder="作品 aweme_id">
+              <input type="text" name="digg_type" value="1" placeholder="1 点赞 / 0 取消">
+              <button type="submit">点赞作品</button>
+            </form>
+            <form hx-post="/actions/crawl/collect" hx-target="#crawl-result">
+              <input type="text" name="aweme_id" placeholder="作品 aweme_id">
+              <input type="text" name="action" value="1" placeholder="1 收藏 / 0 取消">
+              <button type="submit">收藏作品</button>
+            </form>
+          </div>
+          <form hx-post="/actions/crawl/comment" hx-target="#crawl-result">
+            <input type="text" name="aweme_id" placeholder="作品 aweme_id">
+            <input type="text" name="content" placeholder="评论内容">
+            <input type="text" name="reply_id" placeholder="reply_id，可留空">
+            <button type="submit">发表评论</button>
+          </form>
+        </div>
+        <div class="ops-form-card">
+          <h4>批量导出</h4>
+          <form hx-post="/actions/crawl/works-export" hx-target="#crawl-result">
+            <textarea name="works_text" rows="4" placeholder="每行一个作品链接"></textarea>
+            <div class="ops-inline-fields">
+              <input type="text" name="save_choice" value="all" placeholder="all/media/excel">
+              <input type="text" name="excel_name" placeholder="excel 名称">
+            </div>
+            <button type="submit">批量导出作品链接列表</button>
+          </form>
+          <form hx-post="/actions/crawl/search-export" hx-target="#crawl-result">
+            <input type="text" name="query" placeholder="搜索关键词">
+            <div class="ops-inline-fields">
+              <input type="number" name="require_num" value="10" min="1" placeholder="数量">
+              <input type="text" name="save_choice" value="all" placeholder="all/media/excel">
+            </div>
+            <div class="ops-inline-fields">
+              <input type="text" name="sort_type" value="0" placeholder="排序 0/1/2">
+              <input type="text" name="publish_time" value="0" placeholder="发布时间 0/1/7/180">
+            </div>
+            <input type="text" name="excel_name" placeholder="excel 名称">
+            <button type="submit">搜索并后台导出</button>
+          </form>
+        </div>
+      </div>
+    </section>
+  </section>
+
+  <section class="ops-panel">
+    <div class="ops-panel-head">
+      <h3>抓取结果</h3>
+      <span>返回原始结构或任务响应</span>
+    </div>
+    <div id="crawl-result" class="ops-result-shell"></div>
+  </section>
 </section>
 {% endblock %}

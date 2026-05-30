@@ -8,9 +8,10 @@ from web.db import connect_db
 
 
 def test_core_pages_load(client):
-    for path in ["/", "/login", "/data-crawl", "/keyword-funnel", "/live-monitor", "/private-messages", "/tasks", "/settings"]:
+    for path in ["/", "/login", "/data-crawl", "/keyword-funnel", "/live-monitor", "/private-messages", "/tasks", "/settings", "/api-tools"]:
         response = client.get(path)
         assert response.status_code == 200
+        assert 'class="ops-shell' in response.text
     assert "DouYin_Spider Web UI" in client.get("/").text
     assert 'id="app-toast-stack"' in client.get("/").text
 

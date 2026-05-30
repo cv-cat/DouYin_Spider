@@ -1,14 +1,75 @@
 {% extends "base.html" %}
 {% block content %}
-<section class="panel">
-  <h2>设置</h2>
-  <form hx-post="/actions/settings" hx-target="#settings-result">
-    <input type="text" name="media_dir" value="{{ settings_data.get('media_dir', '') }}" placeholder="media_dir">
-    <input type="text" name="excel_dir" value="{{ settings_data.get('excel_dir', '') }}" placeholder="excel_dir">
-    <input type="number" name="port" value="{{ settings_data.get('port', 8000) }}">
-    <button type="submit">保存</button>
-  </form>
-  <p>端口修改需要重启服务生效。</p>
-  <div id="settings-result"></div>
+<section class="ops-shell ops-shell-dashboard">
+  <section class="ops-hero">
+    <div class="ops-hero-copy">
+      <span class="ops-kicker">LOCAL CONFIG</span>
+      <h2>设置</h2>
+      <p>这里只存本机运行目录和端口。改完端口要重启服务，媒体目录和 Excel 目录则会直接影响导出路径。</p>
+    </div>
+    <div class="ops-stat-strip">
+      <article class="ops-stat-card">
+        <span>当前端口</span>
+        <strong>{{ settings_data.get('port', 8000) }}</strong>
+      </article>
+      <article class="ops-stat-card">
+        <span>媒体目录</span>
+        <strong>已配置</strong>
+      </article>
+      <article class="ops-stat-card">
+        <span>Excel 目录</span>
+        <strong>已配置</strong>
+      </article>
+      <article class="ops-stat-card">
+        <span>重启要求</span>
+        <strong>端口变更</strong>
+      </article>
+    </div>
+  </section>
+
+  <section class="ops-two-column">
+    <section class="ops-panel">
+      <div class="ops-panel-head">
+        <h3>运行参数</h3>
+        <span>本机目录和端口</span>
+      </div>
+      <form hx-post="/actions/settings" hx-target="#settings-result">
+        <input type="text" name="media_dir" value="{{ settings_data.get('media_dir', '') }}" placeholder="media_dir">
+        <input type="text" name="excel_dir" value="{{ settings_data.get('excel_dir', '') }}" placeholder="excel_dir">
+        <input type="number" name="port" value="{{ settings_data.get('port', 8000) }}">
+        <button type="submit">保存</button>
+      </form>
+      <p class="ops-note">端口修改需要重启服务生效。</p>
+    </section>
+
+    <section class="ops-panel">
+      <div class="ops-panel-head">
+        <h3>当前值</h3>
+        <span>写入前先确认</span>
+      </div>
+      <div class="ops-kv-grid">
+        <article class="ops-kv-item">
+          <span>media_dir</span>
+          <code>{{ settings_data.get('media_dir', '') }}</code>
+        </article>
+        <article class="ops-kv-item">
+          <span>excel_dir</span>
+          <code>{{ settings_data.get('excel_dir', '') }}</code>
+        </article>
+        <article class="ops-kv-item">
+          <span>port</span>
+          <strong>{{ settings_data.get('port', 8000) }}</strong>
+        </article>
+      </div>
+    </section>
+  </section>
+
+  <section class="ops-panel">
+    <div class="ops-panel-head">
+      <h3>保存结果</h3>
+      <span>会直接显示在这里</span>
+    </div>
+    <div id="settings-result" class="ops-result-shell"></div>
+  </section>
 </section>
 {% endblock %}

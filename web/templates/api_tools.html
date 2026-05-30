@@ -1,65 +1,88 @@
 {% extends "base.html" %}
 {% block content %}
-<section class="panel">
-  <h2>接口工具</h2>
-  <p>这里集中暴露底层未放进常规页面的抓取类接口，返回原始结构，适合本机调试。</p>
-</section>
+<section class="ops-shell ops-shell-funnel">
+  <section class="ops-hero">
+    <div class="ops-hero-copy">
+      <span class="ops-kicker">RAW TOOLBOX</span>
+      <h2>接口工具</h2>
+      <p>这里集中暴露底层未放进常规页面的接口。适合本机调试、看原始结构、以及快速验证某个 API 能不能打通。</p>
+    </div>
+    <div class="ops-stat-strip">
+      <article class="ops-stat-card">
+        <span>Crawl 组数</span>
+        <strong>{{ crawl_tool_groups|length }}</strong>
+      </article>
+      <article class="ops-stat-card">
+        <span>Live 组数</span>
+        <strong>{{ live_tool_groups|length }}</strong>
+      </article>
+      <article class="ops-stat-card">
+        <span>输出风格</span>
+        <strong>原始返回</strong>
+      </article>
+      <article class="ops-stat-card">
+        <span>适合</span>
+        <strong>本机排查</strong>
+      </article>
+    </div>
+  </section>
 
-{% for group in crawl_tool_groups %}
-<section class="panel">
-  <h3>{{ group["title"] }}</h3>
-  {% for item in group["items"] %}
-  <details class="panel">
-    <summary>{{ item["label"] }}</summary>
-    <form hx-post="/actions/toolbox/crawl" hx-target="#toolbox-result">
-      <input type="hidden" name="operation" value="{{ item['operation'] }}">
-      {% for field in item["fields"] %}
-        {% if field.get("kind") == "textarea" %}
-      <textarea
-        name="{{ field['name'] }}"
-        rows="4"
-        placeholder="{{ field['placeholder'] }}"
-      >{{ field.get("value", "") }}</textarea>
-        {% else %}
-      <input
-        type="{{ field.get('type', 'text') }}"
-        name="{{ field['name'] }}"
-        placeholder="{{ field['placeholder'] }}"
-        value="{{ field.get('value', '') }}"
-      >
-        {% endif %}
+  {% for group in crawl_tool_groups %}
+  <section class="ops-panel ops-surface-table">
+    <div class="ops-panel-head">
+      <h3>{{ group["title"] }}</h3>
+      <span>{{ group["items"]|length }} 个操作</span>
+    </div>
+    <div class="ops-stack">
+      {% for item in group["items"] %}
+      <details>
+        <summary>{{ item["label"] }}</summary>
+        <form hx-post="/actions/toolbox/crawl" hx-target="#toolbox-result">
+          <input type="hidden" name="operation" value="{{ item['operation'] }}">
+          {% for field in item["fields"] %}
+            {% if field.get("kind") == "textarea" %}
+          <textarea name="{{ field['name'] }}" rows="4" placeholder="{{ field['placeholder'] }}">{{ field.get("value", "") }}</textarea>
+            {% else %}
+          <input type="{{ field.get('type', 'text') }}" name="{{ field['name'] }}" placeholder="{{ field['placeholder'] }}" value="{{ field.get('value', '') }}">
+            {% endif %}
+          {% endfor %}
+          <button type="submit">执行 {{ item["operation"] }}</button>
+        </form>
+      </details>
       {% endfor %}
-      <button type="submit">执行 {{ item["operation"] }}</button>
-    </form>
-  </details>
+    </div>
+  </section>
   {% endfor %}
-</section>
-{% endfor %}
 
-{% for group in live_tool_groups %}
-<section class="panel">
-  <h3>{{ group["title"] }}</h3>
-  {% for item in group["items"] %}
-  <details class="panel">
-    <summary>{{ item["label"] }}</summary>
-    <form hx-post="/actions/toolbox/live" hx-target="#toolbox-result">
-      <input type="hidden" name="operation" value="{{ item['operation'] }}">
-      {% for field in item["fields"] %}
-      <input
-        type="{{ field.get('type', 'text') }}"
-        name="{{ field['name'] }}"
-        placeholder="{{ field['placeholder'] }}"
-        value="{{ field.get('value', '') }}"
-      >
+  {% for group in live_tool_groups %}
+  <section class="ops-panel ops-surface-table">
+    <div class="ops-panel-head">
+      <h3>{{ group["title"] }}</h3>
+      <span>{{ group["items"]|length }} 个操作</span>
+    </div>
+    <div class="ops-stack">
+      {% for item in group["items"] %}
+      <details>
+        <summary>{{ item["label"] }}</summary>
+        <form hx-post="/actions/toolbox/live" hx-target="#toolbox-result">
+          <input type="hidden" name="operation" value="{{ item['operation'] }}">
+          {% for field in item["fields"] %}
+          <input type="{{ field.get('type', 'text') }}" name="{{ field['name'] }}" placeholder="{{ field['placeholder'] }}" value="{{ field.get('value', '') }}">
+          {% endfor %}
+          <button type="submit">执行 {{ item["operation"] }}</button>
+        </form>
+      </details>
       {% endfor %}
-      <button type="submit">执行 {{ item["operation"] }}</button>
-    </form>
-  </details>
+    </div>
+  </section>
   {% endfor %}
-</section>
-{% endfor %}
 
-<section class="panel">
-  <div id="toolbox-result"></div>
+  <section class="ops-panel">
+    <div class="ops-panel-head">
+      <h3>接口响应</h3>
+      <span>保留原始调试输出</span>
+    </div>
+    <div id="toolbox-result" class="ops-result-shell"></div>
+  </section>
 </section>
 {% endblock %}

@@ -1,30 +1,104 @@
 {% extends "base.html" %}
 {% block content %}
-<section class="panel">
-  <h2>私信中心</h2>
-  <form hx-post="/actions/im/start" hx-target="#im-result">
-    <button type="submit">启动实时接收</button>
-  </form>
-  <form hx-post="/actions/im/stop" hx-target="#im-result">
-    <button type="submit">停止实时接收</button>
-  </form>
-  <form hx-post="/actions/im/conversation/create" hx-target="#im-result">
-    <input type="text" name="to_user_id" placeholder="to_user_id">
-    <button type="submit">创建会话</button>
-  </form>
-  <form hx-post="/actions/im/conversation/detail" hx-target="#im-result">
-    <input type="text" name="to_user_id" placeholder="to_user_id">
-    <input type="text" name="conversation_short_id" placeholder="conversation_short_id">
-    <button type="submit">查询会话详情</button>
-  </form>
-  <form hx-post="/actions/im/send" hx-target="#im-result">
-    <input type="text" name="conversation_id" placeholder="conversation_id">
-    <input type="text" name="conversation_short_id" placeholder="conversation_short_id">
-    <input type="text" name="ticket" placeholder="ticket">
-    <input type="text" name="content" placeholder="消息内容">
-    <button type="submit">发送私信</button>
-  </form>
-  <div id="im-result"></div>
-  {% include "components/event_feed.html" %}
+<section class="ops-shell ops-shell-dashboard">
+  <section class="ops-hero">
+    <div class="ops-hero-copy">
+      <span class="ops-kicker">IM CONTROL</span>
+      <h2>私信中心</h2>
+      <p>这里负责启动收消息、创建会话、查详情和发送私信。适合手工触达或调试批量触达前的底层链路。</p>
+    </div>
+    <div class="ops-stat-strip">
+      <article class="ops-stat-card">
+        <span>实时接收</span>
+        <strong>可启停</strong>
+      </article>
+      <article class="ops-stat-card">
+        <span>动作数</span>
+        <strong>5</strong>
+      </article>
+      <article class="ops-stat-card">
+        <span>目标字段</span>
+        <strong>conversation_id</strong>
+      </article>
+      <article class="ops-stat-card">
+        <span>适合</span>
+        <strong>人工触达</strong>
+      </article>
+    </div>
+  </section>
+
+  <section class="ops-two-column">
+    <section class="ops-panel">
+      <div class="ops-panel-head">
+        <h3>接收控制</h3>
+        <span>先连上，再看实时流</span>
+      </div>
+      <div class="ops-form-split">
+        <div class="ops-form-card">
+          <h4>启动接收</h4>
+          <form hx-post="/actions/im/start" hx-target="#im-result">
+            <button type="submit">启动实时接收</button>
+          </form>
+        </div>
+        <div class="ops-form-card">
+          <h4>停止接收</h4>
+          <form hx-post="/actions/im/stop" hx-target="#im-result">
+            <button type="submit">停止实时接收</button>
+          </form>
+        </div>
+      </div>
+
+      <div class="ops-form-card">
+        <h4>创建会话</h4>
+        <form hx-post="/actions/im/conversation/create" hx-target="#im-result">
+          <input type="text" name="to_user_id" placeholder="to_user_id">
+          <button type="submit">创建会话</button>
+        </form>
+      </div>
+    </section>
+
+    <section class="ops-panel">
+      <div class="ops-panel-head">
+        <h3>会话查询与发送</h3>
+        <span>发消息前先查清会话参数</span>
+      </div>
+      <div class="ops-stack">
+        <div class="ops-form-card">
+          <h4>查询会话详情</h4>
+          <form hx-post="/actions/im/conversation/detail" hx-target="#im-result">
+            <input type="text" name="to_user_id" placeholder="to_user_id">
+            <input type="text" name="conversation_short_id" placeholder="conversation_short_id">
+            <button type="submit">查询会话详情</button>
+          </form>
+        </div>
+        <div class="ops-form-card">
+          <h4>发送私信</h4>
+          <form hx-post="/actions/im/send" hx-target="#im-result">
+            <input type="text" name="conversation_id" placeholder="conversation_id">
+            <input type="text" name="conversation_short_id" placeholder="conversation_short_id">
+            <input type="text" name="ticket" placeholder="ticket">
+            <input type="text" name="content" placeholder="消息内容">
+            <button type="submit">发送私信</button>
+          </form>
+        </div>
+      </div>
+    </section>
+  </section>
+
+  <section class="ops-panel">
+    <div class="ops-panel-head">
+      <h3>执行结果</h3>
+      <span>异常和返回值都直接显示</span>
+    </div>
+    <div id="im-result" class="ops-result-shell"></div>
+  </section>
+
+  <section class="ops-panel">
+    <div class="ops-panel-head">
+      <h3>私信事件流</h3>
+      <span>新消息、回执、异常都会显示</span>
+    </div>
+    {% include "components/event_feed.html" %}
+  </section>
 </section>
 {% endblock %}

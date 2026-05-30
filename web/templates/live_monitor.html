@@ -1,30 +1,102 @@
 {% extends "base.html" %}
 {% block content %}
-<section class="panel">
-  <h2>直播监听</h2>
-  <form hx-post="/actions/live/lookup" hx-target="#live-result">
-    <input type="text" name="live_id" placeholder="直播间 short id">
-    <button type="submit">查询房间信息</button>
-  </form>
-  <form hx-post="/actions/live/start" hx-target="#live-result">
-    <input type="text" name="live_id" placeholder="直播间 short id">
-    <button type="submit">启动监听</button>
-  </form>
-  <form hx-post="/actions/live/stop" hx-target="#live-result">
-    <input type="text" name="live_id" placeholder="直播间 short id">
-    <button type="submit">停止监听</button>
-  </form>
-  <form hx-post="/actions/live/send-message" hx-target="#live-result">
-    <input type="text" name="room_id" placeholder="room_id">
-    <input type="text" name="content" placeholder="弹幕内容">
-    <button type="submit">发送弹幕</button>
-  </form>
-  <form hx-post="/actions/live/like" hx-target="#live-result">
-    <input type="text" name="room_id" placeholder="room_id">
-    <input type="text" name="count" value="1">
-    <button type="submit">点赞直播间</button>
-  </form>
-  <div id="live-result"></div>
-  {% include "components/event_feed.html" %}
+<section class="ops-shell ops-shell-dashboard">
+  <section class="ops-hero">
+    <div class="ops-hero-copy">
+      <span class="ops-kicker">LIVE WATCH</span>
+      <h2>直播监听</h2>
+      <p>先查房间，再决定启动监听、停监听、发弹幕还是点赞。实时推送会直接落到下面事件流里。</p>
+    </div>
+    <div class="ops-stat-strip">
+      <article class="ops-stat-card">
+        <span>核心入口</span>
+        <strong>room_id / live_id</strong>
+      </article>
+      <article class="ops-stat-card">
+        <span>动作数</span>
+        <strong>5</strong>
+      </article>
+      <article class="ops-stat-card">
+        <span>反馈方式</span>
+        <strong>SSE</strong>
+      </article>
+      <article class="ops-stat-card">
+        <span>适合</span>
+        <strong>实时排查</strong>
+      </article>
+    </div>
+  </section>
+
+  <section class="ops-two-column">
+    <section class="ops-panel">
+      <div class="ops-panel-head">
+        <h3>房间控制</h3>
+        <span>先查，再启停</span>
+      </div>
+      <div class="ops-stack">
+        <div class="ops-form-card">
+          <h4>查询房间信息</h4>
+          <form hx-post="/actions/live/lookup" hx-target="#live-result">
+            <input type="text" name="live_id" placeholder="直播间 short id">
+            <button type="submit">查询房间信息</button>
+          </form>
+        </div>
+        <div class="ops-form-card">
+          <h4>监听控制</h4>
+          <div class="ops-form-split">
+            <form hx-post="/actions/live/start" hx-target="#live-result">
+              <input type="text" name="live_id" placeholder="直播间 short id">
+              <button type="submit">启动监听</button>
+            </form>
+            <form hx-post="/actions/live/stop" hx-target="#live-result">
+              <input type="text" name="live_id" placeholder="直播间 short id">
+              <button type="submit">停止监听</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="ops-panel">
+      <div class="ops-panel-head">
+        <h3>互动动作</h3>
+        <span>调试直播发言和点赞</span>
+      </div>
+      <div class="ops-stack">
+        <div class="ops-form-card">
+          <h4>发送弹幕</h4>
+          <form hx-post="/actions/live/send-message" hx-target="#live-result">
+            <input type="text" name="room_id" placeholder="room_id">
+            <input type="text" name="content" placeholder="弹幕内容">
+            <button type="submit">发送弹幕</button>
+          </form>
+        </div>
+        <div class="ops-form-card">
+          <h4>点赞直播间</h4>
+          <form hx-post="/actions/live/like" hx-target="#live-result">
+            <input type="text" name="room_id" placeholder="room_id">
+            <input type="text" name="count" value="1" placeholder="点赞次数">
+            <button type="submit">点赞直播间</button>
+          </form>
+        </div>
+      </div>
+    </section>
+  </section>
+
+  <section class="ops-panel">
+    <div class="ops-panel-head">
+      <h3>接口响应</h3>
+      <span>实时显示执行结果</span>
+    </div>
+    <div id="live-result" class="ops-result-shell"></div>
+  </section>
+
+  <section class="ops-panel">
+    <div class="ops-panel-head">
+      <h3>事件流</h3>
+      <span>弹幕、礼物、点赞推送</span>
+    </div>
+    {% include "components/event_feed.html" %}
+  </section>
 </section>
 {% endblock %}

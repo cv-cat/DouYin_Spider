@@ -1,13 +1,82 @@
 {% extends "base.html" %}
 {% block content %}
-<section class="panel">
-  <h2>概览</h2>
-  <p>本机地址固定为 {{ host }}:{{ port }}。</p>
-  <ul>
-    <li>登录状态: {{ auth_status }}</li>
-    <li>活跃直播监听: {{ live_count }}</li>
-    <li>活跃私信接收: {{ im_count }}</li>
-    <li>失败任务数: {{ failed_count }}</li>
-  </ul>
+<section class="ops-shell ops-shell-dashboard">
+  <section class="ops-hero">
+    <div class="ops-hero-copy">
+      <span class="ops-kicker">SYSTEM OVERVIEW</span>
+      <h2>总控台</h2>
+      <p>先确认登录态、监听器和失败任务，再决定今天是继续获客、排查风控还是补采集链路。</p>
+    </div>
+    <div class="ops-stat-strip">
+      <article class="ops-stat-card">
+        <span>登录状态</span>
+        <strong>{{ auth_status }}</strong>
+      </article>
+      <article class="ops-stat-card">
+        <span>失败任务</span>
+        <strong>{{ failed_count }}</strong>
+      </article>
+      <article class="ops-stat-card">
+        <span>直播监听</span>
+        <strong>{{ live_count }}</strong>
+      </article>
+      <article class="ops-stat-card">
+        <span>私信接收</span>
+        <strong>{{ im_count }}</strong>
+      </article>
+    </div>
+  </section>
+
+  <section class="ops-panel">
+    <div class="ops-panel-head">
+      <h3>运行态快照</h3>
+      <span>{{ host }}:{{ port }}</span>
+    </div>
+    <div class="ops-mini-grid">
+      <article class="ops-mini-card">
+        <span>本机地址</span>
+        <strong>{{ host }}:{{ port }}</strong>
+      </article>
+      <article class="ops-mini-card">
+        <span>登录是否可用</span>
+        <strong>{{ "是" if auth_status != "missing" else "否" }}</strong>
+      </article>
+      <article class="ops-mini-card">
+        <span>监听总数</span>
+        <strong>{{ live_count + im_count }}</strong>
+      </article>
+      <article class="ops-mini-card">
+        <span>故障压力</span>
+        <strong>{{ "高" if failed_count else "低" }}</strong>
+      </article>
+    </div>
+  </section>
+
+  <section class="ops-two-column">
+    <section class="ops-panel">
+      <div class="ops-panel-head">
+        <h3>建议起手</h3>
+        <span>按当前状态继续</span>
+      </div>
+      <ul class="ops-info-list">
+        <li>如果 `登录状态` 不是 `ok`，先去登录中心补 cookie 或走网页登录。</li>
+        <li>如果 `失败任务数` 不为 0，先去任务与日志定位错误，再继续大批量采集。</li>
+        <li>要找新客户，优先进入 `关键词截流` 或 `线索池`。</li>
+        <li>要排查实时链路，分别去 `直播监听` 和 `私信中心`。</li>
+      </ul>
+    </section>
+    <section class="ops-panel">
+      <div class="ops-panel-head">
+        <h3>快捷入口</h3>
+        <span>直接跳关键页</span>
+      </div>
+      <div class="ops-action-grid">
+        <a class="lead-action lead-action-primary" href="/login">先补登录态</a>
+        <a class="lead-action" href="/keyword-funnel">去跑关键词截流</a>
+        <a class="lead-action" href="/lead-pool">查看线索池</a>
+        <a class="lead-action" href="/tasks">检查任务日志</a>
+      </div>
+    </section>
+  </section>
 </section>
 {% endblock %}
