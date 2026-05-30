@@ -1,0 +1,135 @@
+#!/bin/sh
+
+set -eu
+
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+REPO_ROOT=$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd)
+RUNTIME_DIR="$REPO_ROOT/datas/runtime"
+PID_FILE="$RUNTIME_DIR/web-ui.pid"
+LOG_FILE="$RUNTIME_DIR/web-ui.log"
+HOST="${WEB_UI_HOST:-127.0.0.1}"
+PORT="${WEB_UI_PORT:-8000}"
+
+mkdir -p "$RUNTIME_DIR"
+
+resolve_python() {
+  if [ -n "${WEB_UI_PYTHON:-}" ] && [ -x "${WEB_UI_PYTHON}" ]; then
+    printf '%s\n' "${WEB_UI_PYTHON}"
+    return 0
+  fi
+  if [ -n "${VIRTUAL_ENV:-}" ] && [ -x "${VIRTUAL_ENV}/bin/python" ]; then
+    printf '%s\n' "${VIRTUAL_ENV}/bin/python"
+    return 0
+  fi
+  if [ -x "$REPO_ROOT/.venv/bin/python" ]; then
+    printf '%s\n' "$REPO_ROOT/.venv/bin/python"
+    return 0
+  fi
+  if command -v python3 >/dev/null 2>&1; then
+    command -v python3
+    return 0
+  fi
+  if command -v python >/dev/null 2>&1; then
+    command -v python
+    return 0
+  fi
+  printf '%s\n' "python-not-found"
+  return 1
+}
+
+is_running() {
+  if [ ! -f "$PID_FILE" ]; then
+    return 1
+  fi
+  PID=$(cat "$PID_FILE" 2>/dev/null || true)
+  if [ -z "$PID" ]; then
+    return 1
+  fi
+  kill -0 "$PID" >/dev/null 2>&1
+}
+
+start() {
+  if is_running; then
+    PID=$(cat "$PID_FILE")
+    printf 'web ui already running: pid=%s host=%s port=%s\n' "$PID" "$HOST" "$PORT"
+    return 0
+  fi
+
+  PYTHON_BIN=$(resolve_python)
+  if [ ! -x "$PYTHON_BIN" ]; then
+    printf 'python runtime not found. Set WEB_UI_PYTHON or activate a virtualenv first.\n' >&2
+    return 1
+  fi
+
+  (
+    cd "$REPO_ROOT"
+    nohup "$PYTHON_BIN" -m uvicorn web.app:create_app --factory --host "$HOST" --port "$PORT" >>"$LOG_FILE" 2>&1 &
+    echo $! >"$PID_FILE"
+  )
+
+  sleep 1
+  if is_running; then
+    PID=$(cat "$PID_FILE")
+    printf 'web ui started: pid=%s url=http://%s:%s\n' "$PID" "$HOST" "$PORT"
+    return 0
+  fi
+
+  rm -f "$PID_FILE"
+  printf 'web ui failed to start. See log: %s\n' "$LOG_FILE" >&2
+  return 1
+}
+
+stop() {
+  if ! is_running; then
+    rm -f "$PID_FILE"
+    printf 'web ui is not running\n'
+    return 0
+  fi
+
+  PID=$(cat "$PID_FILE")
+  kill "$PID" >/dev/null 2>&1 || true
+  sleep 1
+  if kill -0 "$PID" >/dev/null 2>&1; then
+    kill -9 "$PID" >/dev/null 2>&1 || true
+  fi
+  rm -f "$PID_FILE"
+  printf 'web ui stopped: pid=%s\n' "$PID"
+}
+
+status() {
+  if is_running; then
+    PID=$(cat "$PID_FILE")
+    printf 'web ui running: pid=%s url=http://%s:%s\n' "$PID" "$HOST" "$PORT"
+    return 0
+  fi
+  rm -f "$PID_FILE"
+  printf 'web ui stopped\n'
+}
+
+logs() {
+  touch "$LOG_FILE"
+  tail -n 80 "$LOG_FILE"
+}
+
+case "${1:-start}" in
+  start)
+    start
+    ;;
+  stop)
+    stop
+    ;;
+  restart)
+    stop
+    start
+    ;;
+  status)
+    status
+    ;;
+  logs)
+    logs
+    ;;
+  *)
+    printf 'usage: %s [start|stop|restart|status|logs]\n' "$0" >&2
+    exit 1
+    ;;
+esac

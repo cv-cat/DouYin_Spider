@@ -116,6 +116,16 @@ uvicorn web.app:create_app --factory --host 127.0.0.1 --port 8000
 - 页面会直接展示原始异常和 traceback，仅适用于本机调试
 - 没有有效 cookie 时，页面链路可验证，业务结果不可验证
 
+也可以直接用仓库内置后台脚本：
+
+```bash
+source .venv/bin/activate
+./scripts/web-ui start
+./scripts/web-ui status
+./scripts/web-ui logs
+./scripts/web-ui stop
+```
+
 ### 🗝️注意事项
 - `main.py` 是爬虫入口，可根据需求自行修改调用
 - `dy_apis/douyin_api.py` 包含全部 API 接口封装，含直播间点赞、发消息、私信收发等
@@ -180,4 +190,3 @@ ps: 请加群14、15，人满或者过期 issue | wx 提醒
 ![group14](https://github.com/user-attachments/assets/736fa3a2-1e7d-4681-af5e-c15dbefde1cd)
 
 ![group15](https://github.com/user-attachments/assets/dbc24f80-4307-46d7-ae83-98d694a306b6)
-
