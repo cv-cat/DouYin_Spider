@@ -146,7 +146,17 @@ class KeywordFunnelService:
             rows = conn.execute("select * from keyword_runs order by created_at desc").fetchall()
         return [self._decorate_run(dict(row)) for row in rows]
 
-    def list_leads(self, run_id="", grade="", source_type="", review_status="", message_status=""):
+    def list_leads(
+        self,
+        run_id="",
+        grade="",
+        source_type="",
+        review_status="",
+        message_status="",
+        created_from="",
+        created_to="",
+        intent_query="",
+    ):
         query = "select * from keyword_leads"
         clauses = []
         params = []
@@ -165,12 +175,123 @@ class KeywordFunnelService:
         if message_status:
             clauses.append("message_status = ?")
             params.append(message_status)
+        normalized_from = self._normalize_created_bound(created_from, upper=False)
+        if normalized_from:
+            clauses.append("created_at >= ?")
+            params.append(normalized_from)
+        normalized_to = self._normalize_created_bound(created_to, upper=True)
+        if normalized_to:
+            clauses.append("created_at <= ?")
+            params.append(normalized_to)
+        if intent_query:
+            clauses.append(
+                "("
+                "lower(comment_text) like ? or "
+                "lower(matched_signals) like ? or "
+                "lower(score_reasons) like ?"
+                ")"
+            )
+            like_value = f"%{str(intent_query).strip().lower()}%"
+            params.extend([like_value, like_value, like_value])
         if clauses:
             query += " where " + " and ".join(clauses)
         query += " order by id desc"
         with connect_db(self.db_path) as conn:
             rows = conn.execute(query, tuple(params)).fetchall()
         return [self._decorate_lead(dict(row)) for row in rows]
+
+    def send_lead_message(self, lead_id, content, template_key="", mode="manual"):
+        with connect_db(self.db_path) as conn:
+            row = conn.execute("select * from keyword_leads where id = ?", (int(lead_id),)).fetchone()
+        if not row:
+            raise RuntimeError("Lead not found")
+        lead = dict(row)
+        if lead.get("message_status") == "blocked" or lead.get("contact_status") == "do_not_contact":
+            raise RuntimeError("Lead is blocked for outreach")
+
+        note = content
+        status = "sent"
+        try:
+            conversation = self.im_service.create_conversation(lead["user_id"])
+            self.im_service.send_message(
+                conversation["conversation_id"],
+                conversation["conversation_short_id"],
+                conversation["ticket"],
+                content,
+            )
+            self._mark_lead_sent(lead["id"])
+        except Exception as exc:
+            status = "failed"
+            note = f"{type(exc).__name__}: {exc}"
+            self._mark_lead_failed(lead["id"], note)
+            self._record_outreach_event(lead["id"], mode, template_key, status, note)
+            raise
+
+        self._record_outreach_event(lead["id"], mode, template_key, status, note)
+        return {"lead_id": lead["id"], "nickname": lead["nickname"], "status": status}
+
+    def rescore_existing_leads(self):
+        with connect_db(self.db_path) as conn:
+            rows = conn.execute("select * from keyword_leads order by id asc").fetchall()
+            run_ids = set()
+            for row in rows:
+                lead = dict(row)
+                raw_payload = self._safe_load_json(lead.get("raw_payload"))
+                scoring_state = self._score_lead_state(
+                    lead.get("keyword"),
+                    lead.get("source_type"),
+                    self._extract_source_content(lead.get("source_type"), lead.get("comment_text"), raw_payload),
+                    lead.get("comment_text"),
+                    lead.get("nickname"),
+                    lead.get("signature"),
+                )
+                review_status = scoring_state["review_status"]
+                contact_status = lead.get("contact_status") or "not_contacted"
+                message_status = lead.get("message_status") or "pending"
+                if review_status == "blocked":
+                    if contact_status != "contacted":
+                        contact_status = "do_not_contact"
+                    if message_status not in {"sent", "failed"}:
+                        message_status = "blocked"
+                else:
+                    if contact_status == "do_not_contact":
+                        contact_status = "not_contacted"
+                    if message_status not in {"sent", "failed"}:
+                        message_status = "pending"
+                conn.execute(
+                    "update keyword_leads set score = ?, grade = ?, score_reasons = ?, matched_signals = ?, "
+                    "review_status = ?, contact_status = ?, risk_flags = ?, message_status = ? where id = ?",
+                    (
+                        scoring_state["score"],
+                        scoring_state["grade"],
+                        scoring_state["score_reasons"],
+                        scoring_state["matched_signals"],
+                        review_status,
+                        contact_status,
+                        scoring_state["risk_flags"],
+                        message_status,
+                        lead["id"],
+                    ),
+                )
+                run_ids.add(str(lead.get("run_id") or ""))
+            now = self._now()
+            for run_id in filter(None, run_ids):
+                counts = conn.execute(
+                    "select count(*) as lead_count, "
+                    "sum(case when grade in ('S', 'A') then 1 else 0 end) as high_intent_count "
+                    "from keyword_leads where run_id = ?",
+                    (run_id,),
+                ).fetchone()
+                conn.execute(
+                    "update keyword_runs set lead_count = ?, high_intent_count = ?, updated_at = ? where run_id = ?",
+                    (
+                        int(counts["lead_count"] or 0),
+                        int(counts["high_intent_count"] or 0),
+                        now,
+                        run_id,
+                    ),
+                )
+            conn.commit()
 
     def _decorate_lead(self, lead):
         sec_uid = str(lead.get("sec_uid") or "").strip()
@@ -203,7 +324,10 @@ class KeywordFunnelService:
             "paid": "已成交",
         }.get(str(lead.get("conversion_status") or ""), str(lead.get("conversion_status") or "-"))
         lead["matched_signal_list"] = self._parse_json_list(lead.get("matched_signals"))
+        lead["score_reason_list"] = self._parse_json_list(lead.get("score_reasons"))
         lead["risk_flag_list"] = self._parse_json_list(lead.get("risk_flags"))
+        lead["profile_metrics"] = self._extract_profile_metrics(lead)
+        lead["comment_created_at_label"] = self._extract_comment_created_at_label(lead)
         return lead
 
     def _parse_json_list(self, raw_value):
@@ -218,6 +342,33 @@ class KeywordFunnelService:
         if not isinstance(payload, list):
             return [str(raw_value)]
         return [str(item) for item in payload if str(item).strip()]
+
+    def _extract_comment_created_at_label(self, lead):
+        if str(lead.get("source_type") or "") != "comment":
+            return ""
+        raw_payload = str(lead.get("raw_payload") or "").strip()
+        if not raw_payload:
+            return ""
+        try:
+            payload = json.loads(raw_payload)
+        except Exception:
+            return ""
+        create_time = payload.get("create_time")
+        if not create_time:
+            return ""
+        try:
+            timestamp = int(create_time)
+        except (TypeError, ValueError):
+            return ""
+        return datetime.fromtimestamp(timestamp, UTC).astimezone().strftime("%Y-%m-%d %H:%M")
+
+    def _normalize_created_bound(self, value, upper=False):
+        text = str(value or "").strip()
+        if not text:
+            return ""
+        if len(text) == 10 and text.count("-") == 2:
+            return f"{text}T23:59:59.999999+00:00" if upper else f"{text}T00:00:00+00:00"
+        return text
 
     def _collect_leads(self, run_id, keyword, require_num, include_comments, comment_limit):
         items = self.crawl_service.search_general(keyword, str(require_num), "0", "0")
@@ -424,6 +575,40 @@ class KeywordFunnelService:
         avatar_thumb = profile.get("avatar_thumb") or {}
         avatar_list = avatar_thumb.get("url_list") or []
         comment_text = str(raw_payload.get("text") or "") if isinstance(raw_payload, dict) and source_type == "comment" else ""
+        scoring_state = self._score_lead_state(
+            keyword,
+            source_type,
+            content,
+            comment_text,
+            nickname,
+            str(profile.get("signature") or ""),
+        )
+        return {
+            "keyword": keyword,
+            "source_type": source_type,
+            "source_aweme_id": source_aweme_id or "",
+            "source_url": source_url or "",
+            "user_id": user_id,
+            "sec_uid": str(profile.get("sec_uid") or ""),
+            "nickname": nickname,
+            "signature": str(profile.get("signature") or ""),
+            "avatar_url": avatar_list[0] if avatar_list else "",
+            "comment_text": comment_text,
+            "score": scoring_state["score"],
+            "grade": scoring_state["grade"],
+            "score_reasons": scoring_state["score_reasons"],
+            "matched_signals": scoring_state["matched_signals"],
+            "review_status": scoring_state["review_status"],
+            "contact_status": scoring_state["contact_status"],
+            "conversion_status": "new",
+            "risk_flags": scoring_state["risk_flags"],
+            "profile_json": "{}",
+            "raw_payload": json.dumps(raw_payload, ensure_ascii=False),
+            "dedupe_key": user_id,
+            "message_status": scoring_state["message_status"],
+        }
+
+    def _score_lead_state(self, keyword, source_type, content, comment_text, nickname, signature):
         scoring = self.scoring_service.score_lead(
             {
                 "source_type": source_type,
@@ -431,10 +616,9 @@ class KeywordFunnelService:
                 "content": content,
                 "comment_text": comment_text,
                 "nickname": nickname,
-                "signature": str(profile.get("signature") or ""),
+                "signature": signature,
             }
         )
-        risk_flags = scoring["risk_flags"]
         if scoring["excluded"]:
             review_status = "blocked"
             contact_status = "do_not_contact"
@@ -448,27 +632,13 @@ class KeywordFunnelService:
             contact_status = "not_contacted"
             message_status = "pending"
         return {
-            "keyword": keyword,
-            "source_type": source_type,
-            "source_aweme_id": source_aweme_id or "",
-            "source_url": source_url or "",
-            "user_id": user_id,
-            "sec_uid": str(profile.get("sec_uid") or ""),
-            "nickname": nickname,
-            "signature": str(profile.get("signature") or ""),
-            "avatar_url": avatar_list[0] if avatar_list else "",
-            "comment_text": comment_text,
             "score": scoring["total_score"],
             "grade": scoring["grade"],
             "score_reasons": json.dumps(scoring["reasons"], ensure_ascii=False),
             "matched_signals": json.dumps(scoring["matched_terms"], ensure_ascii=False),
+            "risk_flags": json.dumps(scoring["risk_flags"], ensure_ascii=False),
             "review_status": review_status,
             "contact_status": contact_status,
-            "conversion_status": "new",
-            "risk_flags": json.dumps(risk_flags, ensure_ascii=False),
-            "profile_json": "{}",
-            "raw_payload": json.dumps(raw_payload, ensure_ascii=False),
-            "dedupe_key": user_id,
             "message_status": message_status,
         }
 
@@ -550,6 +720,14 @@ class KeywordFunnelService:
             )
             conn.commit()
 
+    def _record_outreach_event(self, lead_id, mode, template_key, status, note):
+        with connect_db(self.db_path) as conn:
+            conn.execute(
+                "insert into outreach_events(lead_id, mode, template_key, status, note, created_at) values(?, ?, ?, ?, ?, ?)",
+                (lead_id, mode, template_key, status, note, self._now()),
+            )
+            conn.commit()
+
     def _fetch_comments(self, work_url, comment_limit):
         limit_value = int(comment_limit or 0)
         if limit_value <= 0:
@@ -575,6 +753,42 @@ class KeywordFunnelService:
         if not aweme_id:
             return ""
         return f"https://www.douyin.com/video/{aweme_id}"
+
+    def _extract_source_content(self, source_type, comment_text, raw_payload):
+        if source_type == "comment":
+            return str(comment_text or "")
+        if isinstance(raw_payload, dict):
+            aweme = raw_payload.get("aweme_info") or raw_payload
+            return str(aweme.get("desc") or "")
+        return ""
+
+    def _extract_profile_metrics(self, lead):
+        payload = self._safe_load_json(lead.get("profile_json"))
+        user = payload.get("user") or payload
+        metric_map = [
+            ("关注", user.get("following_count")),
+            ("粉丝", user.get("follower_count")),
+            ("作品", user.get("aweme_count")),
+            ("获赞", user.get("total_favorited")),
+        ]
+        metrics = []
+        for label, value in metric_map:
+            if value in (None, "", "null"):
+                continue
+            metrics.append({"label": label, "value": str(value)})
+        return metrics
+
+    def _safe_load_json(self, raw_value):
+        if isinstance(raw_value, dict):
+            return raw_value
+        text = str(raw_value or "").strip()
+        if not text:
+            return {}
+        try:
+            payload = json.loads(text)
+        except Exception:
+            return {}
+        return payload if isinstance(payload, dict) else {}
 
     def _now(self):
         return datetime.now(UTC).isoformat()

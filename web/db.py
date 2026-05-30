@@ -23,6 +23,7 @@ DEFAULT_ACQUISITION_RULES = (
     ("default_precision_mode", "precision"),
     ("default_risk_mode", "safe"),
     ("default_outreach_mode", "manual"),
+    ("default_outreach_template_key", "first_touch_intro"),
     ("high_intent_score_threshold", "80"),
 )
 

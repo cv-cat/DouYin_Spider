@@ -1,7 +1,7 @@
 class LeadScoringService:
     DEFAULT_SOURCE_WEIGHTS = {
         "comment": 30,
-        "search": 20,
+        "search": 10,
         "live": 10,
     }
 
@@ -92,12 +92,14 @@ class LeadScoringService:
         payload.update(overrides)
 
         source_type = str(payload.get("source_type") or "").strip().lower()
-        haystack = self._build_haystack(payload)
+        text_haystack = self._build_haystack(payload, ("content", "comment_text", "notes"))
+        profile_haystack = self._build_haystack(payload, ("nickname", "signature"))
+        review_haystack = " ".join(part for part in (text_haystack, profile_haystack) if part)
         reasons = []
         matched_terms = []
         risk_flags = []
 
-        excluded_labels, excluded_terms, excluded_flags = self._match_exclusions(haystack)
+        excluded_labels, excluded_terms, excluded_flags = self._match_exclusions(review_haystack)
         if excluded_labels:
             reasons.extend(f"excluded:{label}" for label in excluded_labels)
             matched_terms.extend(excluded_terms)
@@ -110,7 +112,7 @@ class LeadScoringService:
 
         best_intent = None
         for rule in self.intent_rules:
-            rule_terms = self._find_terms(haystack, rule["terms"])
+            rule_terms = self._find_terms(text_haystack, rule["terms"])
             if not rule_terms:
                 continue
             rule_score = min(len(rule_terms) * int(rule["weight"]), int(rule["cap"]))
@@ -126,20 +128,20 @@ class LeadScoringService:
             reasons.append(f"intent:{best_intent['label']}")
             matched_terms.extend(best_intent["terms"])
 
-        context_terms = self._find_terms(haystack, self.context_rule["terms"])
+        context_terms = self._find_terms(text_haystack, self.context_rule["terms"])
         if context_terms:
             score += int(self.context_rule["bonus"])
             reasons.append(f"context:{self.context_rule['label']}")
             matched_terms.extend(context_terms)
 
-        payment_terms = self._find_terms(haystack, self.payment_rule["terms"])
+        payment_terms = self._find_terms(text_haystack, self.payment_rule["terms"])
         if payment_terms:
             score += min(len(payment_terms) * int(self.payment_rule["weight"]), int(self.payment_rule["cap"]))
             reasons.append(f"support:{self.payment_rule['label']}")
             matched_terms.extend(payment_terms)
 
         for rule in self.negative_rules:
-            rule_terms = self._find_terms(haystack, rule["terms"])
+            rule_terms = self._find_terms(review_haystack, rule["terms"])
             if not rule_terms:
                 continue
             score -= int(rule["penalty"])
@@ -163,15 +165,8 @@ class LeadScoringService:
             flags.append(rule["flag"])
         return labels, terms, flags
 
-    def _build_haystack(self, payload):
-        parts = [
-            payload.get("keyword"),
-            payload.get("content"),
-            payload.get("comment_text"),
-            payload.get("nickname"),
-            payload.get("signature"),
-            payload.get("notes"),
-        ]
+    def _build_haystack(self, payload, fields):
+        parts = [payload.get(field) for field in fields]
         normalized = [str(part).strip().lower() for part in parts if str(part or "").strip()]
         return " ".join(normalized)
 

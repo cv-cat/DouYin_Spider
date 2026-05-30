@@ -202,23 +202,19 @@ def test_collect_task_persists_unique_author_and_comment_leads(tmp_path):
     assert queued["task_id"] == "task-1"
     assert run_row["keyword"] == "装机"
     assert run_row["status"] == "success"
-    assert run_row["lead_count"] == 2
+    assert run_row["lead_count"] == 1
     assert run_row["processed_count"] == 2
     assert run_row["total_count"] == 2
-    assert run_row["high_intent_count"] == 2
-    assert [row["user_id"] for row in lead_rows] == ["1001", "1002"]
-    assert [row["source_type"] for row in lead_rows] == ["search", "comment"]
-    assert [row["grade"] for row in lead_rows] == ["A", "S"]
-    assert [row["message_status"] for row in lead_rows] == ["pending", "pending"]
-    assert [row["score"] for row in lead_rows] == [70, 90]
-    assert "找队友" in lead_rows[0]["matched_signals"]
-    assert lead_rows[1]["risk_flags"] == "[]"
-    assert lead_rows[0]["comment_text"] == ""
-    assert lead_rows[1]["comment_text"] == "三角洲求带，今晚想上分"
-    assert '"following_count": 11' in lead_rows[0]["profile_json"]
-    assert '"following_count": 22' in lead_rows[1]["profile_json"]
+    assert run_row["high_intent_count"] == 1
+    assert [row["user_id"] for row in lead_rows] == ["1002"]
+    assert [row["source_type"] for row in lead_rows] == ["comment"]
+    assert [row["grade"] for row in lead_rows] == ["S"]
+    assert [row["message_status"] for row in lead_rows] == ["pending"]
+    assert [row["score"] for row in lead_rows] == [90]
+    assert lead_rows[0]["risk_flags"] == "[]"
+    assert lead_rows[0]["comment_text"] == "三角洲求带，今晚想上分"
+    assert '"following_count": 22' in lead_rows[0]["profile_json"]
     assert crawl_service.lookup_calls == [
-        "https://www.douyin.com/user/sec-1001",
         "https://www.douyin.com/user/sec-1002",
     ]
 
@@ -250,9 +246,9 @@ def test_collect_task_wide_mode_keeps_low_intent_leads(tmp_path):
         ).fetchall()
 
     assert run_row["lead_count"] == 2
-    assert run_row["high_intent_count"] == 1
+    assert run_row["high_intent_count"] == 0
     assert [dict(row) for row in lead_rows] == [
-        {"user_id": "1001", "grade": "A"},
+        {"user_id": "1001", "grade": "B"},
         {"user_id": "1003", "grade": "C"},
     ]
 
@@ -279,7 +275,7 @@ def test_collect_task_stops_comment_pagination_at_limit(tmp_path):
             (queued["run_id"],),
         ).fetchone()
 
-    assert run_row["lead_count"] == 2
+    assert run_row["lead_count"] == 1
     assert crawl_service.comment_calls == [
         ("https://www.douyin.com/video/aweme-1", "0"),
         ("https://www.douyin.com/video/aweme-2", "0"),
@@ -307,8 +303,8 @@ def test_collect_task_skips_comment_ssl_error_and_keeps_run_success(tmp_path):
         ).fetchall()
 
     assert run_row["status"] == "success"
-    assert run_row["lead_count"] == 1
-    assert [row["user_id"] for row in lead_rows] == ["1001"]
+    assert run_row["lead_count"] == 0
+    assert [row["user_id"] for row in lead_rows] == []
     assert "评论抓取失败" in run_row["summary"]
 
 
@@ -321,7 +317,13 @@ def test_bulk_message_task_sends_pending_leads_for_run(tmp_path):
         crawl_service,
         im_service,
     )
-    queued = service.queue_collect("装机", require_num="5", include_comments=False, comment_limit="0")
+    queued = service.queue_collect(
+        "装机",
+        require_num="5",
+        include_comments=False,
+        comment_limit="0",
+        precision_mode="wide",
+    )
 
     result = service.queue_bulk_message(queued["run_id"], "你好，我这边有方案", limit="1")
 
@@ -334,7 +336,7 @@ def test_bulk_message_task_sends_pending_leads_for_run(tmp_path):
     assert result["task_id"] == "task-2"
     assert im_service.created == ["1001"]
     assert im_service.sent == [("conv-1001", "short-1001", "ticket-1001", "你好，我这边有方案")]
-    assert [row["message_status"] for row in lead_rows] == ["sent"]
+    assert [row["message_status"] for row in lead_rows] == ["sent", "pending"]
     assert all(row["message_error"] == "" for row in lead_rows)
 
 
@@ -562,6 +564,51 @@ def test_keyword_run_table_surfaces_verification_required_message(tmp_path):
     assert "请先在浏览器完成验证后重试" in response.text
 
 
+def test_lead_pool_send_default_action_uses_current_default_template(tmp_path):
+    from web.app import create_app
+
+    app = create_app({"DB_PATH": str(tmp_path / "web-ui.sqlite3")})
+
+    class DummyKeywordFunnelService:
+        def __init__(self):
+            self.called = None
+
+        def send_lead_message(self, lead_id, content, template_key="", mode="manual"):
+            self.called = {
+                "lead_id": lead_id,
+                "content": content,
+                "template_key": template_key,
+                "mode": mode,
+            }
+            return {"lead_id": lead_id, "nickname": "评论用户", "status": "sent"}
+
+    class DummyOutreachService:
+        def get_default_template(self):
+            return {
+                "template_key": "first_touch_intro",
+                "title": "高意向首触达",
+                "body": "你好，看到你在关注三角洲上分/组队，这边可以先了解下你的需求。",
+            }
+
+    dummy_keyword_service = DummyKeywordFunnelService()
+    app.state.keyword_funnel_service = dummy_keyword_service
+    app.state.outreach_service = DummyOutreachService()
+    client = TestClient(app)
+
+    response = client.post("/actions/lead-pool/send-default", data={"lead_id": "9"})
+
+    assert response.status_code == 200
+    assert response.headers["HX-Trigger"] == "lead-pool-refresh"
+    assert "评论用户" in response.text
+    assert "高意向首触达" in response.text
+    assert dummy_keyword_service.called == {
+        "lead_id": "9",
+        "content": "你好，看到你在关注三角洲上分/组队，这边可以先了解下你的需求。",
+        "template_key": "first_touch_intro",
+        "mode": "default_template",
+    }
+
+
 def test_keyword_run_table_surfaces_missing_requirements_and_next_steps(tmp_path):
     from web.app import create_app
 
@@ -659,5 +706,5 @@ def test_collect_persists_found_author_before_comment_failure(tmp_path):
         ).fetchall()
 
     assert run_row["status"] == "failed"
-    assert run_row["lead_count"] == 1
-    assert [dict(row) for row in lead_rows] == [{"nickname": "Alice", "source_type": "search"}]
+    assert run_row["lead_count"] == 0
+    assert [dict(row) for row in lead_rows] == []

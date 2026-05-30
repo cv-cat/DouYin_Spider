@@ -101,7 +101,7 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   const inspectActionMessages = (root) => {
-    root.querySelectorAll(".keyword-result-message").forEach((node, index) => {
+    root.querySelectorAll(".keyword-result-message, .app-result-message").forEach((node, index) => {
       const text = node.textContent?.trim();
       if (text) {
         showToast(text, "info", `action:${index}:${text}`);
@@ -110,6 +110,35 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   const taskFeed = document.querySelector("[data-task-feed]");
+  const serializeLeadPoolFilters = () => {
+    const form = document.querySelector("#lead-pool-filter-form");
+    const params = new URLSearchParams();
+    if (!form) {
+      return params;
+    }
+    const formData = new FormData(form);
+    for (const [key, value] of formData.entries()) {
+      const text = String(value || "").trim();
+      if (text) {
+        params.set(key, text);
+      }
+    }
+    return params;
+  };
+
+  const refreshLeadPoolContent = () => {
+    const content = document.querySelector("#lead-pool-content");
+    if (!content) {
+      return;
+    }
+    const params = serializeLeadPoolFilters();
+    params.set("partial", "content");
+    htmx.ajax("GET", `/lead-pool?${params.toString()}`, {
+      target: "#lead-pool-content",
+      swap: "innerHTML",
+    });
+  };
+
   const taskSource = new EventSource("/streams/tasks");
   taskSource.onmessage = (event) => {
     try {
@@ -161,9 +190,10 @@ document.addEventListener("DOMContentLoaded", () => {
     if (target.matches("[data-task-feed]")) {
       inspectTaskRows(target);
     }
-    if (target.id === "keyword-funnel-result") {
+    if (target.id === "keyword-funnel-result" || target.id === "lead-pool-result") {
       inspectActionMessages(target);
     }
+    inspectActionMessages(target);
   });
 
   const keywordRunFeed = document.querySelector("#keyword-run-feed");
@@ -177,6 +207,12 @@ document.addEventListener("DOMContentLoaded", () => {
   if (keywordResult) {
     inspectActionMessages(keywordResult);
   }
+  const leadPoolResult = document.querySelector("#lead-pool-result");
+  if (leadPoolResult) {
+    inspectActionMessages(leadPoolResult);
+  }
+
+  document.body.addEventListener("lead-pool-refresh", refreshLeadPoolContent);
 
   document.body.addEventListener("click", (event) => {
     const trigger = event.target.closest("[data-keyword-chip]");

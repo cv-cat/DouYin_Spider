@@ -1,0 +1,107 @@
+{% set stats = namespace(priority=0, pending=0, touched=0) %}
+{% for lead in leads %}
+  {% if lead.grade in ["S", "A"] %}
+    {% set stats.priority = stats.priority + 1 %}
+  {% endif %}
+  {% if lead.message_status == "pending" %}
+    {% set stats.pending = stats.pending + 1 %}
+  {% endif %}
+  {% if lead.message_status == "sent" or lead.conversion_status != "new" %}
+    {% set stats.touched = stats.touched + 1 %}
+  {% endif %}
+{% endfor %}
+
+<section class="ops-hero">
+  <div class="ops-hero-copy">
+    <span class="ops-kicker">Lead Command</span>
+    <h2>线索作战台</h2>
+    <p>先筛，再看，再发。当前卡片会直接显示主页、来源作品、评论时间、判定原因和默认私信入口，减少来回跳页。</p>
+  </div>
+  <div class="ops-stat-strip">
+    <article class="ops-stat-card">
+      <span>当前筛选线索</span>
+      <strong>{{ leads|length }}</strong>
+    </article>
+    <article class="ops-stat-card">
+      <span>S / A 高意向</span>
+      <strong>{{ stats.priority }}</strong>
+    </article>
+    <article class="ops-stat-card">
+      <span>待触达</span>
+      <strong>{{ stats.pending }}</strong>
+    </article>
+    <article class="ops-stat-card">
+      <span>已推进</span>
+      <strong>{{ stats.touched }}</strong>
+    </article>
+  </div>
+</section>
+
+<section class="ops-panel">
+  <form
+    id="lead-pool-filter-form"
+    class="ops-filter-grid"
+    hx-get="/lead-pool?partial=content"
+    hx-target="#lead-pool-content"
+    hx-swap="innerHTML"
+  >
+    <label>
+      <span>等级</span>
+      <select name="grade">
+        <option value="">全部等级</option>
+        {% for grade in ["S", "A", "B", "C"] %}
+        <option value="{{ grade }}" {% if filters.grade == grade %}selected{% endif %}>{{ grade }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>
+      <span>来源</span>
+      <select name="source_type">
+        <option value="">全部来源</option>
+        {% for source in ["comment", "search", "live"] %}
+        <option value="{{ source }}" {% if filters.source_type == source %}selected{% endif %}>{{ source }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>
+      <span>审核状态</span>
+      <select name="review_status">
+        <option value="">全部审核状态</option>
+        {% for status in ["priority", "new", "blocked"] %}
+        <option value="{{ status }}" {% if filters.review_status == status %}selected{% endif %}>{{ status }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>
+      <span>消息状态</span>
+      <select name="message_status">
+        <option value="">全部消息状态</option>
+        {% for status in ["pending", "sent", "failed", "blocked"] %}
+        <option value="{{ status }}" {% if filters.message_status == status %}selected{% endif %}>{{ status }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>
+      <span>开始日期</span>
+      <input type="date" name="created_from" value="{{ filters.created_from }}">
+    </label>
+    <label>
+      <span>结束日期</span>
+      <input type="date" name="created_to" value="{{ filters.created_to }}">
+    </label>
+    <label class="ops-filter-span-2">
+      <span>意向内容过滤</span>
+      <input type="text" name="intent_query" value="{{ filters.intent_query }}" placeholder="如：上分 / 求带 / 陪玩 / 固定车队">
+    </label>
+    <div class="ops-filter-actions ops-filter-actions-tight">
+      <button type="submit">刷新线索池</button>
+      {% if default_template %}
+      <p class="ops-note">默认模板：{{ default_template.title }}</p>
+      {% endif %}
+    </div>
+  </form>
+</section>
+
+<div id="lead-pool-table">
+  {% include "components/lead_pool_table.html" %}
+</div>

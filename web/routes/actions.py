@@ -236,6 +236,27 @@ def keyword_funnel_message(
     )
 
 
+@router.post("/lead-pool/send-default", response_class=HTMLResponse)
+def lead_pool_send_default_message(request: Request, lead_id: str = Form(...)):
+    template = request.app.state.outreach_service.get_default_template()
+    if not template:
+        return HTMLResponse("未配置默认私信模板，请先到触达中心或规则中心设置。", status_code=400)
+    try:
+        payload = request.app.state.keyword_funnel_service.send_lead_message(
+            lead_id,
+            template["body"],
+            template_key=template["template_key"],
+            mode="default_template",
+        )
+    except Exception as exc:
+        return HTMLResponse(f"发送默认私信失败：{type(exc).__name__}: {exc}", status_code=400)
+    response = HTMLResponse(
+        f'<div class="app-result-message">已向 {payload["nickname"]} 发送默认私信《{template["title"]}》</div>'
+    )
+    response.headers["HX-Trigger"] = "lead-pool-refresh"
+    return response
+
+
 @router.post("/live/lookup", response_class=HTMLResponse)
 def lookup_live_room(request: Request, live_id: str = Form(...)):
     payload = request.app.state.live_service.lookup_room(live_id)

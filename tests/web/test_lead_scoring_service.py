@@ -19,7 +19,7 @@ def test_comment_with_strong_intent_scores_s_grade():
     assert result["risk_flags"] == []
 
 
-def test_search_source_and_mid_intent_land_in_a_grade():
+def test_search_source_and_mid_intent_lands_in_b_grade():
     service = LeadScoringService()
 
     result = service.score_lead(
@@ -29,8 +29,8 @@ def test_search_source_and_mid_intent_land_in_a_grade():
         }
     )
 
-    assert result["total_score"] == 70
-    assert result["grade"] == "A"
+    assert result["total_score"] == 60
+    assert result["grade"] == "B"
     assert "source:search" in result["reasons"]
     assert "intent:medium" in result["reasons"]
 
@@ -83,3 +83,20 @@ def test_exclusion_terms_force_c_grade_and_block_flag():
     assert "excluded:agency" in result["reasons"]
     assert "excluded:competitor" in result["reasons"]
     assert result["risk_flags"] == ["excluded", "agency", "competitor"]
+
+
+def test_keyword_terms_do_not_inflate_weak_comment_to_high_intent():
+    service = LeadScoringService()
+
+    result = service.score_lead(
+        {
+            "source_type": "comment",
+            "keyword": "三角洲求陪玩",
+            "comment_text": "哈哈哈，也给我来两个",
+        }
+    )
+
+    assert result["total_score"] == 30
+    assert result["grade"] == "C"
+    assert result["reasons"] == ["source:comment"]
+    assert result["matched_terms"] == []

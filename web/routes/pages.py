@@ -113,23 +113,39 @@ def acquisition_dashboard_page(request: Request):
 
 @router.get("/lead-pool", response_class=HTMLResponse)
 def lead_pool_page(request: Request):
+    partial = request.query_params.get("partial")
     filters = {
         "grade": request.query_params.get("grade", ""),
         "source_type": request.query_params.get("source_type", ""),
         "review_status": request.query_params.get("review_status", ""),
         "message_status": request.query_params.get("message_status", ""),
+        "created_from": request.query_params.get("created_from", ""),
+        "created_to": request.query_params.get("created_to", ""),
+        "intent_query": request.query_params.get("intent_query", ""),
     }
     leads = request.app.state.keyword_funnel_service.list_leads(**filters)
-    if request.query_params.get("partial") == "table":
+    default_template = request.app.state.outreach_service.get_default_template()
+    if partial == "table":
         return request.app.state.templates.TemplateResponse(
             request=request,
             name="components/lead_pool_table.html",
-            context={"leads": leads},
+            context={"leads": leads, "default_template": default_template},
+        )
+    if partial == "content":
+        return request.app.state.templates.TemplateResponse(
+            request=request,
+            name="components/lead_pool_content.html",
+            context={"leads": leads, "filters": filters, "default_template": default_template},
         )
     return request.app.state.templates.TemplateResponse(
         request=request,
         name="lead_pool.html",
-        context={"title": "线索池", "leads": leads, "filters": filters},
+        context={
+            "title": "线索池",
+            "leads": leads,
+            "filters": filters,
+            "default_template": default_template,
+        },
     )
 
 

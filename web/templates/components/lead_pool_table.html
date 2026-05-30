@@ -24,6 +24,7 @@
             </div>
           </div>
         </div>
+
         <div class="lead-card-actions">
           {% if lead.profile_url %}
           <a class="lead-action lead-action-primary" href="{{ lead.profile_url }}" target="_blank" rel="noopener noreferrer">用户主页</a>
@@ -31,7 +32,21 @@
           {% if lead.source_url %}
           <a class="lead-action" href="{{ lead.source_url }}" target="_blank" rel="noopener noreferrer">来源作品</a>
           {% endif %}
-          <a class="lead-action lead-action-ghost" href="/private-messages">私信触达</a>
+          {% if default_template %}
+          <form
+            class="lead-inline-action"
+            hx-post="/actions/lead-pool/send-default"
+            hx-target="#lead-pool-result"
+            hx-swap="innerHTML"
+          >
+            <input type="hidden" name="lead_id" value="{{ lead.id }}">
+            <button type="submit" class="lead-action lead-action-send">
+              {% if lead.message_status == "sent" %}再次发送默认私信{% else %}发送默认私信{% endif %}
+            </button>
+          </form>
+          {% else %}
+          <button type="button" class="lead-action lead-action-disabled" disabled>未配置默认模板</button>
+          {% endif %}
         </div>
       </header>
 
@@ -39,7 +54,22 @@
         <section class="lead-panel">
           <p class="lead-panel-label">用户画像</p>
           <p class="lead-signature">{{ lead.signature or "暂无个性签名，可先打开主页判断活跃度。" }}</p>
-          <div class="lead-meta-grid">
+          <div class="lead-metric-row">
+            {% if lead.profile_metrics %}
+              {% for metric in lead.profile_metrics %}
+              <span class="lead-mini-metric">
+                <strong>{{ metric.value }}</strong>
+                <small>{{ metric.label }}</small>
+              </span>
+              {% endfor %}
+            {% else %}
+              <span class="lead-mini-metric lead-mini-metric-muted">
+                <strong>-</strong>
+                <small>暂无画像统计</small>
+              </span>
+            {% endif %}
+          </div>
+          <div class="lead-meta-grid lead-meta-grid-compact">
             <div>
               <span class="lead-meta-label">主页链接</span>
               {% if lead.profile_url %}
@@ -53,6 +83,10 @@
               <code>{{ lead.source_aweme_id or "-" }}</code>
             </div>
             <div>
+              <span class="lead-meta-label">评论时间</span>
+              <span>{{ lead.comment_created_at_label or "-" }}</span>
+            </div>
+            <div>
               <span class="lead-meta-label">触达状态</span>
               <span>{{ lead.message_status_label }}</span>
             </div>
@@ -60,11 +94,15 @@
               <span class="lead-meta-label">转化状态</span>
               <span>{{ lead.conversion_status_label }}</span>
             </div>
+            <div>
+              <span class="lead-meta-label">默认模板</span>
+              <span>{{ default_template.title if default_template else "-" }}</span>
+            </div>
           </div>
         </section>
 
         <section class="lead-panel">
-          <p class="lead-panel-label">意图内容</p>
+          <p class="lead-panel-label">意向内容</p>
           <blockquote class="lead-quote">
             {{ lead.comment_text or "暂无评论内容，这条线索主要来自搜索作者画像。" }}
           </blockquote>
@@ -77,6 +115,18 @@
                 {% endfor %}
               {% else %}
                 <span class="lead-tag lead-tag-muted">暂无强命中词</span>
+              {% endif %}
+            </div>
+          </div>
+          <div class="lead-tag-section">
+            <span class="lead-meta-label">判定原因</span>
+            <div class="lead-tag-row">
+              {% if lead.score_reason_list %}
+                {% for reason in lead.score_reason_list %}
+                <span class="lead-tag lead-tag-reason">{{ reason }}</span>
+                {% endfor %}
+              {% else %}
+                <span class="lead-tag lead-tag-muted">暂无判定原因</span>
               {% endif %}
             </div>
           </div>
@@ -99,6 +149,7 @@
         <span class="lead-footer-item">来源：{{ lead.source_label }}</span>
         <span class="lead-footer-item">审核：{{ lead.review_status_label }}</span>
         <span class="lead-footer-item">联系：{{ lead.contact_status_label }}</span>
+        <a class="lead-footer-link" href="/private-messages">转到私信中心</a>
       </footer>
     </article>
     {% endfor %}
