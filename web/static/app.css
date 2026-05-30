@@ -64,7 +64,7 @@ main {
 
 .shell-layout {
   display: grid;
-  grid-template-columns: 288px minmax(0, 1fr);
+  grid-template-columns: 248px minmax(0, 1fr);
   min-height: 100vh;
 }
 
@@ -77,9 +77,9 @@ main {
   top: 0;
   align-self: start;
   display: grid;
-  gap: 20px;
+  gap: 16px;
   min-height: 100vh;
-  padding: 20px 16px;
+  padding: 16px 12px;
   background:
     linear-gradient(180deg, rgba(4, 11, 19, 0.98), rgba(6, 16, 29, 0.92)),
     radial-gradient(circle at top left, rgba(14, 165, 233, 0.18), transparent 38%);
@@ -92,8 +92,8 @@ main {
   grid-template-columns: auto 1fr;
   gap: 14px;
   align-items: center;
-  padding: 16px;
-  border-radius: 24px;
+  padding: 14px;
+  border-radius: 20px;
   background:
     linear-gradient(135deg, rgba(5, 17, 31, 0.95), rgba(9, 24, 41, 0.92)),
     radial-gradient(circle at top left, rgba(14, 165, 233, 0.24), transparent 34%);
@@ -105,9 +105,9 @@ main {
 .shell-brand-mark {
   display: grid;
   place-items: center;
-  width: 52px;
-  height: 52px;
-  border-radius: 18px;
+  width: 46px;
+  height: 46px;
+  border-radius: 16px;
   background: linear-gradient(135deg, #0ea5e9, #22c55e);
   color: #041019;
   font-size: 1.15rem;
@@ -118,14 +118,43 @@ main {
 
 .shell-brand-copy h1 {
   margin: 0;
-  font-size: clamp(1.8rem, 3vw, 2.4rem);
-  line-height: 0.95;
+  font-size: clamp(1.45rem, 2.6vw, 2rem);
+  line-height: 0.98;
 }
 
 .shell-brand-copy p {
-  margin: 8px 0 0;
+  margin: 6px 0 0;
   color: rgba(125, 211, 252, 0.76);
-  font-size: 0.92rem;
+  font-size: 0.84rem;
+  line-height: 1.5;
+}
+
+.shell-sidebar-summary {
+  display: grid;
+  gap: 6px;
+  padding: 14px;
+  border-radius: 18px;
+  background: rgba(5, 14, 24, 0.72);
+  border: 1px solid rgba(56, 189, 248, 0.08);
+}
+
+.shell-sidebar-summary span {
+  color: rgba(125, 211, 252, 0.68);
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.shell-sidebar-summary strong {
+  font-size: 1rem;
+  color: #f4fbff;
+}
+
+.shell-sidebar-summary p {
+  margin: 0;
+  color: rgba(199, 234, 255, 0.72);
+  font-size: 0.82rem;
+  line-height: 1.45;
 }
 
 .shell-sidebar-nav {
@@ -136,8 +165,8 @@ main {
 .shell-nav-group {
   display: grid;
   gap: 8px;
-  padding: 14px;
-  border-radius: 22px;
+  padding: 12px;
+  border-radius: 18px;
   background: rgba(6, 15, 26, 0.68);
   border: 1px solid rgba(56, 189, 248, 0.08);
 }
@@ -153,9 +182,9 @@ main {
 .shell-sidebar-nav a {
   display: flex;
   align-items: center;
-  min-height: 44px;
-  padding: 10px 14px;
-  border-radius: 16px;
+  min-height: 40px;
+  padding: 9px 12px;
+  border-radius: 14px;
   text-decoration: none;
   color: #c7eaff;
   background: rgba(12, 26, 43, 0.52);
@@ -298,9 +327,9 @@ code {
   --ops-muted: #7dd3fc;
   --ops-shadow: 0 24px 80px rgba(3, 7, 18, 0.42);
   position: relative;
-  margin: 24px;
-  padding: 28px;
-  border-radius: 28px;
+  margin: 16px 16px 0 0;
+  padding: 20px;
+  border-radius: 24px;
   overflow: hidden;
   background:
     radial-gradient(circle at top left, rgba(56, 189, 248, 0.18), transparent 34%),
@@ -341,13 +370,13 @@ code {
 .ops-hero {
   display: grid;
   grid-template-columns: minmax(0, 1.3fr) minmax(320px, 0.9fr);
-  gap: 18px;
-  margin-bottom: 24px;
+  gap: 14px;
+  margin-bottom: 18px;
 }
 
 .ops-hero-copy {
-  padding: 24px;
-  border-radius: 24px;
+  padding: 18px;
+  border-radius: 18px;
   background: linear-gradient(150deg, rgba(10, 24, 39, 0.84), rgba(10, 24, 39, 0.52));
   border: 1px solid var(--ops-border);
   backdrop-filter: blur(10px);
@@ -367,8 +396,8 @@ code {
 }
 
 .ops-hero h2 {
-  margin: 18px 0 10px;
-  font-size: clamp(2rem, 4vw, 3rem);
+  margin: 12px 0 8px;
+  font-size: clamp(1.6rem, 3vw, 2.2rem);
   line-height: 1;
   font-family: "Avenir Next", "PingFang SC", "Helvetica Neue", sans-serif;
 }
@@ -376,8 +405,9 @@ code {
 .ops-hero p {
   max-width: 60ch;
   color: rgba(215, 240, 255, 0.78);
-  line-height: 1.65;
+  line-height: 1.55;
   margin: 0;
+  font-size: 0.92rem;
 }
 
 .ops-stat-strip {
@@ -387,8 +417,8 @@ code {
 }
 
 .ops-stat-card {
-  padding: 18px 20px;
-  border-radius: 22px;
+  padding: 14px 16px;
+  border-radius: 18px;
   background: linear-gradient(160deg, rgba(7, 19, 31, 0.95), rgba(8, 26, 44, 0.72));
   border: 1px solid rgba(56, 189, 248, 0.16);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
@@ -402,15 +432,15 @@ code {
 
 .ops-stat-card strong {
   display: block;
-  margin-top: 8px;
-  font-size: clamp(1.6rem, 3vw, 2.4rem);
+  margin-top: 6px;
+  font-size: clamp(1.35rem, 2.6vw, 2rem);
   line-height: 1;
 }
 
 .ops-panel {
-  margin-top: 18px;
-  padding: 22px;
-  border-radius: 24px;
+  margin-top: 14px;
+  padding: 18px;
+  border-radius: 20px;
   background: linear-gradient(160deg, rgba(8, 18, 31, 0.92), rgba(8, 23, 38, 0.75));
   border: 1px solid rgba(56, 189, 248, 0.14);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
@@ -421,7 +451,7 @@ code {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
 
 .ops-panel-head h3 {
@@ -446,7 +476,7 @@ code {
 }
 
 .ops-filter-grid {
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   align-items: end;
 }
 
@@ -720,14 +750,14 @@ code {
 
 .lead-card-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(460px, 1fr));
   gap: 16px;
 }
 
 .lead-card {
   position: relative;
   overflow: hidden;
-  padding: 18px;
+  padding: 16px;
   border-radius: 24px;
   background:
     radial-gradient(circle at top right, rgba(34, 197, 94, 0.08), transparent 24%),
@@ -764,16 +794,14 @@ code {
 }
 
 .lead-card-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 14px;
+  display: block;
 }
 
 .lead-card-identity {
   display: flex;
   gap: 12px;
   min-width: 0;
+  align-items: flex-start;
 }
 
 .lead-avatar {
@@ -831,6 +859,8 @@ code {
 .lead-card-copy h3 {
   margin: 8px 0 4px;
   font-size: 1.12rem;
+  line-height: 1.28;
+  word-break: break-word;
 }
 
 .lead-subline {
@@ -841,18 +871,23 @@ code {
   font-size: 0.9rem;
 }
 
+.lead-card-toolbar {
+  margin-top: 12px;
+}
+
 .lead-card-actions {
-  display: grid;
+  display: flex;
+  flex-wrap: wrap;
   gap: 8px;
-  min-width: 178px;
 }
 
 .lead-action,
 .lead-inline-action button {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   justify-content: center;
-  width: 100%;
+  width: auto;
+  min-width: 120px;
   min-height: 38px;
   padding: 8px 12px;
   border-radius: 999px;
@@ -865,6 +900,7 @@ code {
 
 .lead-inline-action {
   margin: 0;
+  flex: 1 1 160px;
 }
 
 .lead-action-primary {
@@ -961,6 +997,40 @@ code {
 
 .lead-meta-grid-compact {
   grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.lead-pool-toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(360px, 0.95fr);
+  gap: 14px;
+  align-items: stretch;
+  margin-bottom: 16px;
+}
+
+.lead-pool-toolbar-copy {
+  padding: 18px;
+  border-radius: 18px;
+  background: linear-gradient(150deg, rgba(10, 24, 39, 0.84), rgba(10, 24, 39, 0.52));
+  border: 1px solid rgba(56, 189, 248, 0.14);
+}
+
+.lead-pool-toolbar-copy h2 {
+  margin: 12px 0 8px;
+  font-size: 1.9rem;
+}
+
+.lead-pool-toolbar-copy p {
+  margin: 0;
+  color: rgba(215, 240, 255, 0.76);
+  line-height: 1.5;
+}
+
+.lead-pool-toolbar-stats {
+  align-self: stretch;
+}
+
+.lead-pool-filter-panel {
+  margin-top: 0;
 }
 
 .lead-quote {
@@ -1065,7 +1135,8 @@ code {
   .ops-form-split,
   .ops-action-grid,
   .ops-mini-grid,
-  .lead-card-body {
+  .lead-card-body,
+  .lead-pool-toolbar {
     grid-template-columns: 1fr;
   }
 
@@ -1073,12 +1144,8 @@ code {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .lead-card-actions {
-    min-width: 0;
-  }
-
-  .lead-card-header {
-    flex-direction: column;
+  .lead-card-grid {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -1090,6 +1157,10 @@ code {
 
   main {
     padding: 8px 8px 24px;
+  }
+
+  .shell-sidebar {
+    padding: 12px;
   }
 
   .ops-filter-grid,
@@ -1109,5 +1180,11 @@ code {
 
   .ops-filter-span-2 {
     grid-column: span 1;
+  }
+
+  .lead-action,
+  .lead-inline-action button {
+    width: 100%;
+    min-width: 0;
   }
 }

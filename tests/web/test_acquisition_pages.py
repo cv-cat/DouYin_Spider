@@ -247,3 +247,53 @@ def test_lead_pool_renders_comment_time_and_default_send_action(tmp_path):
     assert 'hx-post="/actions/lead-pool/send-default"' in response.text
     assert 'name="created_from"' in response.text
     assert 'name="intent_query"' in response.text
+
+
+def test_lead_pool_uses_simplified_workspace_layout(tmp_path):
+    app = create_app({"DB_PATH": str(tmp_path / "web-ui.sqlite3")})
+    with connect_db(tmp_path / "web-ui.sqlite3") as conn:
+        conn.execute(
+            "insert into keyword_leads("
+            "run_id, keyword, source_type, source_aweme_id, source_url, user_id, sec_uid, nickname, signature, avatar_url, "
+            "comment_text, score, grade, score_reasons, matched_signals, review_status, contact_status, conversion_status, risk_flags, "
+            "profile_json, raw_payload, dedupe_key, message_status, message_error, created_at, messaged_at"
+            ") values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (
+                "run-3",
+                "三角洲求陪玩",
+                "comment",
+                "aweme-3",
+                "https://www.douyin.com/video/aweme-3",
+                "user-3",
+                "sec-3",
+                "测试线索",
+                "",
+                "",
+                "求带",
+                90,
+                "S",
+                '["source:comment","intent:strong"]',
+                '["求带"]',
+                "priority",
+                "not_contacted",
+                "new",
+                "[]",
+                "{}",
+                '{"text":"求带","create_time":1717166400}',
+                "user-3",
+                "pending",
+                "",
+                "2026-05-30T10:00:00+00:00",
+                None,
+            ),
+        )
+        conn.commit()
+    client = TestClient(app)
+
+    response = client.get("/lead-pool")
+
+    assert response.status_code == 200
+    assert 'class="shell-sidebar-summary"' in response.text
+    assert 'class="lead-pool-toolbar"' in response.text
+    assert 'class="lead-card-toolbar"' in response.text
+    assert "lead-card-stats" in response.text

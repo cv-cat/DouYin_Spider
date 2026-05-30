@@ -24,7 +24,9 @@
             </div>
           </div>
         </div>
+      </header>
 
+      <div class="lead-card-toolbar">
         <div class="lead-card-actions">
           {% if lead.profile_url %}
           <a class="lead-action lead-action-primary" href="{{ lead.profile_url }}" target="_blank" rel="noopener noreferrer">用户主页</a>
@@ -48,13 +50,13 @@
           <button type="button" class="lead-action lead-action-disabled" disabled>未配置默认模板</button>
           {% endif %}
         </div>
-      </header>
+      </div>
 
       <div class="lead-card-body">
         <section class="lead-panel">
           <p class="lead-panel-label">用户画像</p>
           <p class="lead-signature">{{ lead.signature or "暂无个性签名，可先打开主页判断活跃度。" }}</p>
-          <div class="lead-metric-row">
+          <div class="lead-metric-row lead-card-stats">
             {% if lead.profile_metrics %}
               {% for metric in lead.profile_metrics %}
               <span class="lead-mini-metric">

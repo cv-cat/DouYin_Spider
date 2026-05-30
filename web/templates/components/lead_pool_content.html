@@ -11,13 +11,13 @@
   {% endif %}
 {% endfor %}
 
-<section class="ops-hero">
-  <div class="ops-hero-copy">
+<section class="lead-pool-toolbar">
+  <div class="lead-pool-toolbar-copy">
     <span class="ops-kicker">Lead Command</span>
-    <h2>线索作战台</h2>
-    <p>先筛，再看，再发。当前卡片会直接显示主页、来源作品、评论时间、判定原因和默认私信入口，减少来回跳页。</p>
+    <h2>线索池</h2>
+    <p>先筛，再看，再发。这里只保留判断线索质量和快速触达真正需要的内容。</p>
   </div>
-  <div class="ops-stat-strip">
+  <div class="ops-stat-strip lead-pool-toolbar-stats">
     <article class="ops-stat-card">
       <span>当前筛选线索</span>
       <strong>{{ leads|length }}</strong>
@@ -30,14 +30,14 @@
       <span>待触达</span>
       <strong>{{ stats.pending }}</strong>
     </article>
-    <article class="ops-stat-card">
-      <span>已推进</span>
-      <strong>{{ stats.touched }}</strong>
-    </article>
+      <article class="ops-stat-card">
+        <span>已推进</span>
+        <strong>{{ stats.touched }}</strong>
+      </article>
   </div>
 </section>
 
-<section class="ops-panel">
+<section class="ops-panel lead-pool-filter-panel">
   <form
     id="lead-pool-filter-form"
     class="ops-filter-grid"
