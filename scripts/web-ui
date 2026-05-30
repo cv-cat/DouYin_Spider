@@ -25,6 +25,22 @@ resolve_python() {
     printf '%s\n' "$REPO_ROOT/.venv/bin/python"
     return 0
   fi
+  if command -v git >/dev/null 2>&1; then
+    CANDIDATE=$(
+      git -C "$REPO_ROOT" worktree list --porcelain 2>/dev/null \
+        | awk '/^worktree / {print substr($0, 10)}' \
+        | while IFS= read -r worktree_path; do
+            if [ "$worktree_path" != "$REPO_ROOT" ] && [ -x "$worktree_path/.venv/bin/python" ]; then
+              printf '%s\n' "$worktree_path/.venv/bin/python"
+              break
+            fi
+          done
+    )
+    if [ -n "$CANDIDATE" ] && [ -x "$CANDIDATE" ]; then
+      printf '%s\n' "$CANDIDATE"
+      return 0
+    fi
+  fi
   if command -v python3 >/dev/null 2>&1; then
     command -v python3
     return 0
@@ -37,7 +53,7 @@ resolve_python() {
   return 1
 }
 
-is_running() {
+is_pid_running() {
   if [ ! -f "$PID_FILE" ]; then
     return 1
   fi
@@ -48,7 +64,37 @@ is_running() {
   kill -0 "$PID" >/dev/null 2>&1
 }
 
+is_http_ready() {
+  curl --silent --max-time 2 --output /dev/null "http://$HOST:$PORT/" >/dev/null 2>&1
+}
+
+is_running() {
+  if ! is_pid_running; then
+    return 1
+  fi
+  if ! is_http_ready; then
+    return 1
+  fi
+  return 0
+}
+
+cleanup_stale_pid() {
+  if [ -f "$PID_FILE" ] && ! is_running; then
+    PID=$(cat "$PID_FILE" 2>/dev/null || true)
+    if [ -n "$PID" ] && kill -0 "$PID" >/dev/null 2>&1; then
+      kill "$PID" >/dev/null 2>&1 || true
+      sleep 1
+      if kill -0 "$PID" >/dev/null 2>&1; then
+        kill -9 "$PID" >/dev/null 2>&1 || true
+      fi
+    fi
+    rm -f "$PID_FILE"
+  fi
+}
+
 start() {
+  cleanup_stale_pid
+
   if is_running; then
     PID=$(cat "$PID_FILE")
     printf 'web ui already running: pid=%s host=%s port=%s\n' "$PID" "$HOST" "$PORT"
@@ -67,7 +113,7 @@ start() {
     echo $! >"$PID_FILE"
   )
 
-  sleep 1
+  sleep 2
   if is_running; then
     PID=$(cat "$PID_FILE")
     printf 'web ui started: pid=%s url=http://%s:%s\n' "$PID" "$HOST" "$PORT"
@@ -102,7 +148,11 @@ status() {
     printf 'web ui running: pid=%s url=http://%s:%s\n' "$PID" "$HOST" "$PORT"
     return 0
   fi
-  rm -f "$PID_FILE"
+  if is_pid_running; then
+    PID=$(cat "$PID_FILE")
+    printf 'web ui unhealthy: pid=%s url=http://%s:%s log=%s\n' "$PID" "$HOST" "$PORT" "$LOG_FILE"
+    return 1
+  fi
   printf 'web ui stopped\n'
 }
 
