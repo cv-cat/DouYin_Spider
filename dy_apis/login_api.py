@@ -1,5 +1,7 @@
+import os
 import time
 import urllib.parse
+from pathlib import Path
 
 import aiohttp
 import asyncio
@@ -13,6 +15,15 @@ from utils.dy_util import generateSecretPhoneNum, generate_ree_key, generateSecr
 import json
 from threading import Thread
 import qrcode
+
+
+def _configure_local_playwright_browsers():
+    local_browser_dir = Path(__file__).resolve().parents[1] / '.playwright'
+    if 'PLAYWRIGHT_BROWSERS_PATH' not in os.environ and local_browser_dir.is_dir():
+        os.environ['PLAYWRIGHT_BROWSERS_PATH'] = str(local_browser_dir)
+
+
+_configure_local_playwright_browsers()
 
 
 class DYLoginApi:

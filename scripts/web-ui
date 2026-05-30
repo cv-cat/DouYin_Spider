@@ -9,8 +9,13 @@ PID_FILE="$RUNTIME_DIR/web-ui.pid"
 LOG_FILE="$RUNTIME_DIR/web-ui.log"
 HOST="${WEB_UI_HOST:-127.0.0.1}"
 PORT="${WEB_UI_PORT:-8000}"
+LOCAL_PLAYWRIGHT_DIR="$REPO_ROOT/.playwright"
 
 mkdir -p "$RUNTIME_DIR"
+
+if [ -z "${PLAYWRIGHT_BROWSERS_PATH:-}" ] && [ -d "$LOCAL_PLAYWRIGHT_DIR" ]; then
+  export PLAYWRIGHT_BROWSERS_PATH="$LOCAL_PLAYWRIGHT_DIR"
+fi
 
 resolve_python() {
   if [ -n "${WEB_UI_PYTHON:-}" ] && [ -x "${WEB_UI_PYTHON}" ]; then

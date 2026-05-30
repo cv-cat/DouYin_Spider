@@ -1,0 +1,123 @@
+#!/bin/sh
+
+set -eu
+
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+REPO_ROOT=$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd)
+VENV_DIR="$REPO_ROOT/.venv"
+NODE_MODULES_DIR="$REPO_ROOT/node_modules"
+PLAYWRIGHT_DIR="$REPO_ROOT/.playwright"
+REQUIREMENTS_FILE="$REPO_ROOT/requirements.txt"
+PACKAGE_JSON="$REPO_ROOT/package.json"
+DEFAULT_PYTHON="${PORTABLE_PYTHON:-}"
+
+find_base_python() {
+  if [ -n "$DEFAULT_PYTHON" ] && command -v "$DEFAULT_PYTHON" >/dev/null 2>&1; then
+    command -v "$DEFAULT_PYTHON"
+    return 0
+  fi
+  if command -v python3.14 >/dev/null 2>&1; then
+    command -v python3.14
+    return 0
+  fi
+  if command -v python3 >/dev/null 2>&1; then
+    command -v python3
+    return 0
+  fi
+  if command -v python >/dev/null 2>&1; then
+    command -v python
+    return 0
+  fi
+  return 1
+}
+
+ensure_venv() {
+  if [ -x "$VENV_DIR/bin/python" ]; then
+    return 0
+  fi
+  BASE_PYTHON=$(find_base_python)
+  "$BASE_PYTHON" -m venv "$VENV_DIR"
+}
+
+repair_python() {
+  ensure_venv
+  "$VENV_DIR/bin/python" -m pip install -r "$REQUIREMENTS_FILE"
+}
+
+repair_node() {
+  if [ ! -f "$PACKAGE_JSON" ]; then
+    return 0
+  fi
+  if [ -d "$NODE_MODULES_DIR" ]; then
+    return 0
+  fi
+  npm install --package-lock=false --registry=https://registry.npmjs.org
+}
+
+install_browsers() {
+  ensure_venv
+  PLAYWRIGHT_BROWSERS_PATH="$PLAYWRIGHT_DIR" "$VENV_DIR/bin/python" -m playwright install chromium
+}
+
+check_env() {
+  printf 'repo_root=%s\n' "$REPO_ROOT"
+  printf 'venv=%s\n' "$VENV_DIR"
+  printf 'node_modules=%s\n' "$NODE_MODULES_DIR"
+  printf 'playwright_browsers=%s\n' "$PLAYWRIGHT_DIR"
+  if [ -x "$VENV_DIR/bin/python" ]; then
+    "$VENV_DIR/bin/python" - <<'PY'
+import importlib
+modules = ["fastapi", "uvicorn", "playwright", "execjs", "aiohttp", "websocket", "qrcode", "bs4"]
+missing = []
+for name in modules:
+    try:
+        importlib.import_module(name)
+    except Exception:
+        missing.append(name)
+if missing:
+    raise SystemExit("missing_python_modules=" + ",".join(missing))
+print("python=ok")
+PY
+  else
+    printf 'python=missing\n'
+  fi
+  if [ -d "$NODE_MODULES_DIR" ]; then
+    printf 'node_modules=ok\n'
+  else
+    printf 'node_modules=missing\n'
+  fi
+  if [ -d "$PLAYWRIGHT_DIR" ]; then
+    printf 'playwright_browsers=ok\n'
+  else
+    printf 'playwright_browsers=missing\n'
+  fi
+}
+
+prepare() {
+  repair_python
+  repair_node
+  install_browsers
+  check_env
+}
+
+case "${1:-check}" in
+  check)
+    check_env
+    ;;
+  repair)
+    repair_python
+    repair_node
+    check_env
+    ;;
+  install-browsers)
+    install_browsers
+    check_env
+    ;;
+  prepare)
+    prepare
+    ;;
+  *)
+    printf 'usage: %s [check|repair|install-browsers|prepare]\n' "$0" >&2
+    exit 1
+    ;;
+esac

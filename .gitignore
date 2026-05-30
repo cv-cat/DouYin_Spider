@@ -23,6 +23,7 @@ local_settings.py
 db.sqlite3
 __pypackages__/
 .venv
+.playwright/
 env/
 venv/
 ENV/

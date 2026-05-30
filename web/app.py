@@ -31,9 +31,16 @@ def _configure_proxy_behavior(config: WebConfig):
     os.environ["no_proxy"] = "*"
 
 
+def _configure_playwright_behavior(config: WebConfig):
+    local_browser_dir = config.project_root / ".playwright"
+    if "PLAYWRIGHT_BROWSERS_PATH" not in os.environ and local_browser_dir.is_dir():
+        os.environ["PLAYWRIGHT_BROWSERS_PATH"] = str(local_browser_dir)
+
+
 def create_app(overrides=None) -> FastAPI:
     config = WebConfig(overrides)
     _configure_proxy_behavior(config)
+    _configure_playwright_behavior(config)
     app = FastAPI(title="DouYin_Spider Web UI", debug=True)
     with connect_db(config.db_path) as conn:
         init_db(conn)

@@ -126,6 +126,34 @@ source .venv/bin/activate
 ./scripts/web-ui stop
 ```
 
+## 搬目录/整包带走
+
+如果你准备把整个项目目录直接拖到另一个文件夹，建议先在新目录里执行：
+
+```bash
+./scripts/portable-env check
+```
+
+如果提示 Python 依赖、`node_modules` 或 Playwright 浏览器缺失，再执行：
+
+```bash
+./scripts/portable-env repair
+./scripts/portable-env install-browsers
+```
+
+或者一次性准备完整运行环境：
+
+```bash
+./scripts/portable-env prepare
+```
+
+说明：
+
+- `portable-env` 会在项目根目录下修复 `.venv`
+- `portable-env install-browsers` 会把 Web UI 登录用到的 Chromium 装到项目内的 `.playwright/`
+- `scripts/web-ui` 和网页登录流程会优先使用项目内 `.playwright/`，不再强依赖系统全局 Playwright 缓存
+- 如果你只是同一台 Mac 上挪文件夹，通常 `check` 就能先看出有没有缺项
+
 ### 🗝️注意事项
 - `main.py` 是爬虫入口，可根据需求自行修改调用
 - `dy_apis/douyin_api.py` 包含全部 API 接口封装，含直播间点赞、发消息、私信收发等
