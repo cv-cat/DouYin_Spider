@@ -2,15 +2,9 @@
 {% block content %}
 <section class="panel">
   <h2>登录中心</h2>
-  <form hx-post="/actions/login/cookies" hx-target="#login-result">
-    <input type="hidden" name="scope" value="douyin">
-    <textarea name="cookie_str" rows="6" placeholder="贴入 www.douyin.com cookie"></textarea>
-    <button type="submit">保存 Cookie</button>
-  </form>
-  <form hx-post="/actions/login/cookies" hx-target="#login-result">
-    <input type="hidden" name="scope" value="live">
-    <textarea name="cookie_str" rows="6" placeholder="贴入 live.douyin.com cookie"></textarea>
-    <button type="submit">保存直播 Cookie</button>
+  {% include "components/login_cookie_forms.html" %}
+  <form hx-post="/actions/login/browser" hx-target="#login-result">
+    <button type="submit">一键网页登录并自动保存 Cookie</button>
   </form>
   <form hx-post="/actions/login/qr" hx-target="#login-result">
     <button type="submit">启动二维码登录</button>

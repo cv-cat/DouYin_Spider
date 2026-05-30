@@ -1,4 +1,4 @@
-<section class="page-section">
+<section class="ops-panel">
   <div class="metric-grid">
     <article class="metric-card">
       <span class="metric-label">来源策略</span>
@@ -19,23 +19,32 @@
   </div>
 </section>
 
-<section class="page-section">
-  <h3>当前默认模式</h3>
+<section class="ops-panel">
+  <div class="ops-panel-head">
+    <h3>当前默认模式</h3>
+    <span>这是系统的基础口径</span>
+  </div>
   <p>来源策略：{{ defaults.selected_modes.source_mode }}</p>
   <p>精度档位：{{ defaults.selected_modes.precision_mode }}</p>
   <p>风险档位：{{ defaults.selected_modes.risk_mode }}</p>
   <p>触达模式：{{ defaults.selected_modes.outreach_mode }}</p>
 </section>
 
-<section class="page-section">
-  <h3>默认命中词</h3>
+<section class="ops-panel">
+  <div class="ops-panel-head">
+    <h3>默认命中词</h3>
+    <span>先靠这批词做高意向判定</span>
+  </div>
   <p>强需求词：{{ defaults.must_have_terms | join("、") }}</p>
   <p>次级词：{{ defaults.secondary_terms | join("、") }}</p>
   <p>辅助词：{{ defaults.support_terms | join("、") }}</p>
 </section>
 
-<section class="page-section">
-  <h3>种子模板</h3>
+<section class="ops-panel">
+  <div class="ops-panel-head">
+    <h3>种子模板</h3>
+    <span>后续触达会从这里扩出来</span>
+  </div>
   <ul>
     {% for template in defaults.templates %}
     <li>{{ template.title }} / {{ template.category }}</li>

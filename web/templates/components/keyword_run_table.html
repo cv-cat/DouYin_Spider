@@ -5,8 +5,11 @@
         <th>run_id</th>
         <th>关键词</th>
         <th>状态</th>
+        <th>策略</th>
         <th>进度</th>
         <th>线索数</th>
+        <th>缺什么</th>
+        <th>下一步</th>
         <th>摘要</th>
       </tr>
     </thead>
@@ -21,27 +24,22 @@
       >
         <td><a href="/keyword-funnel?run_id={{ run.run_id }}"><code>{{ run.run_id }}</code></a></td>
         <td>{{ run.keyword }}</td>
-        <td>
-          {% if run.status == "verification_required" %}
-          需要人工验证
-          {% elif run.status == "running" %}
-          运行中
-          {% else %}
-          {{ run.status }}
-          {% endif %}
-        </td>
+        <td>{{ run.status_label }}</td>
+        <td>{{ run.strategy_summary }}</td>
         <td>
           {{ run.processed_count }}/{{ run.total_count }}
           {% if run.status == "running" and run.total_count %}
           <div>{{ ((run.processed_count / run.total_count) * 100) | round(0) }}%</div>
           {% endif %}
         </td>
-        <td>{{ run.lead_count }}</td>
+        <td>{{ run.lead_count }} / 高意向 {{ run.high_intent_count }}</td>
+        <td>{{ run.missing_requirement }}</td>
+        <td>{{ run.next_step }}</td>
         <td>{{ run.summary }}</td>
       </tr>
       {% else %}
       <tr>
-        <td colspan="6">还没有关键词截流任务。</td>
+        <td colspan="9">还没有关键词截流任务。</td>
       </tr>
       {% endfor %}
     </tbody>

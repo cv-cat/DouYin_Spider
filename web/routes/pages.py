@@ -32,13 +32,21 @@ def overview(request: Request):
 @router.get("/login", response_class=HTMLResponse)
 def login_center(request: Request):
     sessions = request.app.state.session_service
+    context = {
+        "title": "登录中心",
+        "douyin_auth": sessions.load_auth("douyin"),
+        "live_auth": sessions.load_auth("live"),
+    }
+    if request.query_params.get("partial") == "cookies":
+        return request.app.state.templates.TemplateResponse(
+            request=request,
+            name="components/login_cookie_forms.html",
+            context=context,
+        )
     return request.app.state.templates.TemplateResponse(
         request=request,
         name="login.html",
-        context={
-            "title": "登录中心",
-            "douyin_auth": sessions.load_auth("douyin"),
-        },
+        context=context,
     )
 
 

@@ -118,6 +118,7 @@ create table if not exists keyword_leads (
     contact_status text not null default 'not_contacted',
     conversion_status text not null default 'new',
     risk_flags text not null default '[]',
+    profile_json text not null default '{}',
     raw_payload text not null,
     dedupe_key text not null,
     message_status text not null,
@@ -179,6 +180,7 @@ def init_db(conn):
     _ensure_column(conn, "keyword_leads", "contact_status", "text not null default 'not_contacted'")
     _ensure_column(conn, "keyword_leads", "conversion_status", "text not null default 'new'")
     _ensure_column(conn, "keyword_leads", "risk_flags", "text not null default '[]'")
+    _ensure_column(conn, "keyword_leads", "profile_json", "text not null default '{}'")
     _seed_acquisition_defaults(conn)
     conn.commit()
 

@@ -29,6 +29,9 @@ class RulesService:
     def defaults(self):
         selected_modes = self._selected_modes()
         templates = self._templates()
+        must_have_terms = ["求带", "陪玩", "上分"]
+        secondary_terms = ["找队友", "找搭子", "车队"]
+        support_terms = ["段位", "卡关", "上不去", "想赢"]
         return {
             "source_modes": DEFAULT_SOURCE_MODES,
             "precision_modes": DEFAULT_PRECISION_MODES,
@@ -36,9 +39,14 @@ class RulesService:
             "selected_modes": selected_modes,
             "score_threshold": self._score_threshold(),
             "templates": templates,
-            "must_have_terms": ["求带", "陪玩", "上分"],
-            "secondary_terms": ["找队友", "找搭子", "车队"],
-            "support_terms": ["段位", "卡关", "上不去", "想赢"],
+            "must_have_terms": must_have_terms,
+            "secondary_terms": secondary_terms,
+            "support_terms": support_terms,
+            "keyword_tag_groups": [
+                {"label": "强意图", "terms": must_have_terms},
+                {"label": "组队意图", "terms": secondary_terms},
+                {"label": "痛点辅助", "terms": support_terms},
+            ],
         }
 
     def _selected_modes(self):

@@ -1,0 +1,35 @@
+<section
+  class="panel"
+  {% if not browser_state.get("done") %}
+  hx-post="/actions/login/browser/poll"
+  hx-trigger="load delay:2s, every 3s"
+  hx-target="this"
+  hx-swap="outerHTML"
+  hx-vals='{"session_id":"{{ browser_state["session_id"] }}"}'
+  {% endif %}
+>
+  <h3>网页登录状态</h3>
+  <p>{{ browser_state["message"] }}</p>
+  <p><code>{{ browser_state["session_id"] }}</code></p>
+  {% if browser_state.get("status") == "awaiting_confirm" %}
+  <form hx-post="/actions/login/browser/confirm" hx-target="closest section">
+    <input type="hidden" name="session_id" value="{{ browser_state['session_id'] }}">
+    <button type="submit">我已完成验证并保存 Cookie</button>
+  </form>
+  {% endif %}
+  {% if browser_state.get("status") == "success" %}
+  <div
+    hx-get="/login?partial=cookies"
+    hx-trigger="load"
+    hx-target="#login-cookie-forms"
+    hx-swap="outerHTML"
+  ></div>
+  {% endif %}
+  {% if browser_state.get("douyin_cookie") or browser_state.get("live_cookie") %}
+  <details>
+    <summary>已保存作用域</summary>
+    <pre>douyin: {{ "ok" if browser_state.get("douyin_cookie") else "missing" }}
+live: {{ "ok" if browser_state.get("live_cookie") else "missing" }}</pre>
+  </details>
+  {% endif %}
+</section>

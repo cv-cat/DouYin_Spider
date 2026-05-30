@@ -1,6 +1,9 @@
 document.addEventListener("DOMContentLoaded", () => {
   const shownToasts = new Set();
+  const knownRunStates = new Map();
+  const knownTaskStates = new Map();
   const toastStack = document.querySelector("#app-toast-stack");
+  const keywordInput = document.querySelector("[data-keyword-input]");
 
   const showToast = (message, type = "info", dedupeKey = "") => {
     const text = String(message || "").trim();
@@ -42,13 +45,22 @@ document.addEventListener("DOMContentLoaded", () => {
     return text || `请求失败（HTTP ${xhr.status || "unknown"}）`;
   };
 
-  const inspectKeywordRuns = (root) => {
+  const inspectKeywordRuns = (root, { suppressExisting = false } = {}) => {
     root.querySelectorAll("[data-run-id]").forEach((row) => {
       const runId = row.dataset.runId;
       const keyword = row.dataset.runKeyword || runId;
       const status = row.dataset.runStatus || "";
       const summary = row.dataset.runSummary || "";
       const updatedAt = row.dataset.runUpdatedAt || "";
+      const snapshot = `${status}|${summary}|${updatedAt}`;
+      const previous = knownRunStates.get(runId);
+      knownRunStates.set(runId, snapshot);
+      if (suppressExisting && !previous) {
+        return;
+      }
+      if (previous === snapshot) {
+        return;
+      }
       if (status === "verification_required") {
         showToast(summary || `关键词任务 ${keyword} 需要人工验证`, "warning", `run:${runId}:verification_required`);
         return;
@@ -67,12 +79,21 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   };
 
-  const inspectTaskRows = (root) => {
+  const inspectTaskRows = (root, { suppressExisting = false } = {}) => {
     root.querySelectorAll("[data-task-id]").forEach((row) => {
       const taskId = row.dataset.taskId;
       const taskType = row.dataset.taskType || taskId;
       const status = row.dataset.taskStatus || "";
       const errorText = row.dataset.taskError || row.dataset.taskSummary || "";
+      const snapshot = `${status}|${errorText}`;
+      const previous = knownTaskStates.get(taskId);
+      knownTaskStates.set(taskId, snapshot);
+      if (suppressExisting && !previous) {
+        return;
+      }
+      if (previous === snapshot) {
+        return;
+      }
       if (status === "failed") {
         showToast(errorText || `后台任务 ${taskType} 失败`, "error", `task:${taskId}:failed`);
       }
@@ -147,13 +168,22 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const keywordRunFeed = document.querySelector("#keyword-run-feed");
   if (keywordRunFeed) {
-    inspectKeywordRuns(keywordRunFeed);
+    inspectKeywordRuns(keywordRunFeed, { suppressExisting: true });
   }
   if (taskFeed) {
-    inspectTaskRows(taskFeed);
+    inspectTaskRows(taskFeed, { suppressExisting: true });
   }
   const keywordResult = document.querySelector("#keyword-funnel-result");
   if (keywordResult) {
     inspectActionMessages(keywordResult);
   }
+
+  document.body.addEventListener("click", (event) => {
+    const trigger = event.target.closest("[data-keyword-chip]");
+    if (!trigger || !keywordInput) {
+      return;
+    }
+    keywordInput.value = trigger.dataset.keywordChip || "";
+    keywordInput.focus();
+  });
 });

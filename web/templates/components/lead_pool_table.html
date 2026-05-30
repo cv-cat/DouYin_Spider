@@ -1,30 +1,111 @@
-<section class="page-section">
-  <table>
-    <thead>
-      <tr>
-        <th>昵称</th>
-        <th>来源</th>
-        <th>关键词</th>
-        <th>评论内容</th>
-        <th>发送状态</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% if leads %}
-        {% for lead in leads %}
-        <tr>
-          <td>{{ lead.nickname }}</td>
-          <td>{{ lead.source_type }}</td>
-          <td>{{ lead.keyword }}</td>
-          <td>{{ lead.comment_text or "-" }}</td>
-          <td>{{ lead.message_status }}</td>
-        </tr>
-        {% endfor %}
-      {% else %}
-        <tr>
-          <td colspan="5">暂无线索</td>
-        </tr>
-      {% endif %}
-    </tbody>
-  </table>
+<section class="lead-card-grid">
+  {% if leads %}
+    {% for lead in leads %}
+    <article class="lead-card lead-grade-{{ lead.grade|lower }}">
+      <header class="lead-card-header">
+        <div class="lead-card-identity">
+          <div class="lead-avatar">
+            {% if lead.avatar_url %}
+            <img src="{{ lead.avatar_url }}" alt="{{ lead.nickname }}">
+            {% else %}
+            <span>{{ lead.nickname[:1] }}</span>
+            {% endif %}
+          </div>
+          <div class="lead-card-copy">
+            <div class="lead-badge-row">
+              <span class="lead-badge lead-badge-grade">{{ lead.grade }}</span>
+              <span class="lead-badge lead-badge-source">{{ lead.source_label }}</span>
+              <span class="lead-badge lead-badge-review">{{ lead.review_status_label }}</span>
+            </div>
+            <h3>{{ lead.nickname }}</h3>
+            <div class="lead-subline">
+              <span>{{ lead.keyword }}</span>
+              <code>{{ lead.user_id }}</code>
+            </div>
+          </div>
+        </div>
+        <div class="lead-card-actions">
+          {% if lead.profile_url %}
+          <a class="lead-action lead-action-primary" href="{{ lead.profile_url }}" target="_blank" rel="noopener noreferrer">用户主页</a>
+          {% endif %}
+          {% if lead.source_url %}
+          <a class="lead-action" href="{{ lead.source_url }}" target="_blank" rel="noopener noreferrer">来源作品</a>
+          {% endif %}
+          <a class="lead-action lead-action-ghost" href="/private-messages">私信触达</a>
+        </div>
+      </header>
+
+      <div class="lead-card-body">
+        <section class="lead-panel">
+          <p class="lead-panel-label">用户画像</p>
+          <p class="lead-signature">{{ lead.signature or "暂无个性签名，可先打开主页判断活跃度。" }}</p>
+          <div class="lead-meta-grid">
+            <div>
+              <span class="lead-meta-label">主页链接</span>
+              {% if lead.profile_url %}
+              <a href="{{ lead.profile_url }}" target="_blank" rel="noopener noreferrer">打开个人主页</a>
+              {% else %}
+              <span>-</span>
+              {% endif %}
+            </div>
+            <div>
+              <span class="lead-meta-label">作品 ID</span>
+              <code>{{ lead.source_aweme_id or "-" }}</code>
+            </div>
+            <div>
+              <span class="lead-meta-label">触达状态</span>
+              <span>{{ lead.message_status_label }}</span>
+            </div>
+            <div>
+              <span class="lead-meta-label">转化状态</span>
+              <span>{{ lead.conversion_status_label }}</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="lead-panel">
+          <p class="lead-panel-label">意图内容</p>
+          <blockquote class="lead-quote">
+            {{ lead.comment_text or "暂无评论内容，这条线索主要来自搜索作者画像。" }}
+          </blockquote>
+          <div class="lead-tag-section">
+            <span class="lead-meta-label">命中信号</span>
+            <div class="lead-tag-row">
+              {% if lead.matched_signal_list %}
+                {% for signal in lead.matched_signal_list %}
+                <span class="lead-tag lead-tag-signal">{{ signal }}</span>
+                {% endfor %}
+              {% else %}
+                <span class="lead-tag lead-tag-muted">暂无强命中词</span>
+              {% endif %}
+            </div>
+          </div>
+          <div class="lead-tag-section">
+            <span class="lead-meta-label">风险标记</span>
+            <div class="lead-tag-row">
+              {% if lead.risk_flag_list %}
+                {% for flag in lead.risk_flag_list %}
+                <span class="lead-tag lead-tag-risk">{{ flag }}</span>
+                {% endfor %}
+              {% else %}
+                <span class="lead-tag lead-tag-clear">当前无风险标记</span>
+              {% endif %}
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <footer class="lead-card-footer">
+        <span class="lead-footer-item">来源：{{ lead.source_label }}</span>
+        <span class="lead-footer-item">审核：{{ lead.review_status_label }}</span>
+        <span class="lead-footer-item">联系：{{ lead.contact_status_label }}</span>
+      </footer>
+    </article>
+    {% endfor %}
+  {% else %}
+    <article class="lead-empty-state">
+      <p>当前筛选条件下还没有线索。</p>
+      <span>换关键词、放宽等级，或者先去关键词截流继续采集。</span>
+    </article>
+  {% endif %}
 </section>

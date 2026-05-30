@@ -20,6 +20,36 @@ def start_qr_login(request: Request):
     )
 
 
+@router.post("/login/browser", response_class=HTMLResponse)
+def start_browser_login(request: Request):
+    browser_state = request.app.state.login_service.begin_browser_login()
+    return request.app.state.templates.TemplateResponse(
+        request=request,
+        name="components/login_browser_status.html",
+        context={"browser_state": browser_state},
+    )
+
+
+@router.post("/login/browser/poll", response_class=HTMLResponse)
+def poll_browser_login(request: Request, session_id: str = Form(...)):
+    browser_state = request.app.state.login_service.poll_browser_login(session_id)
+    return request.app.state.templates.TemplateResponse(
+        request=request,
+        name="components/login_browser_status.html",
+        context={"browser_state": browser_state},
+    )
+
+
+@router.post("/login/browser/confirm", response_class=HTMLResponse)
+def confirm_browser_login(request: Request, session_id: str = Form(...)):
+    browser_state = request.app.state.login_service.confirm_browser_login(session_id)
+    return request.app.state.templates.TemplateResponse(
+        request=request,
+        name="components/login_browser_status.html",
+        context={"browser_state": browser_state},
+    )
+
+
 @router.post("/login/qr/poll", response_class=HTMLResponse)
 def poll_qr_login(request: Request, session_id: str = Form(...)):
     qr_state = request.app.state.login_service.poll_qr_login(session_id)

@@ -1,10 +1,33 @@
 {% extends "base.html" %}
 
 {% block content %}
-<section class="page-section">
-  <h2>规则中心</h2>
-  <p>这里先集中展示默认采集和风控规则，后续再开放保存与编辑。</p>
-</section>
+<div class="ops-shell ops-shell-funnel">
+  <section class="ops-hero">
+    <div class="ops-hero-copy">
+      <span class="ops-kicker">Rules Matrix</span>
+      <h2>规则中心</h2>
+      <p>集中查看默认采集、评分和风控规则，先保证你每天筛线索的口径一致。</p>
+    </div>
+    <div class="ops-stat-strip">
+      <article class="ops-stat-card">
+        <span>来源策略</span>
+        <strong>{{ defaults.source_modes|length }}</strong>
+      </article>
+      <article class="ops-stat-card">
+        <span>精度档位</span>
+        <strong>{{ defaults.precision_modes|length }}</strong>
+      </article>
+      <article class="ops-stat-card">
+        <span>风险档位</span>
+        <strong>{{ defaults.risk_modes|length }}</strong>
+      </article>
+      <article class="ops-stat-card">
+        <span>高意向阈值</span>
+        <strong>{{ defaults.score_threshold }}</strong>
+      </article>
+    </div>
+  </section>
 
-{% include "components/rules_form.html" %}
+  {% include "components/rules_form.html" %}
+</div>
 {% endblock %}

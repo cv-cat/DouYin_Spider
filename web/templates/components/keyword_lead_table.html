@@ -7,6 +7,7 @@
         <th>来源</th>
         <th>等级</th>
         <th>作品</th>
+        <th>作品链接</th>
         <th>评论内容</th>
         <th>命中信号</th>
         <th>风险</th>
@@ -22,6 +23,13 @@
         <td>{{ lead.source_type }}</td>
         <td>{{ lead.grade }}</td>
         <td><code>{{ lead.source_aweme_id }}</code></td>
+        <td>
+          {% if lead.source_url %}
+          <a href="{{ lead.source_url }}" target="_blank" rel="noopener noreferrer">{{ lead.source_url }}</a>
+          {% else %}
+          <span>-</span>
+          {% endif %}
+        </td>
         <td>{{ lead.comment_text }}</td>
         <td>{{ lead.matched_signals }}</td>
         <td>{{ lead.risk_flags }}</td>
@@ -30,7 +38,7 @@
       </tr>
       {% else %}
       <tr>
-        <td colspan="9">当前没有线索。</td>
+        <td colspan="11">当前没有线索。</td>
       </tr>
       {% endfor %}
     </tbody>

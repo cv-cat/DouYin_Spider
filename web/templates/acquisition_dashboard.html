@@ -1,10 +1,33 @@
 {% extends "base.html" %}
 
 {% block content %}
-<section class="page-section">
-  <h2>获客仪表盘</h2>
-  <p>这里看今天的线索量、触达进度和来源分布，先聚焦有没有真实高意向客户进入池子。</p>
-</section>
+<div class="ops-shell ops-shell-dashboard">
+  <section class="ops-hero">
+    <div class="ops-hero-copy">
+      <span class="ops-kicker">Acquisition Radar</span>
+      <h2>获客仪表盘</h2>
+      <p>先看今天有没有新客源进池、哪些来源在出量，再决定是继续截流还是开始触达。</p>
+    </div>
+    <div class="ops-stat-strip">
+      <article class="ops-stat-card">
+        <span>今日新增</span>
+        <strong>{{ summary.today_leads }}</strong>
+      </article>
+      <article class="ops-stat-card">
+        <span>运行任务</span>
+        <strong>{{ summary.running_tasks }}</strong>
+      </article>
+      <article class="ops-stat-card">
+        <span>已触达</span>
+        <strong>{{ summary.contacted_count }}</strong>
+      </article>
+      <article class="ops-stat-card">
+        <span>已成交</span>
+        <strong>{{ summary.paid_count }}</strong>
+      </article>
+    </div>
+  </section>
 
-{% include "components/acquisition_metric_cards.html" %}
+  {% include "components/acquisition_metric_cards.html" %}
+</div>
 {% endblock %}

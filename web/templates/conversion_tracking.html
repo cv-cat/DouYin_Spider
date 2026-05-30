@@ -1,25 +1,31 @@
 {% extends "base.html" %}
 
 {% block content %}
-<section class="page-section">
-  <h2>转化跟踪</h2>
-  <p>先看触达、回复和成交的基础统计，后续再补状态流转和渠道归因。</p>
-</section>
-
-<section class="page-section">
-  <div class="metric-grid">
-    <article class="metric-card">
-      <span class="metric-label">已触达</span>
-      <strong class="metric-value">{{ summary.contacted_count }}</strong>
-    </article>
-    <article class="metric-card">
-      <span class="metric-label">已回复</span>
-      <strong class="metric-value">{{ summary.replied_count }}</strong>
-    </article>
-    <article class="metric-card">
-      <span class="metric-label">已成交</span>
-      <strong class="metric-value">{{ summary.paid_count }}</strong>
-    </article>
-  </div>
-</section>
+<div class="ops-shell ops-shell-dashboard">
+  <section class="ops-hero">
+    <div class="ops-hero-copy">
+      <span class="ops-kicker">Conversion Trace</span>
+      <h2>转化跟踪</h2>
+      <p>这里只盯结果：已触达、已回复、已成交。你可以直接看当前漏斗卡在哪一层。</p>
+    </div>
+    <div class="ops-stat-strip">
+      <article class="ops-stat-card">
+        <span>已触达</span>
+        <strong>{{ summary.contacted_count }}</strong>
+      </article>
+      <article class="ops-stat-card">
+        <span>已回复</span>
+        <strong>{{ summary.replied_count }}</strong>
+      </article>
+      <article class="ops-stat-card">
+        <span>已成交</span>
+        <strong>{{ summary.paid_count }}</strong>
+      </article>
+      <article class="ops-stat-card">
+        <span>当前总线索</span>
+        <strong>{{ summary.total_leads }}</strong>
+      </article>
+    </div>
+  </section>
+</div>
 {% endblock %}

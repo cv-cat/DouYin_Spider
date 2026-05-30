@@ -17,6 +17,7 @@ def test_acquisition_pages_load_and_are_linked(tmp_path):
     ]:
         response = client.get(path)
         assert response.status_code == 200
+        assert 'class="ops-shell' in response.text
 
     home = client.get("/")
     assert "获客仪表盘" in home.text
@@ -104,3 +105,6 @@ def test_lead_pool_filters_grade_and_source(tmp_path):
     assert response.status_code == 200
     assert "高意向用户" in response.text
     assert "普通用户" not in response.text
+    assert 'class="lead-card-grid"' in response.text
+    assert 'href="https://www.douyin.com/user/sec-1"' in response.text
+    assert 'href="https://www.douyin.com/video/aweme-1"' in response.text
