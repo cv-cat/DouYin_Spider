@@ -56,6 +56,7 @@ class AgentAcquisitionService:
         "batch_size": "5",
         "batch_pause_minutes": "10",
         "daily_limit": "0",
+        "active_hours": "",
     }
     DEFAULT_LIVE_CONFIG = {
         "live_ids": "",

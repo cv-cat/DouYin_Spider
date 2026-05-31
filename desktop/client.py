@@ -492,6 +492,7 @@ class AgentDesktopApp(ctk.CTk):
                 ("batch_size", "每批数量"),
                 ("batch_pause_minutes", "批次间隔分钟"),
                 ("daily_limit", "每日上限"),
+                ("active_hours", "活跃时段"),
                 ("headless_mode", "后台静默发送"),
                 ("send_mode", "发送模式"),
                 ("proxy_api", "代理 API"),
@@ -506,6 +507,7 @@ class AgentDesktopApp(ctk.CTk):
                 "message_text": "私信内容；多条话术用单独一行 --- 分隔，发送时随机选一条（防雷同被风控）",
                 "send_interval_seconds": "每条基础间隔秒数；实际会在此值~2倍之间随机，建议 ≥ 30",
                 "daily_limit": "每天最多发多少条，达到就停；0 = 不限。建议设个上限更安全",
+                "active_hours": "只在此时段发，如 9-22 表示 9:00–22:00；留空=不限。半夜不发更像真人",
                 "batch_size": "每发这么多条就长休息一次（分批轮流，防风控）；建议 5-10",
                 "batch_pause_minutes": "每批之间长休息的分钟数，模拟真人节奏；建议 ≥ 10",
                 "headless_mode": "开启=浏览器后台静默运行（不弹窗口）。注意：无头更易被抖音识别，可能发不出，先小批量测",
@@ -1096,6 +1098,10 @@ class AgentDesktopApp(ctk.CTk):
         batch_size = _as_int("batch_size", 5)
         batch_pause = _as_int("batch_pause_minutes", 10)
         daily_limit = _as_int("daily_limit", 0)
+        active_hours = vals.get("active_hours", "")
+        if not self._in_active_hours(active_hours):
+            messagebox.showinfo("自动发送", f"当前不在活跃时段（{active_hours}），未发送。\n可改「活跃时段」或留空表示不限。")
+            return
         headless = vals.get("headless_mode") == "on"
         login = getattr(self.services, "login", None)
         if login is None or not hasattr(login, "send_dm_batch"):
@@ -1211,6 +1217,7 @@ class AgentDesktopApp(ctk.CTk):
             "batch_size": _as_int("batch_size", 5),
             "batch_pause": _as_int("batch_pause_minutes", 10),
             "daily_limit": _as_int("daily_limit", 0),
+            "active_hours": vals.get("active_hours", ""),
             "headless": vals.get("headless_mode") == "on",
         }
         self._send_daemon_stop = threading.Event()
@@ -1231,6 +1238,11 @@ class AgentDesktopApp(ctk.CTk):
         except Exception:
             pass
         while not stop.is_set():
+            if not self._in_active_hours(cfg.get("active_hours", "")):
+                self.after(0, lambda h=cfg.get("active_hours"): self._log_private(f"💤 不在活跃时段（{h}），等待…"))
+                if stop.wait(60):
+                    break
+                continue
             rows = self._safe_call("list_private_targets", fallback=[])
             targets = [
                 {"id": r.get("id"), "sec_uid": r.get("sec_uid"), "nickname": r.get("nickname")}
@@ -1254,6 +1266,21 @@ class AgentDesktopApp(ctk.CTk):
                     self.after(0, lambda e=exc: self._log_private(f"守护发送异常：{type(e).__name__}: {e}"))
             if stop.wait(30):  # 每 30 秒扫一次名单
                 break
+
+    def _in_active_hours(self, spec: str) -> bool:
+        spec = (spec or "").strip()
+        if not spec or "-" not in spec:
+            return True  # 不限
+        try:
+            import datetime
+            a, b = spec.split("-", 1)
+            start, end = int(a), int(b)
+            hour = datetime.datetime.now().hour
+            if start <= end:
+                return start <= hour < end
+            return hour >= start or hour < end  # 跨夜，如 22-6
+        except Exception:
+            return True
 
     def _daemon_round_logged(self, result: Any) -> None:
         if isinstance(result, dict):
