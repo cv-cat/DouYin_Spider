@@ -55,6 +55,7 @@ class AgentAcquisitionService:
         "headless_mode": "",
         "batch_size": "5",
         "batch_pause_minutes": "10",
+        "daily_limit": "0",
     }
     DEFAULT_LIVE_CONFIG = {
         "live_ids": "",

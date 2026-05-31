@@ -131,6 +131,13 @@ class LoginService:
         context.add_cookies(cookies)
         return browser, context
 
+    def _pick_message(self, message):
+        """多条话术（用单独一行 --- 分隔）时随机选一条，降低雷同被风控概率。"""
+        blocks = [b.strip() for b in str(message or "").split("\n---\n") if b.strip()]
+        if len(blocks) <= 1:
+            return str(message or "").strip()
+        return random.choice(blocks)
+
     def _compose_and_send_on_page(self, page, sec_uid, message):
         """在已打开的浏览器 page 上，给某 sec_uid 发一条私信。返回 {ok, step, detail}。"""
         info = {"ok": False, "step": "open", "detail": "", "sec_uid": sec_uid}
@@ -181,7 +188,7 @@ class LoginService:
         info["step"] = "输入内容"
         editor.click()
         page.wait_for_timeout(500)
-        editor.type(message, delay=30)
+        editor.type(self._pick_message(message), delay=30)
         page.wait_for_timeout(800)
 
         info["step"] = "发送"
@@ -214,7 +221,7 @@ class LoginService:
                 browser.close()
 
     def send_dm_batch(self, targets, message, interval_seconds=15, batch_size=5,
-                      batch_pause_minutes=10, headless=False, should_stop=None):
+                      batch_pause_minutes=10, daily_limit=0, headless=False, should_stop=None):
         """批量：复用一个浏览器，分批轮流给 targets 发私信。
         每条间隔在 [interval, 2*interval] 随机；每发 batch_size 条长休息 batch_pause_minutes 分钟。
         targets: [{"id": int, "sec_uid": str, "nickname": str}]"""
@@ -228,12 +235,17 @@ class LoginService:
         sent_in_batch = 0
         results = []
         total = len(targets)
+        sent_today = self._today_sent_count()
         with sync_playwright() as p:
             browser, context = self._new_browser_context(p, headless, cookies)
             try:
                 page = context.new_page()
                 for idx, t in enumerate(targets):
                     if should_stop and should_stop():
+                        break
+                    if daily_limit > 0 and sent_today >= daily_limit:
+                        if self.broker:
+                            self.broker.publish("events", {"channel": "dm", "message": f"已达每日上限 {daily_limit} 条，停止发送"})
                         break
                     try:
                         info = self._compose_and_send_on_page(page, t["sec_uid"], message)
@@ -242,6 +254,8 @@ class LoginService:
                     ok = bool(info.get("ok"))
                     sent += 1 if ok else 0
                     failed += 0 if ok else 1
+                    if ok:
+                        sent_today += 1
                     self._mark_dm_status(t.get("id"), ok, info.get("detail", ""))
                     results.append({"id": t.get("id"), "nickname": t.get("nickname"), "ok": ok, "step": info.get("step")})
                     if self.broker:
@@ -286,6 +300,20 @@ class LoginService:
                 conn.commit()
         except Exception:
             pass
+
+    def _today_sent_count(self):
+        from datetime import datetime, timezone
+        from web.db import connect_db
+        today = datetime.now(timezone.utc).date().isoformat()
+        try:
+            with connect_db(self.db_path) as conn:
+                row = conn.execute(
+                    "select count(*) c from agent_private_targets where status='sent' and sent_at like ?",
+                    (today + "%",),
+                ).fetchone()
+            return int(row["c"] or 0)
+        except Exception:
+            return 0
 
     def _interruptible_wait(self, page, seconds, should_stop):
         """分段等待，支持随时中断。返回 True 表示被 should_stop 中断。"""

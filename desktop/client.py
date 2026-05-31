@@ -131,7 +131,7 @@ class AgentDesktopApp(ctk.CTk):
         super().__init__()
         self.services = services
         self.title("两把刷子获客")
-        self.geometry("1280x780")
+        self.geometry(self._load_geometry() or "1280x780")
         self.minsize(1100, 680)
 
         self._page_buttons: dict[str, ctk.CTkButton] = {}
@@ -491,6 +491,7 @@ class AgentDesktopApp(ctk.CTk):
                 ("send_interval_seconds", "发送间隔秒"),
                 ("batch_size", "每批数量"),
                 ("batch_pause_minutes", "批次间隔分钟"),
+                ("daily_limit", "每日上限"),
                 ("headless_mode", "后台静默发送"),
                 ("send_mode", "发送模式"),
                 ("proxy_api", "代理 API"),
@@ -502,8 +503,9 @@ class AgentDesktopApp(ctk.CTk):
             multiline={"message_text", "card_payload"},
             switches={"headless_mode"},
             hints={
-                "message_text": "要群发的私信内容（纯文本）",
+                "message_text": "私信内容；多条话术用单独一行 --- 分隔，发送时随机选一条（防雷同被风控）",
                 "send_interval_seconds": "每条基础间隔秒数；实际会在此值~2倍之间随机，建议 ≥ 30",
+                "daily_limit": "每天最多发多少条，达到就停；0 = 不限。建议设个上限更安全",
                 "batch_size": "每发这么多条就长休息一次（分批轮流，防风控）；建议 5-10",
                 "batch_pause_minutes": "每批之间长休息的分钟数，模拟真人节奏；建议 ≥ 10",
                 "headless_mode": "开启=浏览器后台静默运行（不弹窗口）。注意：无头更易被抖音识别，可能发不出，先小批量测",
@@ -818,7 +820,26 @@ class AgentDesktopApp(ctk.CTk):
             except Exception:
                 pass
 
+    def _window_state_path(self):
+        return os.path.join(os.path.expanduser("~"), ".liangbashuazi_window")
+
+    def _load_geometry(self):
+        try:
+            with open(self._window_state_path()) as f:
+                g = f.read().strip()
+            return g if "x" in g else None
+        except Exception:
+            return None
+
+    def _save_geometry(self):
+        try:
+            with open(self._window_state_path(), "w") as f:
+                f.write(self.geometry())
+        except Exception:
+            pass
+
     def _on_close(self) -> None:
+        self._save_geometry()
         self._closing = True
         if self._poll_job is not None:
             try:
@@ -1074,6 +1095,7 @@ class AgentDesktopApp(ctk.CTk):
 
         batch_size = _as_int("batch_size", 5)
         batch_pause = _as_int("batch_pause_minutes", 10)
+        daily_limit = _as_int("daily_limit", 0)
         headless = vals.get("headless_mode") == "on"
         login = getattr(self.services, "login", None)
         if login is None or not hasattr(login, "send_dm_batch"):
@@ -1101,7 +1123,7 @@ class AgentDesktopApp(ctk.CTk):
             try:
                 result = login.send_dm_batch(
                     targets, message, interval_seconds=interval,
-                    batch_size=batch_size, batch_pause_minutes=batch_pause,
+                    batch_size=batch_size, batch_pause_minutes=batch_pause, daily_limit=daily_limit,
                     headless=headless, should_stop=lambda: self._dm_stop.is_set(),
                 )
                 self.after(0, lambda r=result: self._batch_send_done(r))
@@ -1183,6 +1205,7 @@ class AgentDesktopApp(ctk.CTk):
             "interval": max(_as_int("send_interval_seconds", 15), 1),
             "batch_size": _as_int("batch_size", 5),
             "batch_pause": _as_int("batch_pause_minutes", 10),
+            "daily_limit": _as_int("daily_limit", 0),
             "headless": vals.get("headless_mode") == "on",
         }
         self._send_daemon_stop = threading.Event()
@@ -1215,7 +1238,7 @@ class AgentDesktopApp(ctk.CTk):
                     result = login.send_dm_batch(
                         targets, cfg["message"], interval_seconds=cfg["interval"],
                         batch_size=cfg["batch_size"], batch_pause_minutes=cfg["batch_pause"],
-                        headless=cfg["headless"], should_stop=lambda: stop.is_set(),
+                        daily_limit=cfg["daily_limit"], headless=cfg["headless"], should_stop=lambda: stop.is_set(),
                     )
                     self.after(0, lambda r=result: self._daemon_round_logged(r))
                 except Exception as exc:
@@ -1677,6 +1700,7 @@ class AgentDesktopApp(ctk.CTk):
     def _restart_app(self) -> None:
         """git pull 后自动重启程序，加载新代码（近似热更新）。"""
         try:
+            self._save_geometry()
             self._closing = True
             os.chdir(self._project_root())
             os.execv(sys.executable, [sys.executable, "-m", "desktop.client"])
