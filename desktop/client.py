@@ -238,6 +238,20 @@ class AgentDesktopApp(ctk.CTk):
         )
         login_btn.grid(row=len(self.NAV_ITEMS) + 3, column=0, sticky="ew", padx=10, pady=(18, 4))
 
+        update_btn = ctk.CTkButton(
+            nav,
+            text="🔄 检查更新",
+            anchor="w",
+            fg_color="transparent",
+            text_color=_NAV_FG,
+            hover_color=_NAV_HOVER,
+            font=ctk.CTkFont(size=11),
+            corner_radius=6,
+            height=32,
+            command=self._check_update,
+        )
+        update_btn.grid(row=len(self.NAV_ITEMS) + 4, column=0, sticky="ew", padx=10, pady=(2, 4))
+
         shell = ctk.CTkFrame(self, fg_color="transparent")
         shell.grid(row=0, column=1, sticky="nsew", padx=22, pady=18)
         shell.grid_rowconfigure(0, weight=1)
@@ -372,6 +386,7 @@ class AgentDesktopApp(ctk.CTk):
                 "only_intent": "开启后只保留高意向 S/A 级评论；关闭可看到全部评论",
                 "auto_to_private": "开启后：监控每扫到高意向(S/A)评论，自动把作者加入私信名单（去重）",
             },
+            on_change=self._comment_config_values,
         )
         return page
 
@@ -582,6 +597,7 @@ class AgentDesktopApp(ctk.CTk):
         multiline: set[str] | None = None,
         switches: set[str] | None = None,
         hints: dict[str, str] | None = None,
+        on_change=None,
     ) -> dict[str, Any]:
         multiline = multiline or set()
         switches = switches or set()
@@ -612,7 +628,7 @@ class AgentDesktopApp(ctk.CTk):
                 ).grid(row=row, column=0, sticky="w", pady=(0, 4))
                 row += 1
             if key in switches:
-                widget = ctk.CTkSwitch(form, text="启用", onvalue="on", offvalue="")
+                widget = ctk.CTkSwitch(form, text="启用", onvalue="on", offvalue="", command=on_change)
                 if self._checkbox_truthy(values.get(key)):
                     widget.select()
                 else:
@@ -883,6 +899,7 @@ class AgentDesktopApp(ctk.CTk):
 
     def _refresh_comments(self) -> None:
         all_rows = self._safe_call("list_comments", fallback=[])
+        all_rows = sorted(all_rows, key=lambda r: r.get("create_time") or 0, reverse=True)  # 最新评论在前
         rows = self._comment_visible_rows(all_rows)
         self._fill_table(
             self.comments_table,
@@ -1558,6 +1575,113 @@ class AgentDesktopApp(ctk.CTk):
         label = getattr(self, "_bl_status", None)
         if label is not None:
             label.configure(text=f"出错：{type(exc).__name__}: {exc}")
+
+    # --- 检查更新 ---
+
+    def _project_root(self) -> str:
+        cfg = getattr(self.services, "config", None)
+        root = getattr(cfg, "project_root", None)
+        if root:
+            return str(root)
+        return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+    def _check_update(self) -> None:
+        self._status_var.set("正在检查更新……")
+
+        def worker() -> None:
+            try:
+                result = self._do_check_update()
+                self.after(0, lambda r=result: self._show_update_result(r))
+            except Exception as exc:
+                self.after(0, lambda e=exc: self._show_error("检查更新", e))
+
+        threading.Thread(target=worker, daemon=True).start()
+
+    def _do_check_update(self) -> dict:
+        import subprocess
+        root = self._project_root()
+        if os.path.isdir(os.path.join(root, ".git")):
+            def run(args):
+                return subprocess.run(args, cwd=root, capture_output=True, text=True, timeout=30)
+            run(["git", "fetch", "--quiet"])
+            local = run(["git", "rev-parse", "HEAD"]).stdout.strip()
+            remote = run(["git", "rev-parse", "origin/master"]).stdout.strip()
+            behind = run(["git", "rev-list", "--count", "HEAD..origin/master"]).stdout.strip() or "0"
+            return {
+                "mode": "git",
+                "up_to_date": bool(local) and local == remote,
+                "behind": behind,
+                "local": local[:7],
+                "remote": remote[:7],
+            }
+        import requests
+        resp = requests.get(
+            "https://api.github.com/repos/371066607/DouYin_Spider/commits/master", timeout=15
+        )
+        data = resp.json()
+        msg = (data.get("commit", {}).get("message", "") or "").splitlines()
+        return {
+            "mode": "zip",
+            "latest": (data.get("sha", "") or "")[:7],
+            "date": (data.get("commit", {}).get("author", {}).get("date", "") or "")[:10],
+            "msg": (msg[0] if msg else "")[:60],
+        }
+
+    def _show_update_result(self, r: dict) -> None:
+        if r.get("mode") == "git":
+            if r.get("up_to_date"):
+                self._status_var.set("已是最新版本")
+                messagebox.showinfo("检查更新", "✅ 已是最新版本。")
+            else:
+                if messagebox.askyesno(
+                    "检查更新",
+                    f"发现新版本（落后 {r.get('behind')} 个提交）。\n"
+                    f"本地 {r.get('local')} → 最新 {r.get('remote')}\n\n"
+                    "是否现在自动更新（git pull）？更新后请重启程序。",
+                ):
+                    self._do_git_pull()
+        else:
+            self._status_var.set("已获取最新版本信息")
+            messagebox.showinfo(
+                "检查更新",
+                f"GitHub 最新版本：{r.get('latest')} · {r.get('date')}\n{r.get('msg')}\n\n"
+                "你是 zip 下载版，无法自动更新。\n请到 GitHub 仓库重新「Download ZIP」覆盖即可。",
+            )
+
+    def _do_git_pull(self) -> None:
+        self._status_var.set("正在更新（git pull）……")
+
+        def worker() -> None:
+            try:
+                import subprocess
+                out = subprocess.run(
+                    ["git", "pull"], cwd=self._project_root(), capture_output=True, text=True, timeout=120
+                )
+                ok = out.returncode == 0
+                msg = (out.stdout + out.stderr).strip()[-400:]
+                self.after(0, lambda o=ok, m=msg: self._git_pull_done(o, m))
+            except Exception as exc:
+                self.after(0, lambda e=exc: self._show_error("更新", e))
+
+        threading.Thread(target=worker, daemon=True).start()
+
+    def _git_pull_done(self, ok: bool, msg: str) -> None:
+        if not ok:
+            messagebox.showerror("更新失败", msg or "git pull 失败，请检查网络或手动 git pull。")
+            return
+        if messagebox.askyesno("更新完成", f"{msg}\n\n✅ 更新成功！是否立即重启使新版本生效？"):
+            self._restart_app()
+        else:
+            self._status_var.set("更新完成，下次启动生效")
+
+    def _restart_app(self) -> None:
+        """git pull 后自动重启程序，加载新代码（近似热更新）。"""
+        try:
+            self._closing = True
+            os.chdir(self._project_root())
+            os.execv(sys.executable, [sys.executable, "-m", "desktop.client"])
+        except Exception as exc:
+            messagebox.showerror("重启失败", f"更新已完成，请手动关闭并重启程序。\n{exc}")
 
 
 def run(services: DesktopServices) -> None:

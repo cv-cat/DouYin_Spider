@@ -58,6 +58,22 @@ if (-not (Has-Cmd "node")) {
     Read-Host "按回车退出"; exit 1
 }
 
+# ---- Git（让客户端「检查更新」能自助一键更新）----
+if (-not (Has-Cmd "git")) {
+    Write-Host "[*] 正在安装 Git（用于一键更新，用户无需手动操作）..." -ForegroundColor Cyan
+    winget install -e --id Git.Git --silent --accept-package-agreements --accept-source-agreements
+    Refresh-Path
+}
+# 把当前文件夹关联成 git 仓库，之后「检查更新」即可自动 git pull
+if ((Has-Cmd "git") -and (-not (Test-Path ".git"))) {
+    Write-Host "[*] 关联 GitHub 仓库（便于以后一键更新）..." -ForegroundColor Cyan
+    git init -q
+    git remote add origin https://github.com/371066607/DouYin_Spider.git
+    git fetch -q origin master
+    git reset -q --hard origin/master
+    git branch -q --set-upstream-to=origin/master master 2>$null
+}
+
 # ---- 3) Python 虚拟环境 + 依赖 + 浏览器 ----
 $venvPython = ".\.venv\Scripts\python.exe"
 if (-not (Test-Path $venvPython)) {
