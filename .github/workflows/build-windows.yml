@@ -1,0 +1,60 @@
+name: build-windows
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: 安装 Python 依赖 + PyInstaller
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: 安装 playwright driver
+        run: python -m playwright install chromium
+
+      - name: 生成 node_modules（--ignore-scripts 跳过 canvas 编译）
+        run: |
+          node --version
+          npm --version
+          npm install --ignore-scripts
+
+      - name: PyInstaller 打包
+        run: >
+          pyinstaller --noconfirm --clean --windowed
+          --name liangbashuazi
+          --paths .
+          --collect-submodules desktop --collect-submodules web
+          --collect-submodules dy_apis --collect-submodules dy_live
+          --collect-all customtkinter --collect-all playwright
+          --add-data "desktop/claude_theme.json;desktop"
+          desktop/client.py
+
+      - name: 后处理：拷 static + node_modules 进包
+        shell: pwsh
+        run: |
+          $dest = "dist/liangbashuazi/_internal"
+          Copy-Item -Recurse -Force static "$dest/static"
+          Copy-Item -Recurse -Force node_modules "$dest/node_modules"
+
+      - name: 打包成 zip
+        shell: pwsh
+        run: Compress-Archive -Path dist/liangbashuazi/* -DestinationPath liangbashuazi-windows.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: liangbashuazi-windows
+          path: liangbashuazi-windows.zip
