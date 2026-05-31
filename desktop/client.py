@@ -1154,6 +1154,11 @@ class AgentDesktopApp(ctk.CTk):
             else:
                 self._log_private(f"❌ {r.get('nickname', '')} 失败 @ {r.get('step', '')}")
         self._refresh_private()
+        if result.get("aborted"):
+            self._log_private(f"⚠️ {result['aborted']}")
+            messagebox.showwarning(
+                "发送已中止", f"{result['aborted']}\n\n请点左下角「🔑 网页登录」检查 / 重新登录后再试。"
+            )
 
     def _log_private(self, message: str) -> None:
         log = getattr(self, "private_log", None)
@@ -1241,6 +1246,10 @@ class AgentDesktopApp(ctk.CTk):
                         daily_limit=cfg["daily_limit"], headless=cfg["headless"], should_stop=lambda: stop.is_set(),
                     )
                     self.after(0, lambda r=result: self._daemon_round_logged(r))
+                    if isinstance(result, dict) and result.get("aborted"):
+                        stop.set()
+                        self.after(0, lambda a=result.get("aborted"): self._daemon_aborted(a))
+                        return
                 except Exception as exc:
                     self.after(0, lambda e=exc: self._log_private(f"守护发送异常：{type(e).__name__}: {e}"))
             if stop.wait(30):  # 每 30 秒扫一次名单
@@ -1250,6 +1259,19 @@ class AgentDesktopApp(ctk.CTk):
         if isinstance(result, dict):
             self._log_private(f"守护本轮：成功 {result.get('sent', 0)} / 失败 {result.get('failed', 0)}")
         self._refresh_private()
+
+    def _daemon_aborted(self, reason: str) -> None:
+        self._send_daemon_running = False
+        try:
+            self._send_daemon_btn.configure(text="守护")
+        except Exception:
+            pass
+        self._log_private(f"⚠️ {reason}")
+        self._status_var.set(f"⚠️ 守护已暂停：{reason}")
+        messagebox.showwarning(
+            "守护已暂停",
+            f"{reason}\n\n请点左下角「🔑 网页登录」重新登录，确认能正常发送后，再重新开启守护。",
+        )
 
     def _auto_send_dm(self) -> None:
         tree = self.private_table

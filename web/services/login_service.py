@@ -236,6 +236,8 @@ class LoginService:
         results = []
         total = len(targets)
         sent_today = self._today_sent_count()
+        consecutive_fail = 0
+        aborted = None
         with sync_playwright() as p:
             browser, context = self._new_browser_context(p, headless, cookies)
             try:
@@ -256,8 +258,16 @@ class LoginService:
                     failed += 0 if ok else 1
                     if ok:
                         sent_today += 1
+                        consecutive_fail = 0
+                    else:
+                        consecutive_fail += 1
                     self._mark_dm_status(t.get("id"), ok, info.get("detail", ""))
                     results.append({"id": t.get("id"), "nickname": t.get("nickname"), "ok": ok, "step": info.get("step")})
+                    if consecutive_fail >= 3:
+                        aborted = "连续 3 条发送失败，可能登录失效或被风控，已自动停止"
+                        if self.broker:
+                            self.broker.publish("events", {"channel": "dm", "message": aborted})
+                        break
                     if self.broker:
                         self.broker.publish("events", {
                             "channel": "dm",
@@ -280,7 +290,7 @@ class LoginService:
                             wait = random.uniform(max(interval_seconds, 1), max(interval_seconds, 1) * 2)
                             if self._interruptible_wait(page, wait, should_stop):
                                 break
-                return {"sent": sent, "failed": failed, "total": total, "results": results}
+                return {"sent": sent, "failed": failed, "total": total, "results": results, "aborted": aborted}
             finally:
                 browser.close()
 
