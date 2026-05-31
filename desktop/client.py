@@ -329,8 +329,8 @@ class AgentDesktopApp(ctk.CTk):
         right = self._panel(main, "监控配置", row=0, column=1, width=380)
 
         toolbar = self._toolbar(left)
-        self._button(toolbar, "开始", lambda: self._run_agent_action("queue_comment_monitor", before=self._comment_config_values))
-        self._button(toolbar, "停止", lambda: self._run_agent_action("stop_comment_monitor"))
+        self._button(toolbar, "开始监控", lambda: self._run_agent_action("queue_comment_monitor", before=self._comment_config_values))
+        self._button(toolbar, "停止监控", lambda: self._run_agent_action("stop_comment_monitor"))
         self._button(toolbar, "清空", lambda: self._confirm_action("清空评论监控结果？", "clear_comments", refresh=self._refresh_comments))
         self._button(toolbar, "导出", self._export_comments_filtered)
         self._button(toolbar, "刷新", self._refresh_comments)
@@ -354,6 +354,7 @@ class AgentDesktopApp(ctk.CTk):
                 ("exclude_keywords", "排除关键词"),
                 ("only_intent", "仅高意向（S/A 级）"),
                 ("fetch_first_level", "仅一级评论"),
+                ("auto_to_private", "高意向自动入私信名单"),
                 ("page_count", "抓取页数"),
                 ("thread_count", "线程数"),
                 ("interval_minutes", "轮询间隔（分钟）"),
@@ -362,13 +363,14 @@ class AgentDesktopApp(ctk.CTk):
             ],
             defaults,
             multiline={"video_ids", "include_keywords", "exclude_keywords"},
-            switches={"only_intent", "fetch_first_level"},
+            switches={"only_intent", "fetch_first_level", "auto_to_private"},
             hints={
                 "monitor_minutes": "只保留最近 N 分钟内发布的评论；填 0 = 不限时间",
                 "date_from": "与结束日期一起填则按日期范围过滤（YYYY-MM-DD，优先于时间窗口）",
                 "include_keywords": "评论需至少包含其一；逗号或换行分隔；留空不限",
                 "exclude_keywords": "命中任一即丢弃；逗号或换行分隔",
                 "only_intent": "开启后只保留高意向 S/A 级评论；关闭可看到全部评论",
+                "auto_to_private": "开启后：监控每扫到高意向(S/A)评论，自动把作者加入私信名单（去重）",
             },
         )
         return page
@@ -870,10 +872,13 @@ class AgentDesktopApp(ctk.CTk):
                 for row in rows
             ),
         )
-        if len(rows) != len(all_rows):
+        status = self._safe_call("comment_status", fallback={})
+        if status.get("running"):
+            shown = f"显示 {len(rows)}/{len(all_rows)}" if len(rows) != len(all_rows) else f"{len(rows)} 条"
+            self._status_var.set(f"{status.get('label', '监控中')} · {shown}")
+        elif len(rows) != len(all_rows):
             self._status_var.set(f"评论监控：显示 {len(rows)} / 共 {len(all_rows)} 条（已按关键词过滤）")
         else:
-            status = self._safe_call("comment_status", fallback={})
             self._status_var.set(status.get("label", f"评论监控：{len(rows)} 条"))
 
     def _refresh_live(self) -> None:

@@ -42,6 +42,7 @@ class AgentAcquisitionService:
         "fetch_first_level": "on",
         "enterprise_webhook": "",
         "proxy_url": "",
+        "auto_to_private": "",
     }
     DEFAULT_PRIVATE_CONFIG = {
         "proxy_api": "",
@@ -158,19 +159,31 @@ class AgentAcquisitionService:
     def queue_comment_monitor(self):
         stop_event = threading.Event()
         self.task_manager.runtimes[self.COMMENT_RUNTIME_KEY] = stop_event
+        self._comment_monitor_state = {"rounds": 0, "total_inserted": 0, "last_inserted": 0, "last_scanned": 0, "next_scan_ts": 0}
 
         def runner():
             try:
                 total_inserted = 0
+                rounds = 0
                 while not stop_event.is_set():
+                    rounds += 1
                     result = self.collect_comment_cycle()
-                    total_inserted += int(result["inserted_count"])
+                    inserted = int(result["inserted_count"])
+                    total_inserted += inserted
                     interval = max(self._int_value(self.get_comment_config().get("interval_minutes"), 1), 1) * 60
+                    self._comment_monitor_state = {
+                        "rounds": rounds,
+                        "total_inserted": total_inserted,
+                        "last_inserted": inserted,
+                        "last_scanned": int(result.get("scanned_count", 0)),
+                        "next_scan_ts": time.time() + interval,
+                    }
                     if stop_event.wait(interval):
                         break
                 return {"inserted_count": total_inserted}
             finally:
                 self.task_manager.runtimes.pop(self.COMMENT_RUNTIME_KEY, None)
+                self._comment_monitor_state = None
 
         task_id = self.task_manager.submit("agent.comment_monitor", "评论监控", runner)
         return {"task_id": task_id}
@@ -210,7 +223,21 @@ class AgentAcquisitionService:
                 inserted += self._insert_comment_item(item)
                 if item["is_intent"]:
                     self._push_webhook(config.get("enterprise_webhook"), item)
+                    if self._checkbox_on(config.get("auto_to_private")):
+                        self._add_private_target(item.get("user_id"))
         return {"scanned_count": scanned, "inserted_count": inserted}
+
+    def _add_private_target(self, uid):
+        uid = str(uid or "").strip()
+        if not uid:
+            return
+        with connect_db(self.db_path) as conn:
+            conn.execute(
+                "insert into agent_private_targets(uid, status, ip, error_message, created_at, sent_at) "
+                "values(?, 'pending', '', '', ?, null) on conflict(uid) do nothing",
+                (uid, self._now()),
+            )
+            conn.commit()
 
     def clear_comments(self):
         with connect_db(self.db_path) as conn:
@@ -248,7 +275,18 @@ class AgentAcquisitionService:
 
     def comment_status(self):
         running = self.COMMENT_RUNTIME_KEY in self.task_manager.runtimes
-        return {"running": running, "label": "监控中" if running else "监控已停止"}
+        state = getattr(self, "_comment_monitor_state", None)
+        if running and state and state.get("next_scan_ts"):
+            remain = max(0, int(state["next_scan_ts"] - time.time()))
+            label = (
+                f"🟢 监控中：已扫 {state['rounds']} 轮 · 本轮新增 {state['last_inserted']} 条"
+                f"（扫描 {state['last_scanned']}）· 下次 {remain}s 后"
+            )
+        elif running:
+            label = "🟢 监控中：正在扫描…"
+        else:
+            label = "监控已停止"
+        return {"running": running, "label": label}
 
     def save_private_config(self, values):
         return self._save_config("private", self.DEFAULT_PRIVATE_CONFIG, values)
