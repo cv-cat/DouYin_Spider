@@ -445,13 +445,15 @@ class AgentDesktopApp(ctk.CTk):
         right = self._panel(main, "私信配置", row=0, column=1, width=380)
 
         toolbar = self._toolbar(left)
-        self._button(toolbar, "Cookie 状态", self._show_cookie_status)
-        self._button(toolbar, "保存 Cookie", self._save_private_cookie)
         self._button(toolbar, "导入 UID", self._import_private_uids)
-        self._button(toolbar, "半自动私信", self._semi_auto_dm)
-        self._button(toolbar, "自动发送(试)", self._auto_send_dm)
-        self._button(toolbar, "开始发送", self._start_auto_send_batch)
-        self._button(toolbar, "停止发送", self._stop_auto_send)
+        self._button(toolbar, "半自动", self._semi_auto_dm)
+        self._button(toolbar, "单个发送", self._auto_send_dm)
+        self._button(toolbar, "自动发送", self._start_auto_send_batch)
+        self._button(toolbar, "停止", self._stop_auto_send)
+        self._send_daemon_btn = ctk.CTkButton(
+            toolbar, text="守护", command=self._toggle_send_daemon, height=28, width=72, font=ctk.CTkFont(size=11)
+        )
+        self._send_daemon_btn.pack(side="left", padx=(0, 5))
         self._button(toolbar, "清空", lambda: self._confirm_action("清空私信发送目标？", "clear_private_targets", refresh=self._refresh_private))
         self._button(toolbar, "刷新", self._refresh_private)
 
@@ -461,9 +463,10 @@ class AgentDesktopApp(ctk.CTk):
             (46, 120, 100, 240, 210, 125, 55, 70, 150, 140),
         )
         self.private_table.bind("<Double-1>", self._open_private_profile)
-        self.private_uid_input = self._text(left, height=4)
-        self.private_uid_input.grid(row=2, column=0, sticky="ew", padx=12, pady=(0, 12))
-        self.private_uid_input.insert("0.0", "每行一个 UID")
+        self.private_log = self._text(left, height=5)
+        self.private_log.grid(row=2, column=0, sticky="ew", padx=12, pady=(0, 12))
+        self.private_log.insert("0.0", "📋 发送日志会显示在这里\n")
+        self.private_log.configure(state="disabled")
 
         defaults = self._safe_call("get_private_config", fallback={})
         self.private_fields = self._form(
@@ -507,6 +510,10 @@ class AgentDesktopApp(ctk.CTk):
         ctk.CTkLabel(cookie_box, text="手动 Cookie", text_color="gray", anchor="w").grid(row=2, column=0, sticky="w", pady=(8, 3))
         self.private_cookie_text = self._text(cookie_box, height=3)
         self.private_cookie_text.grid(row=3, column=0, sticky="ew")
+        cookie_btns = ctk.CTkFrame(cookie_box, fg_color="transparent")
+        cookie_btns.grid(row=4, column=0, sticky="w", pady=(8, 0))
+        self._button(cookie_btns, "保存 Cookie", self._save_private_cookie)
+        self._button(cookie_btns, "Cookie 状态", self._show_cookie_status)
         return page
 
     # --- Layout helpers ---
@@ -621,7 +628,29 @@ class AgentDesktopApp(ctk.CTk):
                 widget.insert(0, str(values.get(key, "")))
             widgets[key] = widget
             row += 1
+        self._enable_mousewheel(form)
         return widgets
+
+    def _enable_mousewheel(self, scroll_frame) -> None:
+        canvas = getattr(scroll_frame, "_parent_canvas", None)
+        if canvas is None:
+            return
+
+        def _on_wheel(event):
+            try:
+                canvas.yview_scroll(-1 if event.delta > 0 else 1, "units")
+            except Exception:
+                pass
+
+        def _bind(widget):
+            try:
+                widget.bind("<MouseWheel>", _on_wheel, add="+")
+            except Exception:
+                pass
+            for child in widget.winfo_children():
+                _bind(child)
+
+        _bind(scroll_frame)
 
     def _text(self, parent: ctk.CTkFrame, height: int) -> ctk.CTkTextbox:
         return ctk.CTkTextbox(parent, height=height * 22, wrap="word")
@@ -1079,11 +1108,108 @@ class AgentDesktopApp(ctk.CTk):
         failed = result.get("failed", 0)
         total = result.get("total", 0)
         self._status_var.set(f"批量发送结束：成功 {sent}，失败 {failed}，共 {total}")
+        self._log_private(f"———— 批量结束：成功 {sent} / 失败 {failed} / 共 {total} ————")
+        for r in (result.get("results") or []):
+            if r.get("ok"):
+                self._log_private(f"✅ {r.get('nickname', '')} 发送成功")
+            else:
+                self._log_private(f"❌ {r.get('nickname', '')} 失败 @ {r.get('step', '')}")
         self._refresh_private()
-        messagebox.showinfo(
-            "批量自动发送",
-            f"完成。\n成功：{sent}\n失败：{failed}\n共尝试：{total}\n\n各目标状态已标记（sent/failed），可在列表查看。",
-        )
+
+    def _log_private(self, message: str) -> None:
+        log = getattr(self, "private_log", None)
+        if log is None:
+            return
+        try:
+            log.configure(state="normal")
+            log.insert("end", message.rstrip() + "\n")
+            log.see("end")
+            log.configure(state="disabled")
+        except Exception:
+            pass
+
+    def _toggle_send_daemon(self) -> None:
+        if getattr(self, "_send_daemon_running", False):
+            ev = getattr(self, "_send_daemon_stop", None)
+            if ev:
+                ev.set()
+            self._send_daemon_running = False
+            self._send_daemon_btn.configure(text="守护")
+            self._status_var.set("自动发送守护已停止")
+            self._log_private("⏹ 自动发送守护已停止")
+            return
+        vals = self._values(self.private_fields)
+        message = vals.get("message_text", "").strip()
+        if not message:
+            messagebox.showinfo("守护", "请先在右侧「私信文本」里填写内容。")
+            return
+        login = getattr(self.services, "login", None)
+        if login is None or not hasattr(login, "send_dm_batch"):
+            messagebox.showwarning("守护", "登录服务不可用。")
+            return
+        if not messagebox.askyesno(
+            "自动发送守护（最高风险）",
+            "开启后：后台持续盯着私信名单，一发现新的待发送(pending)就自动发出。\n"
+            "配合『评论监控 + 高意向自动入名单』= 全自动无人值守获客。\n\n"
+            "⚠️ 封号风险最高！务必先小批量验证稳定后，再长时间挂机。\n\n确定开启？",
+        ):
+            return
+
+        def _as_int(key, default):
+            try:
+                return max(int(float(vals.get(key) or str(default))), 0)
+            except Exception:
+                return default
+
+        cfg = {
+            "message": message,
+            "interval": max(_as_int("send_interval_seconds", 15), 1),
+            "batch_size": _as_int("batch_size", 5),
+            "batch_pause": _as_int("batch_pause_minutes", 10),
+            "headless": vals.get("headless_mode") == "on",
+        }
+        self._send_daemon_stop = threading.Event()
+        self._send_daemon_running = True
+        self._send_daemon_btn.configure(text="停止守护")
+        self._status_var.set("🟢 自动发送守护已开启")
+        self._log_private("🟢 自动发送守护已开启，每 30 秒盯一次名单……")
+        threading.Thread(target=self._send_daemon_loop, args=(cfg,), daemon=True).start()
+
+    def _send_daemon_loop(self, cfg: dict) -> None:
+        stop = self._send_daemon_stop
+        login = getattr(self.services, "login", None)
+        if login is None:
+            return
+        try:
+            from desktop.bootstrap import ensure_chromium
+            ensure_chromium()
+        except Exception:
+            pass
+        while not stop.is_set():
+            rows = self._safe_call("list_private_targets", fallback=[])
+            targets = [
+                {"id": r.get("id"), "sec_uid": r.get("sec_uid"), "nickname": r.get("nickname")}
+                for r in rows
+                if r.get("status") == "pending" and r.get("sec_uid")
+            ]
+            if targets:
+                self.after(0, lambda n=len(targets): self._log_private(f"🔔 守护发现 {n} 个待发送，开始发送…"))
+                try:
+                    result = login.send_dm_batch(
+                        targets, cfg["message"], interval_seconds=cfg["interval"],
+                        batch_size=cfg["batch_size"], batch_pause_minutes=cfg["batch_pause"],
+                        headless=cfg["headless"], should_stop=lambda: stop.is_set(),
+                    )
+                    self.after(0, lambda r=result: self._daemon_round_logged(r))
+                except Exception as exc:
+                    self.after(0, lambda e=exc: self._log_private(f"守护发送异常：{type(e).__name__}: {e}"))
+            if stop.wait(30):  # 每 30 秒扫一次名单
+                break
+
+    def _daemon_round_logged(self, result: Any) -> None:
+        if isinstance(result, dict):
+            self._log_private(f"守护本轮：成功 {result.get('sent', 0)} / 失败 {result.get('failed', 0)}")
+        self._refresh_private()
 
     def _auto_send_dm(self) -> None:
         tree = self.private_table
@@ -1098,18 +1224,20 @@ class AgentDesktopApp(ctk.CTk):
             return
         sec_uid = profile.rsplit("/user/", 1)[-1]
         nickname = values[2] if len(values) > 2 else ""
-        message = self._values(self.private_fields).get("message_text", "").strip()
+        vals = self._values(self.private_fields)
+        message = vals.get("message_text", "").strip()
         if not message:
             messagebox.showinfo("自动发送", "请先在右侧「私信文本」里填写要发送的内容。")
             return
+        headless = vals.get("headless_mode") == "on"
         login = getattr(self.services, "login", None)
         if login is None or not hasattr(login, "send_dm_browser"):
             messagebox.showwarning("自动发送", "登录服务不可用。")
             return
         if not messagebox.askyesno(
-            "自动发送（实验功能）",
-            f"将用浏览器自动给「{nickname}」发送私信：\n\n{message[:60]}\n\n"
-            "⚠️ 这是真实发送、有封号风险。\n第一次请务必先用你自己的小号测试。\n\n确定继续？",
+            "单个发送",
+            f"将用浏览器给「{nickname}」发送一条私信：\n\n{message[:60]}\n\n"
+            "⚠️ 真实发送、有封号风险。\n第一次请务必先用你自己的小号测试。\n\n确定继续？",
         ):
             return
         self._status_var.set(f"正在自动私信「{nickname}」（浏览器操作中）……")
@@ -1118,7 +1246,7 @@ class AgentDesktopApp(ctk.CTk):
             if not self._ensure_browser_ready():
                 return
             try:
-                result = login.send_dm_browser(sec_uid, message, headless=False)
+                result = login.send_dm_browser(sec_uid, message, headless=headless)
                 self.after(0, lambda r=result: self._auto_send_done(nickname, r))
             except Exception as exc:
                 self.after(0, lambda e=exc: self._show_error("自动发送", e))
@@ -1126,23 +1254,14 @@ class AgentDesktopApp(ctk.CTk):
         threading.Thread(target=worker, daemon=True).start()
 
     def _auto_send_done(self, nickname: str, result: Any) -> None:
-        wp = result.get("web_protect", "未读取") if isinstance(result, dict) else "未读取"
         if isinstance(result, dict) and result.get("ok"):
             self._status_var.set(f"✅ 已自动私信「{nickname}」")
-            messagebox.showinfo(
-                "自动发送",
-                f"✅ 已给「{nickname}」发送私信。\n请到抖音确认是否真的发出。\n\n"
-                f"ticket(web_protect)：{wp}\n（这关系到能否改用「接口批量」方案，请把这行也发我）",
-            )
+            self._log_private(f"✅ 「{nickname}」发送成功")
         else:
             step = result.get("step", "?") if isinstance(result, dict) else "?"
             detail = result.get("detail", "") if isinstance(result, dict) else str(result)
-            self._status_var.set(f"自动发送卡在：{step}")
-            messagebox.showwarning(
-                "自动发送未完成",
-                f"卡在步骤：{step}\nticket(web_protect)：{wp}\n\n{detail}\n\n"
-                "把这整段发我：① 卡在哪步 → 我校准点击/输入定位；② web_protect 有没有值 → 决定接口方案是否可行。",
-            )
+            self._status_var.set(f"❌ 「{nickname}」发送失败：{step}")
+            self._log_private(f"❌ 「{nickname}」失败 @ {step}：{str(detail)[:80]}")
 
     def _semi_auto_dm(self) -> None:
         tree = self.private_table
@@ -1219,13 +1338,18 @@ class AgentDesktopApp(ctk.CTk):
         self._refresh_live()
 
     def _import_private_uids(self) -> None:
-        uid_text = self.private_uid_input.get("0.0", "end").strip()
+        dialog = ctk.CTkInputDialog(text="粘贴要私信的 UID（多个用逗号 / 空格分隔）：", title="导入 UID")
+        uid_text = dialog.get_input()
+        if not uid_text:
+            return
         try:
             result = self.agent.import_private_uids(uid_text)
         except Exception as exc:
             self._show_error("导入 UID", exc)
             return
-        self._status_var.set(f"导入 UID 完成：{result}")
+        imported = result.get("imported_count", 0) if isinstance(result, dict) else result
+        self._status_var.set(f"导入 UID 完成：新增 {imported}")
+        self._log_private(f"导入 UID：新增 {imported}")
         self._refresh_private()
 
     def _show_cookie_status(self) -> None:
