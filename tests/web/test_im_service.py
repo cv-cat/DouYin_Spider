@@ -47,7 +47,11 @@ def test_start_receiver_registers_runtime(tmp_path):
     assert "im:default" in service.task_manager.runtimes
     with connect_db(tmp_path / "web-ui.sqlite3") as conn:
         receiver = conn.execute("select status from im_receivers where scope = ?", ("default",)).fetchone()
+        event = conn.execute("select channel, event_type, payload from event_feed").fetchone()
     assert receiver["status"] == "running"
+    assert event["channel"] == "im"
+    assert event["event_type"] == "text"
+    assert "hello" in event["payload"]
 
     service.stop_receiver()
 

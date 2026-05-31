@@ -19,6 +19,38 @@ def test_comment_with_strong_intent_scores_s_grade():
     assert result["risk_flags"] == []
 
 
+def test_delta_playmate_comment_variants_score_as_high_intent():
+    service = LeadScoringService()
+
+    for text in ("三角洲找陪，今晚有人吗", "三角洲来陪一个，想上分", "三角洲找人带，带我上把"):
+        result = service.score_lead(
+            {
+                "source_type": "comment",
+                "content": text,
+            }
+        )
+
+        assert result["grade"] in {"S", "A"}
+        assert "intent:strong" in result["reasons"]
+        assert "context:delta" in result["reasons"]
+
+
+def test_delta_escort_terms_score_as_high_intent():
+    service = LeadScoringService()
+
+    for text in ("三角洲护航有人接吗", "三角洲纯绿护报价来", "三角洲来个绿护"):
+        result = service.score_lead(
+            {
+                "source_type": "comment",
+                "content": text,
+            }
+        )
+
+        assert result["grade"] in {"S", "A"}
+        assert "intent:strong" in result["reasons"]
+        assert "context:delta" in result["reasons"]
+
+
 def test_search_source_and_mid_intent_lands_in_b_grade():
     service = LeadScoringService()
 

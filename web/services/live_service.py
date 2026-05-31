@@ -1,8 +1,11 @@
-from datetime import UTC, datetime
+from datetime import datetime, timezone
+import json
 
 from dy_apis.douyin_api import DouyinAPI
 from dy_live.server import DouyinLive
 from web.db import connect_db, init_db
+
+UTC = timezone.utc
 
 
 class LiveService:
@@ -34,7 +37,9 @@ class LiveService:
 
     def start_listener(self, live_id):
         def sink(payload):
-            self.broker.publish("events", {"channel": "live", "payload": payload})
+            event = {"channel": "live", "room_id": live_id, "payload": payload}
+            self._record_event(event)
+            self.broker.publish("events", event)
 
         runtime = self.live_cls(
             live_id,
@@ -52,6 +57,16 @@ class LiveService:
             )
             conn.commit()
         self.task_manager.submit("live.listen", live_id, runtime.start_ws)
+
+    def _record_event(self, event):
+        payload = event.get("payload") or {}
+        event_type = str(payload.get("event_type") or "live")
+        with connect_db(self.db_path) as conn:
+            conn.execute(
+                "insert into event_feed(channel, event_type, payload, created_at) values(?, ?, ?, ?)",
+                ("live", event_type, json.dumps(event, ensure_ascii=False), datetime.now(UTC).isoformat()),
+            )
+            conn.commit()
 
     def stop_listener(self, live_id):
         runtime = self.task_manager.runtimes.pop(f"live:{live_id}", None)

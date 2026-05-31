@@ -5,6 +5,7 @@ from web.db import connect_db
 
 DEFAULT_SOURCE_MODES = [
     {"key": "comments_first", "label": "评论区优先"},
+    {"key": "comments_only", "label": "只看评论区"},
     {"key": "search_first", "label": "搜索优先"},
     {"key": "live_first", "label": "直播补充"},
 ]

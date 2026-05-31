@@ -27,6 +27,44 @@
     </div>
   </section>
 
+  <section class="ops-two-column">
+    <section class="ops-panel">
+      <div class="ops-panel-head">
+        <h3>近两天三角洲陪玩精筛</h3>
+        <span>一键启动，进度在下方实时刷新</span>
+      </div>
+      <form class="ops-form-grid" hx-post="/actions/keyword-funnel/collect" hx-target="#keyword-funnel-result">
+        <input type="hidden" name="keyword" value="三角洲陪玩">
+        <input type="hidden" name="require_num" value="30">
+        <input type="hidden" name="include_comments" value="on">
+        <input type="hidden" name="comment_limit" value="50">
+        <input type="hidden" name="comment_since_hours" value="48">
+        <input type="hidden" name="source_mode" value="comments_only">
+        <input type="hidden" name="precision_mode" value="precision">
+        <input type="hidden" name="risk_mode" value="safe">
+        <input type="hidden" name="outreach_mode" value="manual">
+        <input type="hidden" name="clear_existing" value="on">
+        <button type="submit">开始近两天精筛</button>
+      </form>
+      <p class="ops-note">会先清空旧线索池，再搜索“三角洲陪玩”，只保留近 48 小时评论里的少而准线索。</p>
+    </section>
+
+    <section class="ops-panel">
+      <div class="ops-panel-head">
+        <h3>高意向判断逻辑</h3>
+        <span>当前任务口径</span>
+      </div>
+      <ol class="ops-info-list">
+        <li>只看评论区：作者画像不入池，避免把陪玩商家或内容作者误当客户。</li>
+        <li>时间过滤：评论 <code>create_time</code> 必须在近 48 小时内，缺少评论时间的记录直接跳过。</li>
+        <li>评分：评论来源 +30；强需求词“求带 / 陪玩 / 找陪 / 来陪 / 带我 / 护航 / 绿护 / 纯绿护 / 上分”命中 +22，最高 +40。</li>
+        <li>语境：评论里命中“三角洲 / 三角洲行动”再 +20；“多少钱 / 长期 / 靠谱 / 有人接吗 / 固定队”最高再 +15。</li>
+        <li>风险：命中“招代理 / 加盟 / 同行 / 工作室”会屏蔽；“免费 / 白嫖 / 广告”会降分并打风险标记。</li>
+        <li>少而准只保留 S / A：70 分以上 A，85 分以上 S；其余只留在全量任务里，不进精筛结果。</li>
+      </ol>
+    </section>
+  </section>
+
   <div class="ops-two-column">
     <section class="panel ops-panel">
       <div class="ops-panel-head">
@@ -74,6 +112,7 @@
           <span>额外抓取评论用户</span>
         </label>
         <input type="number" name="comment_limit" value="20" min="0" placeholder="每条作品最多读取评论数">
+        <input type="number" name="comment_since_hours" min="0" placeholder="只保留最近 N 小时评论，可留空">
         <button type="submit">后台采集线索</button>
       </form>
     </section>

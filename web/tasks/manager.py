@@ -1,10 +1,12 @@
 from concurrent.futures import ThreadPoolExecutor
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 import json
 import traceback
 import uuid
 
 from web.db import connect_db, init_db
+
+UTC = timezone.utc
 
 
 class TaskManager:

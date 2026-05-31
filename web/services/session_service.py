@@ -1,7 +1,9 @@
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 
 from builder.auth import DouyinAuth
 from web.db import connect_db, init_db
+
+UTC = timezone.utc
 
 
 class SessionService:

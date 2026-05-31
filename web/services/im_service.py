@@ -1,8 +1,11 @@
-from datetime import UTC, datetime
+from datetime import datetime, timezone
+import json
 
 from dy_apis.douyin_api import DouyinAPI
 from dy_apis.douyin_recv_msg import DouyinRecvMsg
 from web.db import connect_db, init_db
+
+UTC = timezone.utc
 
 
 class IMService:
@@ -39,7 +42,9 @@ class IMService:
 
     def start_receiver(self):
         def sink(payload):
-            self.broker.publish("events", {"channel": "im", "payload": payload})
+            event = {"channel": "im", "payload": payload}
+            self._record_event(event)
+            self.broker.publish("events", event)
 
         runtime = self.receiver_cls(
             self._auth(),
@@ -57,6 +62,16 @@ class IMService:
             )
             conn.commit()
         self.task_manager.submit("im.receive", "default", runtime.start)
+
+    def _record_event(self, event):
+        payload = event.get("payload") or {}
+        event_type = str(payload.get("event_type") or "im")
+        with connect_db(self.db_path) as conn:
+            conn.execute(
+                "insert into event_feed(channel, event_type, payload, created_at) values(?, ?, ?, ?)",
+                ("im", event_type, json.dumps(event, ensure_ascii=False), datetime.now(UTC).isoformat()),
+            )
+            conn.commit()
 
     def stop_receiver(self):
         runtime = self.task_manager.runtimes.pop("im:default", None)

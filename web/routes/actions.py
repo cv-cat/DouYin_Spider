@@ -191,11 +191,14 @@ def keyword_funnel_collect(
     require_num: str = Form("10"),
     include_comments: str | None = Form(None),
     comment_limit: str = Form("20"),
+    comment_since_hours: str = Form(""),
     source_mode: str = Form("comments_first"),
     precision_mode: str = Form("precision"),
     risk_mode: str = Form("safe"),
     outreach_mode: str = Form("manual"),
+    clear_existing: str | None = Form(None),
 ):
+    cleared_count = request.app.state.keyword_funnel_service.clear_leads() if clear_existing is not None else 0
     payload = request.app.state.keyword_funnel_service.queue_collect(
         keyword,
         require_num,
@@ -205,12 +208,14 @@ def keyword_funnel_collect(
         precision_mode=precision_mode,
         risk_mode=risk_mode,
         outreach_mode=outreach_mode,
+        comment_since_hours=comment_since_hours,
     )
+    prefix = f"已清空旧线索 {cleared_count} 条；" if clear_existing is not None else ""
     return request.app.state.templates.TemplateResponse(
         request=request,
         name="components/keyword_action_result.html",
         context={
-            "message": f"keyword collect task queued: run_id={payload['run_id']} task_id={payload['task_id']}",
+            "message": f"{prefix}keyword collect task queued: run_id={payload['run_id']} task_id={payload['task_id']}",
             "runs": request.app.state.keyword_funnel_service.list_runs(),
             "leads": request.app.state.keyword_funnel_service.list_leads(),
         },

@@ -8,6 +8,7 @@
         <th>等级</th>
         <th>作品</th>
         <th>作品链接</th>
+        <th>评论时间</th>
         <th>评论内容</th>
         <th>命中信号</th>
         <th>风险</th>
@@ -30,6 +31,7 @@
           <span>-</span>
           {% endif %}
         </td>
+        <td>{{ lead.comment_created_at_label or "-" }}</td>
         <td>{{ lead.comment_text }}</td>
         <td>{{ lead.matched_signals }}</td>
         <td>{{ lead.risk_flags }}</td>
@@ -38,7 +40,7 @@
       </tr>
       {% else %}
       <tr>
-        <td colspan="11">当前没有线索。</td>
+        <td colspan="12">当前没有线索。</td>
       </tr>
       {% endfor %}
     </tbody>

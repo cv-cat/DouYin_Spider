@@ -7,6 +7,20 @@ from web.toolbox_catalog import CRAWL_TOOL_GROUPS, LIVE_TOOL_GROUPS
 router = APIRouter()
 
 
+def _auth_status_label(status: str) -> str:
+    labels = {
+        "missing": "未配置",
+        "ok": "已登录",
+        "browser-login-success": "网页登录成功",
+        "browser-login-pending": "等待网页登录",
+        "qr-login-success": "二维码已登录",
+        "phone-login-success": "手机已登录",
+    }
+    if not status:
+        return labels["missing"]
+    return labels.get(status, status.replace("-", " "))
+
+
 @router.get("/", response_class=HTMLResponse)
 def overview(request: Request):
     with connect_db(request.app.state.config.db_path) as conn:
@@ -20,6 +34,7 @@ def overview(request: Request):
         context={
             "title": "DouYin_Spider Web UI",
             "auth_status": auth_row["status"] if auth_row else "missing",
+            "auth_status_label": _auth_status_label(auth_row["status"] if auth_row else "missing"),
             "live_count": live_count,
             "im_count": im_count,
             "failed_count": failed_count,

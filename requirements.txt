@@ -20,4 +20,5 @@ jinja2
 uvicorn
 python-multipart
 httpx
+customtkinter
 pytest

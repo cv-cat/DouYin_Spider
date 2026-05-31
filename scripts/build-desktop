@@ -1,0 +1,71 @@
+#!/bin/sh
+
+set -eu
+
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+REPO_ROOT=$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd)
+VENV_PYTHON="$REPO_ROOT/.venv/bin/python"
+APP_NAME="${DESKTOP_APP_NAME:-liangbashuazi}"
+ENTRY_FILE="$REPO_ROOT/desktop/client.py"
+
+if [ -x "$VENV_PYTHON" ]; then
+  PYTHON_BIN="$VENV_PYTHON"
+else
+  PYTHON_BIN="python3"
+fi
+
+cd "$REPO_ROOT"
+
+# PyInstaller 主打包。
+# 说明：
+# - --collect-all customtkinter : 带上主题/资源
+# - --collect-all playwright     : 带上 playwright driver + 自带 node（签名 execjs 复用它，用户免装 Node.js）
+# - --add-data claude_theme.json : 自定义暖色主题
+# - 不打包 chromium 浏览器 —— 体积太大，改为首次运行时自动下载到用户目录
+"$PYTHON_BIN" -m PyInstaller \
+  --noconfirm \
+  --clean \
+  --windowed \
+  --name "$APP_NAME" \
+  --paths "$REPO_ROOT" \
+  --collect-submodules desktop \
+  --collect-submodules web \
+  --collect-submodules dy_apis \
+  --collect-submodules dy_live \
+  --collect-all customtkinter \
+  --collect-all playwright \
+  --add-data "desktop/claude_theme.json:desktop" \
+  "$ENTRY_FILE"
+
+# 后处理：把抖音签名脚本 static/ 和 node_modules/ 拷进包。
+# 这两个目录含平台相关的 native .node 模块，PyInstaller 直接 --add-data 会处理失败，
+# 所以打包后手动复制（PyInstaller 完全不碰）。frozen 时 dy_util 从 _MEIPASS 读取它们。
+copy_runtime_assets() {
+  DEST="$1"
+  [ -d "$DEST" ] || return 0
+  rm -rf "$DEST/static" "$DEST/node_modules"
+  cp -R static "$DEST/"
+  cp -R node_modules "$DEST/"
+  echo "  已拷 static + node_modules -> $DEST"
+}
+
+echo "拷贝签名运行时资源（static + node_modules）："
+copy_runtime_assets "dist/$APP_NAME.app/Contents/Frameworks"
+copy_runtime_assets "dist/$APP_NAME/_internal"
+
+cat <<EOF
+
+Build 完成。
+
+产物：
+  dist/$APP_NAME.app    macOS 应用（分发这个）
+  dist/$APP_NAME/       onedir 文件夹版
+
+打包策略：
+  - chromium 浏览器不在包内，首次「网页登录/私信」时自动下载到
+    ~/Library/Application Support/$APP_NAME/ms-playwright（需联网，约 150MB，一次性）
+  - 抖音签名复用 playwright 自带的 node，使用者无需安装 Node.js
+
+Windows exe 必须在 Windows 上打（native node_modules 不能跨平台）：
+  见 .github/workflows/build-windows.yml，push 后在 GitHub Actions 触发。
+EOF

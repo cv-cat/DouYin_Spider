@@ -30,3 +30,11 @@ ENV/
 env.bak/
 venv.bak/
 datas
+
+.DS_Store
+.codegraph/
+.cursor/
+.venv-tk/
+skills/
+delta_client_assets/
+output/

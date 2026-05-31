@@ -1,0 +1,16 @@
+#!/bin/sh
+
+set -eu
+
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+REPO_ROOT=$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd)
+VENV_PYTHON="$REPO_ROOT/.venv/bin/python"
+
+if [ -x "$VENV_PYTHON" ]; then
+  PYTHON_BIN="$VENV_PYTHON"
+else
+  PYTHON_BIN="python3"
+fi
+
+cd "$REPO_ROOT"
+exec "$PYTHON_BIN" -m desktop.client "$@"

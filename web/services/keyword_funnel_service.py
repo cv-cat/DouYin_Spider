@@ -1,4 +1,4 @@
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 import json
 import uuid
 
@@ -29,6 +29,7 @@ class KeywordFunnelService:
         precision_mode="precision",
         risk_mode="safe",
         outreach_mode="manual",
+        comment_since_hours="",
     ):
         run_id = uuid.uuid4().hex
         require_num = int(require_num)
@@ -76,10 +77,14 @@ class KeywordFunnelService:
                     require_num,
                     include_comments,
                     comment_limit,
+                    comment_since_hours,
                 )
                 run = self._get_run(run_id) or {}
                 total_count = int(run.get("total_count", 0))
                 summary = f"collected {lead_count} leads"
+                since_hours = self._parse_positive_int(comment_since_hours)
+                if since_hours:
+                    summary += f"（近 {since_hours} 小时评论精筛）"
                 if comment_error_count:
                     summary += f"，跳过 {comment_error_count} 条作品评论抓取失败"
                 self._update_run(
@@ -130,6 +135,20 @@ class KeywordFunnelService:
             )
             conn.commit()
         return {"run_id": run_id, "task_id": task_id, "keyword": keyword}
+
+    def clear_leads(self):
+        with connect_db(self.db_path) as conn:
+            rows = conn.execute("select id from keyword_leads").fetchall()
+            lead_ids = [row["id"] for row in rows]
+            if lead_ids:
+                placeholders = ",".join("?" for _ in lead_ids)
+                conn.execute(f"delete from outreach_events where lead_id in ({placeholders})", tuple(lead_ids))
+            conn.execute("delete from keyword_leads")
+            conn.execute(
+                "update keyword_runs set lead_count = 0, high_intent_count = 0, contacted_count = 0, replied_count = 0"
+            )
+            conn.commit()
+        return len(lead_ids)
 
     def queue_bulk_message(self, run_id, content, limit=""):
         limit_value = int(limit) if str(limit).strip() else 0
@@ -370,40 +389,49 @@ class KeywordFunnelService:
             return f"{text}T23:59:59.999999+00:00" if upper else f"{text}T00:00:00+00:00"
         return text
 
-    def _collect_leads(self, run_id, keyword, require_num, include_comments, comment_limit):
+    def _collect_leads(self, run_id, keyword, require_num, include_comments, comment_limit, comment_since_hours=""):
         items = self.crawl_service.search_general(keyword, str(require_num), "0", "0")
         run = self._get_run(run_id) or {}
         precision_mode = str(run.get("precision_mode") or "precision")
+        source_mode = str(run.get("source_mode") or "comments_first")
+        since_hours = self._parse_positive_int(comment_since_hours)
+        comment_cutoff = datetime.now(UTC) - timedelta(hours=since_hours) if since_hours else None
         total_count = len(items)
-        self._update_progress(run_id, 0, total_count, 0, f"已找到 {total_count} 条作品，准备开始处理", high_intent_count=0)
+        summary = f"已找到 {total_count} 条作品，准备开始处理"
+        if source_mode == "comments_only":
+            summary += "，只保留评论区线索"
+        if since_hours:
+            summary += f"，只保留近 {since_hours} 小时评论"
+        self._update_progress(run_id, 0, total_count, 0, summary, high_intent_count=0)
         seen = set()
         inserted_total = 0
         high_intent_total = 0
         comment_error_count = 0
         for index, item in enumerate(items, start=1):
-            self._update_progress(
-                run_id,
-                index - 1,
-                total_count,
-                inserted_total,
-                f"正在处理第 {index}/{total_count} 条作品：提取作者",
-                high_intent_count=high_intent_total,
-            )
-            author_lead = self._extract_author_lead(keyword, item)
-            if author_lead and self._should_include_lead(author_lead, precision_mode) and author_lead["dedupe_key"] not in seen:
-                author_lead = self._enrich_lead_profile(author_lead)
-                seen.add(author_lead["dedupe_key"])
-                inserted_count, high_intent_count = self._insert_leads(run_id, [author_lead])
-                inserted_total += inserted_count
-                high_intent_total += high_intent_count
+            if source_mode != "comments_only":
                 self._update_progress(
                     run_id,
                     index - 1,
                     total_count,
                     inserted_total,
-                    f"正在处理第 {index}/{total_count} 条作品：已新增 {inserted_total} 条线索，准备抓取评论",
+                    f"正在处理第 {index}/{total_count} 条作品：提取作者",
                     high_intent_count=high_intent_total,
                 )
+                author_lead = self._extract_author_lead(keyword, item)
+                if author_lead and self._should_include_lead(author_lead, precision_mode) and author_lead["dedupe_key"] not in seen:
+                    author_lead = self._enrich_lead_profile(author_lead)
+                    seen.add(author_lead["dedupe_key"])
+                    inserted_count, high_intent_count = self._insert_leads(run_id, [author_lead])
+                    inserted_total += inserted_count
+                    high_intent_total += high_intent_count
+                    self._update_progress(
+                        run_id,
+                        index - 1,
+                        total_count,
+                        inserted_total,
+                        f"正在处理第 {index}/{total_count} 条作品：已新增 {inserted_total} 条线索，准备抓取评论",
+                        high_intent_count=high_intent_total,
+                    )
 
             if not include_comments:
                 self._update_progress(
@@ -439,7 +467,7 @@ class KeywordFunnelService:
             )
             try:
                 comments = self._fetch_comments(work_url, comment_limit)
-            except requests_exceptions.RequestException as exc:
+            except (requests_exceptions.RequestException, json.JSONDecodeError) as exc:
                 comment_error_count += 1
                 self._update_progress(
                     run_id,
@@ -450,6 +478,8 @@ class KeywordFunnelService:
                     high_intent_count=high_intent_total,
                 )
                 continue
+            if comment_cutoff:
+                comments = [comment for comment in comments if self._comment_is_recent(comment, comment_cutoff)]
             item_comment_leads = []
             for comment in comments:
                 comment_lead = self._extract_comment_lead(keyword, comment, aweme_id, work_url)
@@ -470,6 +500,20 @@ class KeywordFunnelService:
                 high_intent_count=high_intent_total,
             )
         return inserted_total, high_intent_total, comment_error_count
+
+    def _parse_positive_int(self, value):
+        try:
+            parsed = int(str(value or "").strip())
+        except (TypeError, ValueError):
+            return 0
+        return parsed if parsed > 0 else 0
+
+    def _comment_is_recent(self, comment, cutoff):
+        try:
+            create_time = int(comment.get("create_time"))
+        except (TypeError, ValueError):
+            return False
+        return datetime.fromtimestamp(create_time, UTC) >= cutoff
 
     def _send_bulk_messages(self, run_id, content, limit_value):
         query = "select * from keyword_leads where run_id = ? and message_status = 'pending' order by id asc"
@@ -827,6 +871,7 @@ class KeywordFunnelService:
         labels = {
             "source": {
                 "comments_first": "评论区优先",
+                "comments_only": "只看评论区",
                 "search_first": "搜索优先",
                 "live_first": "直播补充",
             },

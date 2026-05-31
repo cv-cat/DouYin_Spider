@@ -10,7 +10,7 @@
     <div class="ops-stat-strip">
       <article class="ops-stat-card">
         <span>登录状态</span>
-        <strong>{{ auth_status }}</strong>
+        <strong>{{ auth_status_label }}</strong>
       </article>
       <article class="ops-stat-card">
         <span>失败任务</span>
@@ -59,7 +59,7 @@
         <span>按当前状态继续</span>
       </div>
       <ul class="ops-info-list">
-        <li>如果 `登录状态` 不是 `ok`，先去登录中心补 cookie 或走网页登录。</li>
+        <li>如果登录状态不可用，先去登录中心补 cookie 或走网页登录。</li>
         <li>如果 `失败任务数` 不为 0，先去任务与日志定位错误，再继续大批量采集。</li>
         <li>要找新客户，优先进入 `关键词截流` 或 `线索池`。</li>
         <li>要排查实时链路，分别去 `直播监听` 和 `私信中心`。</li>

@@ -11,6 +11,7 @@ from web.routes.pages import router as pages_router
 from web.routes.streams import router as streams_router
 from web.services.crawl_service import CrawlService
 from web.services.acquisition_dashboard_service import AcquisitionDashboardService
+from web.services.agent_acquisition_service import AgentAcquisitionService
 from web.services.im_service import IMService
 from web.services.keyword_funnel_service import KeywordFunnelService
 from web.services.live_service import LiveService
@@ -59,6 +60,15 @@ def create_app(overrides=None) -> FastAPI:
         app.state.crawl_service,
         app.state.im_service,
         app.state.lead_scoring_service,
+    )
+    app.state.agent_acquisition_service = AgentAcquisitionService(
+        config.db_path,
+        config.project_root / "datas" / "runtime",
+        app.state.task_manager,
+        app.state.crawl_service,
+        app.state.lead_scoring_service,
+        app.state.im_service,
+        app.state.live_service,
     )
     app.state.acquisition_dashboard_service = AcquisitionDashboardService(config.db_path)
     app.state.outreach_service = OutreachService(config.db_path)

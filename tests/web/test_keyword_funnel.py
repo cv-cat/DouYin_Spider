@@ -1,3 +1,6 @@
+from datetime import UTC, datetime, timedelta
+import json
+
 from fastapi.testclient import TestClient
 from requests import exceptions as requests_exceptions
 
@@ -177,6 +180,99 @@ class CommentSSLErrorCrawlService(DummyCrawlService):
         return super().invoke(operation, payload)
 
 
+class CommentJSONErrorCrawlService(DummyCrawlService):
+    def invoke(self, operation, payload):
+        if payload.get("cursor", "0") == "0":
+            raise json.JSONDecodeError("Expecting value", "", 0)
+        return super().invoke(operation, payload)
+
+
+class RecentCommentCrawlService(DummyCrawlService):
+    def search_general(
+        self,
+        query,
+        require_num,
+        sort_type,
+        publish_time,
+        filter_duration="",
+        search_range="",
+        content_type="",
+    ):
+        return [
+            {
+                "aweme_info": {
+                    "aweme_id": "aweme-recent",
+                    "share_url": "https://www.douyin.com/video/aweme-recent",
+                    "desc": "三角洲陪玩",
+                    "author": {
+                        "uid": "author-1",
+                        "sec_uid": "sec-author-1",
+                        "nickname": "作者不应入池",
+                        "signature": "三角洲求带上分",
+                        "avatar_thumb": {"url_list": []},
+                    },
+                }
+            }
+        ]
+
+    def invoke(self, operation, payload):
+        now = datetime.now(UTC)
+        return {
+            "comments": [
+                {
+                    "cid": "recent-comment",
+                    "aweme_id": "aweme-recent",
+                    "text": "三角洲求陪玩，今晚求带",
+                    "create_time": int((now - timedelta(hours=3)).timestamp()),
+                    "user": {
+                        "uid": "recent-user",
+                        "sec_uid": "sec-recent-user",
+                        "nickname": "近两天用户",
+                        "signature": "",
+                        "avatar_thumb": {"url_list": []},
+                    },
+                },
+                {
+                    "cid": "old-comment",
+                    "aweme_id": "aweme-recent",
+                    "text": "三角洲求陪玩，三天前",
+                    "create_time": int((now - timedelta(days=3)).timestamp()),
+                    "user": {
+                        "uid": "old-user",
+                        "sec_uid": "sec-old-user",
+                        "nickname": "旧评论用户",
+                        "signature": "",
+                        "avatar_thumb": {"url_list": []},
+                    },
+                },
+                {
+                    "cid": "missing-time-comment",
+                    "aweme_id": "aweme-recent",
+                    "text": "三角洲求陪玩，但没时间",
+                    "user": {
+                        "uid": "missing-time-user",
+                        "sec_uid": "sec-missing-time-user",
+                        "nickname": "无时间用户",
+                        "signature": "",
+                        "avatar_thumb": {"url_list": []},
+                    },
+                },
+            ],
+            "cursor": "0",
+            "has_more": 0,
+        }
+
+    def lookup_user(self, user_url):
+        sec_uid = user_url.rstrip("/").split("/")[-1].split("?")[0]
+        return {
+            "user": {
+                "uid": sec_uid.replace("sec-", ""),
+                "sec_uid": sec_uid,
+                "nickname": "近两天用户" if sec_uid == "sec-recent-user" else sec_uid,
+            }
+        }
+
+
 def test_collect_task_persists_unique_author_and_comment_leads(tmp_path):
     crawl_service = DummyCrawlService()
     service = KeywordFunnelService(
@@ -308,6 +404,70 @@ def test_collect_task_skips_comment_ssl_error_and_keeps_run_success(tmp_path):
     assert "评论抓取失败" in run_row["summary"]
 
 
+def test_collect_task_skips_comment_json_error_and_keeps_run_success(tmp_path):
+    service = KeywordFunnelService(
+        tmp_path / "web-ui.sqlite3",
+        DummyTaskManager(),
+        CommentJSONErrorCrawlService(),
+        DummyIMService(),
+    )
+
+    queued = service.queue_collect("装机", require_num="5", include_comments=True, comment_limit="10")
+
+    with connect_db(tmp_path / "web-ui.sqlite3") as conn:
+        run_row = conn.execute(
+            "select status, lead_count, summary from keyword_runs where run_id = ?",
+            (queued["run_id"],),
+        ).fetchone()
+
+    assert run_row["status"] == "success"
+    assert run_row["lead_count"] == 0
+    assert "评论抓取失败" in run_row["summary"]
+
+
+def test_collect_task_can_filter_to_recent_comments_and_comments_only(tmp_path):
+    service = KeywordFunnelService(
+        tmp_path / "web-ui.sqlite3",
+        DummyTaskManager(),
+        RecentCommentCrawlService(),
+        DummyIMService(),
+    )
+
+    queued = service.queue_collect(
+        "三角洲陪玩",
+        require_num="5",
+        include_comments=True,
+        comment_limit="10",
+        source_mode="comments_only",
+        precision_mode="precision",
+        comment_since_hours="48",
+    )
+
+    with connect_db(tmp_path / "web-ui.sqlite3") as conn:
+        run_row = conn.execute(
+            "select status, lead_count, high_intent_count, summary from keyword_runs where run_id = ?",
+            (queued["run_id"],),
+        ).fetchone()
+        lead_rows = conn.execute(
+            "select user_id, nickname, source_type, grade, comment_text from keyword_leads where run_id = ?",
+            (queued["run_id"],),
+        ).fetchall()
+
+    assert run_row["status"] == "success"
+    assert run_row["lead_count"] == 1
+    assert run_row["high_intent_count"] == 1
+    assert "近 48 小时评论精筛" in run_row["summary"]
+    assert [dict(row) for row in lead_rows] == [
+        {
+            "user_id": "recent-user",
+            "nickname": "近两天用户",
+            "source_type": "comment",
+            "grade": "S",
+            "comment_text": "三角洲求陪玩，今晚求带",
+        }
+    ]
+
+
 def test_bulk_message_task_sends_pending_leads_for_run(tmp_path):
     crawl_service = DummyCrawlService()
     im_service = DummyIMService()
@@ -356,6 +516,7 @@ def test_keyword_collect_action_returns_run_and_task_ids(tmp_path):
             precision_mode="precision",
             risk_mode="safe",
             outreach_mode="manual",
+            comment_since_hours="",
         ):
             return {"run_id": "run-1", "task_id": "task-1", "keyword": keyword}
 
@@ -395,11 +556,17 @@ def test_keyword_funnel_page_contains_auto_refresh_regions(tmp_path):
     assert 'name="precision_mode"' in response.text
     assert 'name="risk_mode"' in response.text
     assert 'name="outreach_mode"' in response.text
+    assert 'name="comment_since_hours"' in response.text
     assert "评论区优先" in response.text
     assert "人工审核" in response.text
     assert "默认关键词标签" in response.text
     assert 'data-keyword-chip="求带"' in response.text
     assert 'data-keyword-input' in response.text
+    assert "近两天三角洲陪玩精筛" in response.text
+    assert 'value="comments_only"' in response.text
+    assert 'value="48"' in response.text
+    assert "评论来源 +30" in response.text
+    assert "少而准只保留 S / A" in response.text
 
 
 def test_keyword_bulk_message_action_returns_task_id(tmp_path):
@@ -448,6 +615,7 @@ def test_keyword_collect_action_passes_strategy_modes(tmp_path):
             precision_mode="precision",
             risk_mode="safe",
             outreach_mode="manual",
+            comment_since_hours="",
         ):
             self.called = {
                 "keyword": keyword,
@@ -458,8 +626,13 @@ def test_keyword_collect_action_passes_strategy_modes(tmp_path):
                 "precision_mode": precision_mode,
                 "risk_mode": risk_mode,
                 "outreach_mode": outreach_mode,
+                "comment_since_hours": comment_since_hours,
             }
             return {"run_id": "run-1", "task_id": "task-1", "keyword": keyword}
+
+        def clear_leads(self):
+            self.cleared = True
+            return 12
 
         def list_runs(self):
             return []
@@ -482,6 +655,8 @@ def test_keyword_collect_action_passes_strategy_modes(tmp_path):
             "precision_mode": "precision",
             "risk_mode": "safe",
             "outreach_mode": "manual",
+            "comment_since_hours": "48",
+            "clear_existing": "on",
         },
     )
 
@@ -495,7 +670,10 @@ def test_keyword_collect_action_passes_strategy_modes(tmp_path):
         "precision_mode": "precision",
         "risk_mode": "safe",
         "outreach_mode": "manual",
+        "comment_since_hours": "48",
     }
+    assert dummy.cleared is True
+    assert "已清空旧线索 12 条" in response.text
 
 
 def test_collect_task_marks_verification_required_for_frontend(tmp_path):

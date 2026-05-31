@@ -1,6 +1,10 @@
+from __future__ import annotations
+
 import sqlite3
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from pathlib import Path
+
+UTC = timezone.utc
 
 
 DEFAULT_OUTREACH_TEMPLATES = (
@@ -148,6 +152,70 @@ create table if not exists outreach_events (
 create table if not exists acquisition_rules (
     rule_key text primary key,
     value text not null,
+    updated_at text not null
+);
+create table if not exists agent_configs (
+    config_key text primary key,
+    value text not null,
+    updated_at text not null
+);
+create table if not exists agent_video_items (
+    id integer primary key autoincrement,
+    keyword text not null,
+    aweme_id text not null,
+    title text not null default '',
+    nickname text not null default '',
+    user_id text not null default '',
+    sec_uid text not null default '',
+    avatar_url text not null default '',
+    share_url text not null default '',
+    comment_count integer not null default 0,
+    follower_count integer not null default 0,
+    following_count integer not null default 0,
+    aweme_count integer not null default 0,
+    digg_count integer not null default 0,
+    create_time integer not null default 0,
+    raw_payload text not null default '{}',
+    created_at text not null,
+    unique(keyword, aweme_id)
+);
+create table if not exists agent_comment_items (
+    id integer primary key autoincrement,
+    aweme_id text not null,
+    comment_id text not null,
+    user_id text not null default '',
+    sec_uid text not null default '',
+    nickname text not null default '',
+    blue_v text not null default '否',
+    follower_count integer not null default 0,
+    following_count integer not null default 0,
+    aweme_count integer not null default 0,
+    comment_text text not null default '',
+    create_time integer not null default 0,
+    score integer not null default 0,
+    grade text not null default 'C',
+    is_intent integer not null default 0,
+    matched_signals text not null default '[]',
+    raw_payload text not null default '{}',
+    created_at text not null,
+    unique(aweme_id, comment_id)
+);
+create table if not exists agent_private_targets (
+    id integer primary key autoincrement,
+    uid text not null unique,
+    status text not null default 'pending',
+    ip text not null default '',
+    error_message text not null default '',
+    created_at text not null,
+    sent_at text
+);
+create table if not exists agent_live_rooms (
+    id integer primary key autoincrement,
+    live_id text not null unique,
+    title text not null default '',
+    status text not null default 'pending',
+    online_text text not null default '',
+    created_at text not null,
     updated_at text not null
 );
 """
