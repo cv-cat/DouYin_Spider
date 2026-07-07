@@ -164,11 +164,10 @@ python dy_apis/douyin_recv_msg.py
 
 如果你对爬虫和 AI Agent 感兴趣，请加作者主页 wx 通过邀请加入群聊
 
-ps: 请加群19、20、21，人满或者过期 issue | wx 提醒
+ps: 请加群21、22、23，人满或者过期 issue | wx 提醒
 
-| group19 | group20 | group21 |
+| group21 | group22 | group23 |
 |:--:|:--:|:--:|
-| <img width="280" alt="group19" src="https://github.com/user-attachments/assets/c3b4cb63-eeb7-40de-8ee4-e597c77dd53e" /> | <img width="280" alt="group20" src="https://github.com/user-attachments/assets/5246820c-3e6f-4fa8-b812-056deb15dd7f" /> | <img width="280" alt="group21" src="https://github.com/user-attachments/assets/ddb73efa-34c1-4a74-b103-8fe1cdb21469" /> |
-
+| <img width="280" alt="group21" src="https://github.com/user-attachments/assets/fdde52de-b2b9-48a5-a996-cd83ab018413" /> | <img width="280" alt="group22" src="https://github.com/user-attachments/assets/86ee2c3c-7f9d-4f0f-81f0-997edaf2b255" /> | <img width="280" alt="group23" src="https://github.com/user-attachments/assets/288fb4f0-2c4d-4b5c-96bf-2a271233339b" /> |
 
 
