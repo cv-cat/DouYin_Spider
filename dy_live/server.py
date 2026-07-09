@@ -2,6 +2,7 @@ import gzip
 import threading
 import time
 from urllib.parse import urlencode
+from loguru import logger
 
 from websocket import WebSocketApp
 
@@ -82,8 +83,7 @@ class DouyinLive:
 
             # s = zlib.decompress(decode_str).decode()
         except Exception as e:
-            print('error')
-            print(str(e))
+            logger.error(f'Error processing live message: {e}')
 
     def on_error(self, ws, error):
         print("\033[31m### error ###")
@@ -162,7 +162,7 @@ class DouyinLive:
         try:
             self.ws.run_forever(origin='https://live.douyin.com')
         except Exception as e:
-            print(str(e))
+            logger.error(f'Error starting websocket: {e}')
             self.ws.close()
 
 

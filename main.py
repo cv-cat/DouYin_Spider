@@ -20,6 +20,9 @@ class Data_Spider():
         :return:
         """
         res_json = self.douyin_apis.get_work_info(auth, work_url)
+        if not res_json or 'aweme_detail' not in res_json:
+            logger.error(f'获取作品信息失败 {work_url}: {res_json}')
+            return None
         data = res_json['aweme_detail']
 
         work_info = handle_work_info(data)
@@ -41,7 +44,8 @@ class Data_Spider():
         work_list = []
         for work_url in works:
             work_info = self.spider_work(auth, work_url)
-            work_list.append(work_info)
+            if work_info:
+                work_list.append(work_info)
         for work_info in work_list:
             if save_choice == 'all' or 'media' in save_choice:
                 download_work(work_info, base_path['media'], save_choice)
@@ -144,4 +148,3 @@ if __name__ == '__main__':
     content_type = "0"  # 内容形式 0 不限, 1 视频, 2 图文
 
     data_spider.spider_some_search_work(auth, query, require_num, base_path, 'all', sort_type, publish_time, filter_duration, search_range, content_type)
-
