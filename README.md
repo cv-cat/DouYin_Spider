@@ -105,6 +105,29 @@ python dy_live/server.py
 python dy_apis/douyin_recv_msg.py
 ```
 
+### 公开数据匿名 Cookie 采集
+
+如果只需要公开账号信息、账号下作品、作品评论和评论区图片，不需要登录态 cookie。
+可以使用 `public_spider.py` 生成匿名浏览器 cookie 并采集公开数据：
+
+```bash
+python public_spider.py \
+  --user-url "https://www.douyin.com/user/SEC_UID" \
+  --refresh-cookie \
+  --max-pages 1 \
+  --max-comments-per-video 20 \
+  --output-dir outputs/public_spider
+```
+
+输出文件：
+
+- `user.json`：账号信息
+- `videos.jsonl`：账号作品列表
+- `comments.jsonl`：评论列表，评论图片在 `picture_urls`
+- `summary.json`：本次采集统计
+
+注意：匿名 cookie 只适合公开读取链路。私信、会话、互动等需要当前登录用户身份的接口仍需要登录态 cookie。
+
 ### 🗝️注意事项
 - `main.py` 是爬虫入口，可根据需求自行修改调用
 - `dy_apis/douyin_api.py` 包含全部 API 接口封装，含直播间点赞、发消息、私信收发等
@@ -169,5 +192,4 @@ ps: 请加群21、22、23，人满或者过期 issue | wx 提醒
 | group21 | group22 | group23 |
 |:--:|:--:|:--:|
 | <img width="280" alt="group21" src="https://github.com/user-attachments/assets/fdde52de-b2b9-48a5-a996-cd83ab018413" /> | <img width="280" alt="group22" src="https://github.com/user-attachments/assets/86ee2c3c-7f9d-4f0f-81f0-997edaf2b255" /> | <img width="280" alt="group23" src="https://github.com/user-attachments/assets/288fb4f0-2c4d-4b5c-96bf-2a271233339b" /> |
-
 

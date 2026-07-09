@@ -10,3 +10,5 @@ requests
 argparse
 websockets
 protobuf3_to_dict
+beautifulsoup4
+playwright
