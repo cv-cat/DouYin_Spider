@@ -1,20 +1,56 @@
-<p align="center">
-  <a href="https://github.com/cv-cat/Douyin_Spider" target="_blank" align="center" alt="Go to Douyin_Spider Website">
-    <picture>
-      <img width="220" src="./author/logo.jpg" alt="Douyin_Spider logo">
-    </picture>
-  </a>
-</p>
 <div align="center">
-    <a href="https://www.python.org/">
-        <img src="https://img.shields.io/badge/python-3.7%2B-blue" alt="Python 3.7+">
+  <p align="center">
+    <a href="https://github.com/cv-cat/Douyin_Spider" target="_blank" align="center" alt="Go to Douyin_Spider Website">
+      <picture>
+        <img width="220" src="./author/logo.jpg" alt="Douyin_Spider logo">
+      </picture>
     </a>
-    <a href="https://nodejs.org/zh-cn/">
-        <img src="https://img.shields.io/badge/nodejs-18%2B-blue" alt="NodeJS 18+">
-    </a>
+  </p>
+  <div align="center">
+      <a href="https://www.python.org/">
+          <img src="https://img.shields.io/badge/python-3.7%2B-blue" alt="Python 3.7+">
+      </a>
+      <a href="https://nodejs.org/zh-cn/">
+          <img src="https://img.shields.io/badge/nodejs-18%2B-blue" alt="NodeJS 18+">
+      </a>
+  </div>
+  
+  # 🎶DouYin_Spider
+  
 </div>
 
-# 🎶DouYin_Spider
+
+## ❤️Sponsor
+
+> [想出现在这里？](mailto:992822653@qq.com)
+
+<details open>
+<summary>点击折叠</summary>
+
+<div align="center">
+
+[![FastAIToken](https://github.com/TheSmallHanCat/flow2api/blob/main/static/sponsors/fastaitoken-banner.png)](https://www.fastaitoken.com/register?aff=48J4VXUABAAV)
+
+</div>
+
+**FastAIToken** 是面向开发者的 AI API 聚合平台，支持 OpenAI、Claude、Gemini 等主流大模型，兼容 OpenAI API 协议，可无缝接入 **Claude Code、Codex、Gemini CLI、Cherry Studio、Cline、Continue** 等各类 AI 开发工具。平台采用 **充值 1:1（1 元 = 1 美元 API 额度）**，帮助开发者以更低成本、更高效率地使用全球领先的大模型服务。
+
+平台提供多个可选分组与公开状态页，开发者可根据成本、响应速度和稳定性自由选择不同渠道，并享受 **7×24 小时真人技术支持**（非机器人）。
+
+**主要做 AI 开发接入？可以试试 [FastAIToken](https://www.fastaitoken.com/register?aff=48J4VXUABAAV)，兼容 Codex / Claude Code / Gemini CLI 等主流工具。**
+
+
+---
+
+<table>
+<tr>
+<td width="180"><a href="https://api.icreat.ai/register?aff=Spider_XHS"><img src="https://github.com/user-attachments/assets/457f46d1-2a39-4e64-9240-4b7420a41242" alt="iCreat API" width="150"></a></td>
+<td><a href="https://api.icreat.ai/register?aff=Spider_XHS">iCreat API</a> 专为个人开发者、团队和企业的高性能AI模型API中转平台，官方直连稳定渠道（谷歌/火山/昆仑万维/腾讯云等开白名单），平台特别提供 Seedance2 真人免审核开白以及 banana pro/GPT image 2 等 60 多个最热门模型。通过统一控制台提供多维度模型筛选、计费类型管理及分组权限控制。提供按需计费及余额计费、企业可正常开票和专属对接服务。</td>
+</tr>
+
+</table>
+
+</details>
 
 **✨ 专业的抖音数据采集与交互解决方案，支持数据爬取、直播间监听、私信收发等功能**
 
