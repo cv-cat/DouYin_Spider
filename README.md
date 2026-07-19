@@ -42,13 +42,6 @@
 
 ---
 
-<table>
-<tr>
-<td width="180"><a href="https://api.icreat.ai/register?aff=Spider_XHS"><img src="https://github.com/user-attachments/assets/457f46d1-2a39-4e64-9240-4b7420a41242" alt="iCreat API" width="150"></a></td>
-<td><a href="https://api.icreat.ai/register?aff=Spider_XHS">iCreat API</a> 专为个人开发者、团队和企业的高性能AI模型API中转平台，官方直连稳定渠道（谷歌/火山/昆仑万维/腾讯云等开白名单），平台特别提供 Seedance2 真人免审核开白以及 banana pro/GPT image 2 等 60 多个最热门模型。通过统一控制台提供多维度模型筛选、计费类型管理及分组权限控制。提供按需计费及余额计费、企业可正常开票和专属对接服务。</td>
-</tr>
-
-</table>
 
 </details>
 
