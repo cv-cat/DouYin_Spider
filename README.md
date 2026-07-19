@@ -180,12 +180,13 @@ python dy_apis/douyin_recv_msg.py
 
 
 ## 📈 Star 趋势
-<a href="https://www.star-history.com/#cv-cat/DouYin_Spider&Date">
- <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=cv-cat/DouYin_Spider&type=Date&theme=dark" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=cv-cat/DouYin_Spider&type=Date" />
-   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=cv-cat/DouYin_Spider&type=Date" />
- </picture>
+
+<a href="https://cvcat.site/star-history/svg?repos=cv-cat/DouYin_Spider&type=Date">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://cvcat.site/star-history/svg?repos=cv-cat/DouYin_Spider&type=Date&theme=dark" />
+    <source media="(prefers-color-scheme: light)" srcset="https://cvcat.site/star-history/svg?repos=cv-cat/DouYin_Spider&type=Date" />
+    <img alt="Star History Chart" src="https://cvcat.site/star-history/svg?repos=cv-cat/DouYin_Spider&type=Date" />
+  </picture>
 </a>
 
 
