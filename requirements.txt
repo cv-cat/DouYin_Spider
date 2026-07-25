@@ -3,6 +3,7 @@ aiofiles
 loguru
 python-dotenv
 retry
+beautifulsoup4
 openpyxl
 urllib3
 PyExecJS

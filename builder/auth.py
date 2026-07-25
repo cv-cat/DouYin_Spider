@@ -2,7 +2,7 @@ import base64
 import json
 
 from dy_apis.douyin_api import DouyinAPI
-from utils.dy_util import trans_cookies, generate_msToken
+from utils.dy_util import trans_cookies, generate_msToken, generate_webid, generate_fake_webid
 
 
 class DouyinAuth:
@@ -22,6 +22,12 @@ class DouyinAuth:
         self.cookie_str = cookieStr
         self.msToken = self.cookie["msToken"] if "msToken" in self.cookie else generate_msToken()
         self.cookie["msToken"] = self.msToken
+        # 如果 cookie 中没有 s_v_web_id，自动生成
+        if "s_v_web_id" not in self.cookie or not self.cookie["s_v_web_id"]:
+            webid = generate_webid(self)
+            if webid is None:
+                webid = generate_fake_webid()
+            self.cookie["s_v_web_id"] = webid
         self.cookie_str = "; ".join([f"{k}={v}" for k, v in self.cookie.items()])
         if web_protect_ != "":
             web_protect_ = json.loads(json.loads(web_protect_)['data'])

@@ -120,19 +120,35 @@ def save_to_xlsx(datas, file_path):
     wb.save(file_path)
     logger.info(f'数据保存至 {file_path}')
 
+HEADERS = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
+    'Referer': 'https://www.douyin.com/',
+}
+
 def download_media(path, name, url, type):
+    if not url:
+        logger.warning(f'下载失败，URL为空: {path}/{name}')
+        return
     if type == 'image':
-        content = requests.get(url).content
+        resp = requests.get(url, headers=HEADERS, verify=False)
+        content = resp.content
         with open(path + '/' + name + '.jpg', mode="wb") as f:
             f.write(content)
     elif type == 'video':
-        res = requests.get(url, stream=True)
+        # 去掉视频地址中的水印参数，获取无水印版本
+        video_url = url.replace('watermark=1', 'watermark=0')
+        resp = requests.get(video_url, headers=HEADERS, stream=True, verify=False)
+        if resp.status_code != 200:
+            logger.warning(f'视频下载失败，HTTP {resp.status_code}: {video_url}')
+            return
         size = 0
         chunk_size = 1024 * 1024
         with open(path + '/' + name + '.mp4', mode="wb") as f:
-            for data in res.iter_content(chunk_size=chunk_size):
+            for data in resp.iter_content(chunk_size=chunk_size):
                 f.write(data)
                 size += len(data)
+        if size < 1024:
+            logger.warning(f'视频可能下载不完整，大小仅 {size} bytes: {video_url}')
 
 
 def save_wrok_detail(work, path):
