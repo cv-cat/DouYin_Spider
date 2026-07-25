@@ -48,7 +48,8 @@ class Header:
 class HeaderBuilder:
     # ua = ('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 '
     #       'Safari/537.36 Edg/125.0.0.0')
-    ua = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/117.0"
+    from utils.fingerprint import get_profile
+    ua = get_profile()["ua"]
 
     @staticmethod
     def build(header_type):

@@ -15,6 +15,7 @@ from functools import partial
 
 subprocess.Popen = partial(subprocess.Popen, encoding="utf-8")
 import execjs
+from utils.fingerprint import get_profile
 
 if getattr(sys, 'frozen', None):
     basedir = sys._MEIPASS
@@ -41,14 +42,10 @@ def generateSecretCode(phone, code):
 
 try:
     node_modules = path.join(basedir, 'node_modules')
-    dy_path = path.join(basedir, 'static', 'dy_ab.js')
-    dy_js = execjs.compile(open(dy_path, 'r', encoding='utf-8').read(), cwd=node_modules)
     sign_path = path.join(basedir, 'static', 'dy_live_sign.js')
     sign_js = execjs.compile(open(sign_path, 'r', encoding='utf-8').read(), cwd=node_modules)
 except:
     node_modules = path.join(basedir, '..', 'node_modules')
-    dy_path = path.join(basedir, '..', 'static', 'dy_ab.js')
-    dy_js = execjs.compile(open(dy_path, 'r', encoding='utf-8').read(), cwd=node_modules)
     sign_path = path.join(basedir, '..', 'static', 'dy_live_sign.js')
     sign_js = execjs.compile(open(sign_path, 'r', encoding='utf-8').read(), cwd=node_modules)
 
@@ -68,14 +65,15 @@ def trans_cookies(cookies_str):
 
 # 私信传obj, 其他的拼接
 def generate_req_sign(e, priK):
-    sign = dy_js.call('get_req_sign', e, priK)
-    return sign
+    """bd-ticket-guard ECDSA req_sign。"""
+    from utils.bd_ticket import get_req_sign
+    return get_req_sign(e, priK)
 
 
 # query, data都是拼接字符串
 def generate_a_bogus(query, data=""):
-    a_bogus = dy_js.call('get_ab', query, data)
-    return a_bogus
+    """a_bogus。"""
+    return _pure_sign().sign(f'https://www.douyin.com/?{query}', data)
 
 
 def generate_signature(room_id, user_unique_id):
@@ -87,8 +85,9 @@ def generate_signature(room_id, user_unique_id):
 
 # 传递私钥
 def generate_ree_key(prik):
-    ree_key = dy_js.call('get_ree_key', prik)
-    return ree_key
+    """bd-ticket-guard """
+    from utils.bd_ticket import get_ree_key
+    return get_ree_key(prik)
 
 
 # 传递query, ticket, ts_sign, priK
@@ -114,12 +113,37 @@ def generate_msToken(randomlength=107):
     return random_str
 
 
+def generate_dynamic_msToken(ttwid=None, proxies=None):
+    """msToken"""
+    try:
+        from utils.mstoken import get_mstoken
+        return get_mstoken(ttwid=ttwid, proxies=proxies) or ''
+    except Exception:
+        return ''
+
+
+_pure_signer = None
+
+
+def _pure_sign():
+    global _pure_signer
+    if _pure_signer is None:
+        from utils.ab_pure import ABogusPureSigner
+        _pure_signer = ABogusPureSigner(fixed=False)
+    return _pure_signer
+
+
+def generate_a_bogus_pure(api_path, query):
+    """a_bogus"""
+    return _pure_sign().sign(f'https://www.douyin.com{api_path}?{query}')
+
+
 def generate_ttwid():
     url = f"https://www.douyin.com/discover?modal_id=7376449060384935209"
     ttwid = None
     try:
         headers = {
-            'user-agent': "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
+            'user-agent': get_profile()["ua"],
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
             "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8"
         }
@@ -191,13 +215,13 @@ def generate_csrf_token(cookies_str):
             'pragma': 'no-cache',
             'priority': 'u=1, i',
             'referer': 'https://www.douyin.com/?recommend=1',
-            'sec-ch-ua': '"Microsoft Edge";v="125", "Chromium";v="125", "Not.A/Brand";v="24"',
+            'sec-ch-ua': '"Google Chrome";v="150", "Chromium";v="150", "Not.A/Brand";v="24"',
             'sec-ch-ua-mobile': '?0',
             'sec-ch-ua-platform': '"Windows"',
             'sec-fetch-dest': 'empty',
             'sec-fetch-mode': 'cors',
             'sec-fetch-site': 'same-origin',
-            'user-agent': "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
+            'user-agent': get_profile()["ua"],
             'x-secsdk-csrf-request': '1',
             'x-secsdk-csrf-version': '1.2.22',
         }

@@ -124,15 +124,15 @@ if __name__ == '__main__':
     # save_choice 为 excel 或者 all 时，excel_name 不能为空
 
 
-    # 1 爬取列表的所有作品信息 作品链接 如下所示 注意此url会过期！
-    works = [
-        r'https://www.douyin.com/user/MS4wLjABAAAAv2Jr7Ngl7lQMjp4fw0AxtXkaHOgI_UL8aBJGGDSaU1g?from_tab_name=main&modal_id=7445533736877264178',
-    ]
-    data_spider.spider_some_work(auth, works, base_path, 'all', 'test')
-
-    # 2 爬取用户的所有作品信息 用户链接 如下所示 注意此url会过期！
-    user_url = 'https://www.douyin.com/user/MS4wLjABAAAAULqT-SrJDT7RqeoxeGg1hB14Ia5UI9Pm66kzKmI1ITD2Fo3bUhqYePBaztkzj7U5?from_tab_name=main&relation=0&vid=7227654252435361061'
-    data_spider.spider_user_all_work(auth, user_url, base_path, 'all')
+    # # 1 爬取列表的所有作品信息 作品链接 如下所示 注意此url会过期！
+    # works = [
+    #     r'https://www.douyin.com/user/MS4wLjABAAAAv2Jr7Ngl7lQMjp4fw0AxtXkaHOgI_UL8aBJGGDSaU1g?from_tab_name=main&modal_id=7445533736877264178',
+    # ]
+    # data_spider.spider_some_work(auth, works, base_path, 'all', 'test')
+    #
+    # # 2 爬取用户的所有作品信息 用户链接 如下所示 注意此url会过期！
+    # user_url = 'https://www.douyin.com/user/MS4wLjABAAAAULqT-SrJDT7RqeoxeGg1hB14Ia5UI9Pm66kzKmI1ITD2Fo3bUhqYePBaztkzj7U5?from_tab_name=main&relation=0&vid=7227654252435361061'
+    # data_spider.spider_user_all_work(auth, user_url, base_path, 'all')
 
     # 3 搜索指定关键词的作品
     query = "榴莲"
