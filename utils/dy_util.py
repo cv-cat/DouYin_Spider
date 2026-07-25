@@ -40,16 +40,6 @@ def generateSecretCode(phone, code):
     sign = login_js.call('generateSecretCode', phone, code)
     return sign
 
-try:
-    node_modules = path.join(basedir, 'node_modules')
-    sign_path = path.join(basedir, 'static', 'dy_live_sign.js')
-    sign_js = execjs.compile(open(sign_path, 'r', encoding='utf-8').read(), cwd=node_modules)
-except:
-    node_modules = path.join(basedir, '..', 'node_modules')
-    sign_path = path.join(basedir, '..', 'static', 'dy_live_sign.js')
-    sign_js = execjs.compile(open(sign_path, 'r', encoding='utf-8').read(), cwd=node_modules)
-
-
 def trans_cookies(cookies_str):
     cookies = {
         # "douyin.com": "",
@@ -77,10 +67,10 @@ def generate_a_bogus(query, data=""):
 
 
 def generate_signature(room_id, user_unique_id):
+    """直播 X-Bogus。"""
     raw_string = f"live_id=1,aid=6383,version_code=180800,webcast_sdk_version=1.0.15,room_id={room_id},sub_room_id=,sub_channel_id=,did_rule=3,user_unique_id={user_unique_id},device_platform=web,device_type=,ac=,identity=audience"
     x_ms_stub = hashlib.md5(raw_string.encode("utf-8")).hexdigest()
-    result = sign_js.call("get_signature", x_ms_stub)
-    return result.get("X-Bogus")
+    return _xb_sign().sign(x_ms_stub)
 
 
 # 传递私钥
@@ -123,6 +113,7 @@ def generate_dynamic_msToken(ttwid=None, proxies=None):
 
 
 _pure_signer = None
+_xb_signer = None
 
 
 def _pure_sign():
@@ -131,6 +122,14 @@ def _pure_sign():
         from utils.ab_pure import ABogusPureSigner
         _pure_signer = ABogusPureSigner(fixed=False)
     return _pure_signer
+
+
+def _xb_sign():
+    global _xb_signer
+    if _xb_signer is None:
+        from utils.xbogus_pure import XbogusSigner
+        _xb_signer = XbogusSigner()
+    return _xb_signer
 
 
 def generate_a_bogus_pure(api_path, query):
