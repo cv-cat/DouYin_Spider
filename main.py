@@ -143,5 +143,11 @@ if __name__ == '__main__':
     search_range = "0"  # 搜索范围 0 不限, 1 最近看过, 2 还未看过, 3 关注的人
     content_type = "0"  # 内容形式 0 不限, 1 视频, 2 图文
 
-    data_spider.spider_some_search_work(auth, query, require_num, base_path, 'all', sort_type, publish_time, filter_duration, search_range, content_type)
+    # data_spider.spider_some_search_work(auth, query, require_num, base_path, 'all', sort_type, publish_time, filter_duration, search_range, content_type)
 
+    # 4 私信：用户链接转 uid 后建对话发一条
+    user_url = 'https://www.douyin.com/user/MS4wLjABAAAAaB23ankxsw7PIgXnKxCcLC9iJIadZMQQpS-KWVO8Y306zOksK9cUvT5QdoOIcsS6?from_tab_name=live'
+    content = "在吗"
+    to_user_id = DouyinAPI.get_user_info(auth, user_url)['user']['uid']
+    conversation_id, conversation_short_id, ticket = DouyinAPI.create_conversation(auth, to_user_id)
+    DouyinAPI.send_msg(auth, conversation_id, conversation_short_id, ticket, content)

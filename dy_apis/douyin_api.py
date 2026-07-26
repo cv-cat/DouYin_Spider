@@ -8,7 +8,12 @@ import uuid
 import requests
 requests.packages.urllib3.disable_warnings()
 from bs4 import BeautifulSoup
-from protobuf_to_dict import protobuf_to_dict
+from loguru import logger
+from google.protobuf.json_format import MessageToDict as _message_to_dict
+
+
+def protobuf_to_dict(message):
+    return _message_to_dict(message, preserving_proto_field_name=True)
 
 import static.Response_pb2 as ResponseProto
 from builder.header import HeaderBuilder, HeaderType
@@ -1724,7 +1729,7 @@ class DouyinAPI:
         resp_json = protobuf_to_dict(responseProto)
         conversation = resp_json['body']['create_conversation_v2_body']['conversation_info_list'][0]
         conversation_id = conversation['conversation_id']
-        conversation_short_id, ticket = conversation['conversation_short_id'], conversation['ticket']
+        conversation_short_id, ticket = int(conversation['conversation_short_id']), conversation['ticket']
         return conversation_id, conversation_short_id, ticket
 
     @staticmethod
@@ -1780,7 +1785,12 @@ class DouyinAPI:
         responseProto = ResponseProto.Response()
         responseProto.ParseFromString(resp.content)
         resp_json = protobuf_to_dict(responseProto)
-        print(resp_json)
+        success = resp_json.get('message') == 'OK'
+        if success:
+            logger.info(f'私信发送成功 conversation_id={conversation_id}')
+        else:
+            logger.error(f'私信发送失败 {resp_json}')
+        return success
 
     @staticmethod
     def get_device_id(auth, **kwargs) -> str:

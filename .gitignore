@@ -34,3 +34,6 @@ datas
 /.claude
 /test_search_oldab.py
 /new/
+
+# 本地环境变量（cookie 与登录凭证，勿入库）
+.env
