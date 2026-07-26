@@ -108,22 +108,6 @@ def generate_a_bogus_pure(api_path, query):
     return _pure_sign().sign(f'https://www.douyin.com{api_path}?{query}')
 
 
-def generate_ttwid():
-    url = f"https://www.douyin.com/discover?modal_id=7376449060384935209"
-    ttwid = None
-    try:
-        headers = {
-            'user-agent': get_profile()["ua"],
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
-            "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8"
-        }
-        response = requests.get(url, headers=headers, verify=False)
-        cookies_dict = response.cookies.get_dict()
-        ttwid = cookies_dict.get('ttwid')
-        return ttwid
-    except Exception as e:
-        return ttwid
-
 
 def generate_fake_webid(random_length=19):
     random_str = ''
@@ -154,24 +138,6 @@ def generate_webid(auth=None, url=""):
         # print("===================")
         return generate_fake_webid()
 
-
-def ws_accept_key(ws_key):
-    """calc the Sec-WebSocket-Accept key by Sec-WebSocket-key
-    come from client, the return value used for handshake
-
-    :ws_key: Sec-WebSocket-Key come from client
-    :returns: Sec-WebSocket-Accept
-
-    """
-    import hashlib
-    import base64
-    try:
-        magic = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11'
-        sha1 = hashlib.sha1()
-        sha1.update(ws_key + magic)
-        return base64.b64encode(sha1.digest())
-    except Exception as e:
-        return None
 
 
 def generate_csrf_token(cookies_str):
