@@ -190,13 +190,13 @@ python dy_apis/douyin_recv_msg.py
 </a>
 
 
+
 ## 🍔 交流群
 
 如果你对爬虫和 AI Agent 感兴趣，请加作者主页 wx 通过邀请加入群聊
 
-ps: 请加群22、23、24，人满或者过期 issue | wx 提醒
+ps: 请加群，人满或者过期 issue | wx 提醒
 
-| group22 | group23 | group24 |
+| group-1 | group-2 | group-3 |
 |:--:|:--:|:--:|
-| <img width="280" alt="group22" src="https://github.com/user-attachments/assets/d2821fad-1be7-4712-8399-1a9f4710483a" /> | <img width="280" alt="group23" src="https://github.com/user-attachments/assets/ea27f64b-2f0c-46eb-9728-10691fef9756" /> | <img width="280" alt="group24" src="https://github.com/user-attachments/assets/4d153b10-598a-4f3b-9508-2c51832b89f0" /> |
-
+| <img width="280" alt="group1" src="https://cvcat.site/assets/group1.jpg" /> | <img width="280" alt="group2" src="https://cvcat.site/assets/group2.jpg" /> | <img width="280" alt="group3" src="https://cvcat.site/assets/group3.jpg" /> |
