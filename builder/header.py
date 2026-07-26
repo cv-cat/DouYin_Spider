@@ -46,10 +46,10 @@ class Header:
 
 
 class HeaderBuilder:
-    # ua = ('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 '
-    #       'Safari/537.36 Edg/125.0.0.0')
     from utils.fingerprint import get_profile
     ua = get_profile()["ua"]
+    sec_ch_ua = get_profile()["sec_ch_ua"]
+    sec_ch_ua_platform = get_profile()["sec_ch_ua_platform"]
 
     @staticmethod
     def build(header_type):
@@ -57,9 +57,9 @@ class HeaderBuilder:
         header.set_header('user-agent', HeaderBuilder.ua)
         header.set_header('cache-control', 'no-cache')
         header.set_header('pragma', 'no-cache')
-        header.set_header('sec-ch-ua', '"Microsoft Edge";v="125", "Chromium";v="125", "Not.A/Brand";v="24"')
+        header.set_header('sec-ch-ua', HeaderBuilder.sec_ch_ua)
         header.set_header('sec-ch-ua-mobile', '?0')
-        header.set_header('sec-ch-ua-platform', '"Windows"')
+        header.set_header('sec-ch-ua-platform', HeaderBuilder.sec_ch_ua_platform)
         header.set_header('sec-fetch-dest', 'empty')
         header.set_header('sec-fetch-mode', 'cors')
         header.set_header('sec-fetch-site', 'same-origin')
@@ -85,9 +85,9 @@ class HeaderBuilder:
                 'cookie': '',
                 'pragma': 'no-cache',
                 'priority': 'u=0, i',
-                'sec-ch-ua': '"Microsoft Edge";v="125", "Chromium";v="125", "Not.A/Brand";v="24"',
+                'sec-ch-ua': HeaderBuilder.sec_ch_ua,
                 'sec-ch-ua-mobile': '?0',
-                'sec-ch-ua-platform': '"Windows"',
+                'sec-ch-ua-platform': HeaderBuilder.sec_ch_ua_platform,
                 'sec-fetch-dest': 'document',
                 'sec-fetch-mode': 'navigate',
                 'sec-fetch-site': 'none',

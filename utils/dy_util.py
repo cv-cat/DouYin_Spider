@@ -1,44 +1,15 @@
 import hashlib
 import re
-import sys
 import time
 import json
 import random
 import base64
 import urllib
-from os import path
 
 import requests
 requests.packages.urllib3.disable_warnings()
-import subprocess
-from functools import partial
-
-subprocess.Popen = partial(subprocess.Popen, encoding="utf-8")
-import execjs
 from utils.fingerprint import get_profile
 
-if getattr(sys, 'frozen', None):
-    basedir = sys._MEIPASS
-else:
-    basedir = path.dirname(__file__)
-
-
-try:
-    node_modules = path.join(basedir, 'static', 'node_modules')
-    login_path = path.join(basedir, 'static', 'login.js')
-    login_js = execjs.compile(open(login_path, 'r', encoding='utf-8').read(), cwd=node_modules)
-except:
-    node_modules = path.join(basedir, '..', 'static', 'node_modules')
-    login_path = path.join(basedir, '..', 'static', 'login.js')
-    login_js = execjs.compile(open(login_path, 'r', encoding='utf-8').read(), cwd=node_modules)
-
-
-def generateSecretPhoneNum(phone):
-    sign = login_js.call('generateSecretPhoneNum', phone)
-    return sign
-def generateSecretCode(phone, code):
-    sign = login_js.call('generateSecretCode', phone, code)
-    return sign
 
 def trans_cookies(cookies_str):
     cookies = {
@@ -214,9 +185,9 @@ def generate_csrf_token(cookies_str):
             'pragma': 'no-cache',
             'priority': 'u=1, i',
             'referer': 'https://www.douyin.com/?recommend=1',
-            'sec-ch-ua': '"Google Chrome";v="150", "Chromium";v="150", "Not.A/Brand";v="24"',
+            'sec-ch-ua': get_profile()["sec_ch_ua"],
             'sec-ch-ua-mobile': '?0',
-            'sec-ch-ua-platform': '"Windows"',
+            'sec-ch-ua-platform': get_profile()["sec_ch_ua_platform"],
             'sec-fetch-dest': 'empty',
             'sec-fetch-mode': 'cors',
             'sec-fetch-site': 'same-origin',
