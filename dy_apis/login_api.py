@@ -3,13 +3,15 @@ import urllib.parse
 
 import aiohttp
 import asyncio
+import os
 from playwright.async_api import async_playwright
 import requests
+from loguru import logger
 
 from builder.auth import DouyinAuth
 from builder.header import HeaderBuilder, HeaderType
 from builder.params import Params
-from utils.dy_util import generateSecretPhoneNum, generate_ree_key, generateSecretCode, generate_bd_ticket_client_data
+from utils.dy_util import generate_ree_key, generate_bd_ticket_client_data
 import json
 from threading import Thread
 import qrcode
@@ -22,31 +24,111 @@ class DYLoginApi:
         self.home_url = 'https://www.douyin.com/'
 
     # 生成初始cookies
-    async def dyGenerateInitData(self, headless=True):
+    async def dyGenerateInitData(self, headless=True, cookie_str=""):
         async with async_playwright() as p:
-            browser = await p.firefox.launch(
+            browser = await p.chromium.launch(
                 headless=headless,
                 args=[
                     '--disable-blink-features=AutomationControlled',
                 ],
             )
+            context = await browser.new_context()
+            if cookie_str:
+                await context.add_cookies([
+                    {"name": part.strip().partition("=")[0],
+                     "value": part.strip().partition("=")[2],
+                     "domain": ".douyin.com", "path": "/"}
+                    for part in cookie_str.split(";") if part.strip()
+                ])
+            page = await context.new_page()
+            await page.goto(self.home_url)
+            await page.wait_for_load_state("load")
+            keys_str = None
+            web_protect_str = None
+            for _ in range(6):
+                await asyncio.sleep(4)
+                await page.mouse.wheel(0, 600)
+                keys_str = await page.evaluate('localStorage["security-sdk/s_sdk_crypt_sdk"]')
+                web_protect_str = await page.evaluate('localStorage["security-sdk/s_sdk_sign_data_key/web_protect"]')
+                if keys_str and web_protect_str:
+                    break
+            cookies = {cookie['name']: cookie['value'] for cookie in await context.cookies()}
+            await browser.close()
+            auth = DouyinAuth()
+            auth.perepare_auth('', web_protect_str, keys_str)
+            auth.cookie = cookies
+            auth.cookie_str = "; ".join(f"{k}={v}" for k, v in cookies.items())
+            return auth
+
+    # 扫码登录并抓 ticket
+    async def login_grab_ticket(self, headless=False, timeout=180):
+        async with async_playwright() as p:
+            browser = await p.chromium.launch(
+                headless=headless,
+                args=['--disable-blink-features=AutomationControlled'],
+            )
             page = await browser.new_page()
             await page.goto(self.home_url)
             await page.wait_for_load_state("load")
-            await asyncio.sleep(10)
-            # 获取localStorage的security-sdk/s_sdk_crypt_sdk
-            keys_str = await page.evaluate('localStorage["security-sdk/s_sdk_crypt_sdk"]')
-            # web_protect_str = await page.evaluate('localStorage["security-sdk/s_sdk_sign_data_key/web_protect"]')
-            web_protect_str = ''
-            auth = DouyinAuth()
-            cookies = dict()
-            page_cookies = await page.context.cookies()
-            for cookie in page_cookies:
-                cookies[cookie['name']] = cookie['value']
+            await asyncio.sleep(2)
+            await page.evaluate('''() => {
+                const nodes = Array.from(document.querySelectorAll('button, span, div, a'));
+                const hit = nodes.find(n => ['登录','登 录'].includes((n.textContent||'').trim()));
+                if (hit) hit.click();
+            }''')
+            logger.info("请在浏览器里扫码登录")
+            deadline = time.time() + timeout
+            keys_str = None
+            web_protect_str = None
+            while time.time() < deadline:
+                await asyncio.sleep(2)
+                try:
+                    keys_str = await page.evaluate('localStorage["security-sdk/s_sdk_crypt_sdk"]')
+                    web_protect_str = await page.evaluate('localStorage["security-sdk/s_sdk_sign_data_key/web_protect"]')
+                except Exception:
+                    # 登录跳转瞬间执行上下文被销毁，下一轮重试
+                    continue
+                if keys_str and web_protect_str:
+                    break
+            if not (keys_str and web_protect_str):
+                await browser.close()
+                raise TimeoutError("登录超时：未抓到 ticket")
+            cookies = {cookie['name']: cookie['value'] for cookie in await page.context.cookies()}
             await browser.close()
+            auth = DouyinAuth()
             auth.perepare_auth('', web_protect_str, keys_str)
             auth.cookie = cookies
+            auth.cookie_str = "; ".join(f"{k}={v}" for k, v in cookies.items())
             return auth
+
+    # 登录凭证写入 .env
+    ENV_FILE = ".env"
+    TICKET_KEYS = ("DY_TICKET", "DY_TS_SIGN", "DY_CLIENT_CERT", "DY_PRIVATE_KEY")
+
+    def save_credential(self, auth):
+        cookie_str = "; ".join(f"{k}={v}" for k, v in auth.cookie.items())
+        values = {
+            "DY_COOKIES": cookie_str,
+            "DY_TICKET": auth.ticket or "",
+            "DY_TS_SIGN": auth.ts_sign or "",
+            "DY_CLIENT_CERT": auth.client_cert or "",
+            "DY_PRIVATE_KEY": auth.private_key or "",
+        }
+        set_values = {k: v for k, v in values.items() if v}
+        from dotenv import set_key
+        for key, value in set_values.items():
+            set_key(self.ENV_FILE, key, value)
+        return os.path.abspath(self.ENV_FILE)
+
+    async def get_login_auth(self, headless=False):
+        """优先从 .env 读 ticket，没有就扫码登录后写入 .env。"""
+        from utils.common_util import load_env
+        auth = load_env()
+        if auth.ticket and auth.private_key:
+            return auth
+        auth = await self.login_grab_ticket(headless=headless)
+        logger.info(f"登录凭证已存 {self.save_credential(auth)}")
+        return auth
 
     # 获取二维码
     def dyGenerateQRcode(self, auth) -> dict:
