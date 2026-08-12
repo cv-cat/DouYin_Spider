@@ -12,6 +12,10 @@ def load_env():
     from builder.auth import DouyinAuth
     dy_auth = DouyinAuth()
     dy_auth.perepare_auth(cookies_dy, "", "")
+    dy_auth.ticket = os.getenv('DY_TICKET') or None
+    dy_auth.ts_sign = os.getenv('DY_TS_SIGN') or None
+    dy_auth.client_cert = os.getenv('DY_CLIENT_CERT') or None
+    dy_auth.private_key = os.getenv('DY_PRIVATE_KEY') or None
     dy_live_auth = DouyinAuth()
     dy_live_auth.perepare_auth(cookies_live, "", "")
     return dy_auth

@@ -1,4 +1,5 @@
 from builder.header import HeaderBuilder
+from utils.fingerprint import get_profile
 from utils.dy_util import generate_webid, generate_msToken, splice_url, generate_a_bogus, generate_fake_webid
 
 
@@ -16,19 +17,19 @@ class Params:
             'version_code': '170400',
             'version_name': '17.4.0',
             'cookie_enabled': 'true',
-            'screen_width': '1707',
-            'screen_height': '960',
+            'screen_width': get_profile()["screen_width"],
+            'screen_height': get_profile()["screen_height"],
             'browser_language': 'zh-CN',
             'browser_platform': 'Win32',
-            'browser_name': 'Edge',
-            'browser_version': '125.0.0.0',
+            'browser_name': get_profile()["browser_name"],
+            'browser_version': get_profile()["browser_version"],
             'browser_online': 'true',
             'engine_name': 'Blink',
-            'engine_version': '125.0.0.0',
+            'engine_version': get_profile()["engine_version"],
             'os_name': 'Windows',
             'os_version': '10',
-            'cpu_core_num': '32',
-            'device_memory': '8',
+            'cpu_core_num': get_profile()["cpu_core_num"],
+            'device_memory': get_profile()["device_memory"],
             'platform': 'PC',
             'downlink': '10',
             'effective_type': '4g',

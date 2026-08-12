@@ -9,6 +9,7 @@ import random
 
 import uuid
 
+from utils.fingerprint import get_profile
 import static.Request_pb2 as RequestProto
 from builder.header import HeaderBuilder
 from utils.dy_util import generate_webid, generate_req_sign, generate_millisecond
@@ -35,11 +36,11 @@ class ProtoBuilder:
         request.headers['cookie_enabled'] = 'true'
         request.headers['browser_language'] = 'zh-CN'
         request.headers['browser_platform'] = 'Win32'
-        request.headers['browser_name'] = 'Mozilla'
-        request.headers['browser_version'] = HeaderBuilder.ua.split('Mozilla/')[-1]
+        request.headers['browser_name'] = get_profile()["browser_name"]
+        request.headers['browser_version'] = get_profile()["browser_version"]
         request.headers['browser_online'] = 'true'
-        request.headers['screen_width'] = '1707'
-        request.headers['screen_height'] = '960'
+        request.headers['screen_width'] = get_profile()["screen_width"]
+        request.headers['screen_height'] = get_profile()["screen_height"]
         request.headers['referer'] = ''
         request.headers['timezone_name'] = 'Etc/GMT-8'
         request.headers['deviceId'] = '0'

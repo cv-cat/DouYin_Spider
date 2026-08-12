@@ -1,4 +1,5 @@
 import gzip
+import sys
 import threading
 import time
 from urllib.parse import urlencode
@@ -11,6 +12,9 @@ from builder.header import HeaderBuilder
 from builder.params import Params
 import utils.common_util as common_util
 from utils.dy_util import generate_signature
+
+# Windows 控制台是 GBK，弹幕含 emoji 会 UnicodeEncodeError，按 UTF-8 输出
+sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 
 class DouyinLive:
@@ -168,6 +172,6 @@ class DouyinLive:
 
 if __name__ == '__main__':
     common_util.load_env()
-    live_id = "571821134948"
-    live = DouyinLive(live_id, common_util.dy_live_auth)
+    live_id = "432433667143"
+    live = DouyinLive(live_id, common_util.dy_auth)
     live.start_ws()

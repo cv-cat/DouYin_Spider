@@ -1,56 +1,14 @@
 import hashlib
 import re
-import sys
 import time
 import json
 import random
 import base64
 import urllib
-from os import path
 
 import requests
 requests.packages.urllib3.disable_warnings()
-import subprocess
-from functools import partial
-
-subprocess.Popen = partial(subprocess.Popen, encoding="utf-8")
-import execjs
-
-if getattr(sys, 'frozen', None):
-    basedir = sys._MEIPASS
-else:
-    basedir = path.dirname(__file__)
-
-
-try:
-    node_modules = path.join(basedir, 'static', 'node_modules')
-    login_path = path.join(basedir, 'static', 'login.js')
-    login_js = execjs.compile(open(login_path, 'r', encoding='utf-8').read(), cwd=node_modules)
-except:
-    node_modules = path.join(basedir, '..', 'static', 'node_modules')
-    login_path = path.join(basedir, '..', 'static', 'login.js')
-    login_js = execjs.compile(open(login_path, 'r', encoding='utf-8').read(), cwd=node_modules)
-
-
-def generateSecretPhoneNum(phone):
-    sign = login_js.call('generateSecretPhoneNum', phone)
-    return sign
-def generateSecretCode(phone, code):
-    sign = login_js.call('generateSecretCode', phone, code)
-    return sign
-
-try:
-    node_modules = path.join(basedir, 'node_modules')
-    dy_path = path.join(basedir, 'static', 'dy_ab.js')
-    dy_js = execjs.compile(open(dy_path, 'r', encoding='utf-8').read(), cwd=node_modules)
-    sign_path = path.join(basedir, 'static', 'dy_live_sign.js')
-    sign_js = execjs.compile(open(sign_path, 'r', encoding='utf-8').read(), cwd=node_modules)
-except:
-    node_modules = path.join(basedir, '..', 'node_modules')
-    dy_path = path.join(basedir, '..', 'static', 'dy_ab.js')
-    dy_js = execjs.compile(open(dy_path, 'r', encoding='utf-8').read(), cwd=node_modules)
-    sign_path = path.join(basedir, '..', 'static', 'dy_live_sign.js')
-    sign_js = execjs.compile(open(sign_path, 'r', encoding='utf-8').read(), cwd=node_modules)
+from utils.fingerprint import get_profile
 
 
 def trans_cookies(cookies_str):
@@ -68,27 +26,29 @@ def trans_cookies(cookies_str):
 
 # 私信传obj, 其他的拼接
 def generate_req_sign(e, priK):
-    sign = dy_js.call('get_req_sign', e, priK)
-    return sign
+    """bd-ticket-guard ECDSA req_sign。"""
+    from utils.bd_ticket import get_req_sign
+    return get_req_sign(e, priK)
 
 
 # query, data都是拼接字符串
 def generate_a_bogus(query, data=""):
-    a_bogus = dy_js.call('get_ab', query, data)
-    return a_bogus
+    """a_bogus。"""
+    return _pure_sign().sign(f'https://www.douyin.com/?{query}', data)
 
 
 def generate_signature(room_id, user_unique_id):
+    """直播 X-Bogus。"""
     raw_string = f"live_id=1,aid=6383,version_code=180800,webcast_sdk_version=1.0.15,room_id={room_id},sub_room_id=,sub_channel_id=,did_rule=3,user_unique_id={user_unique_id},device_platform=web,device_type=,ac=,identity=audience"
     x_ms_stub = hashlib.md5(raw_string.encode("utf-8")).hexdigest()
-    result = sign_js.call("get_signature", x_ms_stub)
-    return result.get("X-Bogus")
+    return _xb_sign().sign(x_ms_stub)
 
 
 # 传递私钥
 def generate_ree_key(prik):
-    ree_key = dy_js.call('get_ree_key', prik)
-    return ree_key
+    """bd-ticket-guard """
+    from utils.bd_ticket import get_ree_key
+    return get_ree_key(prik)
 
 
 # 传递query, ticket, ts_sign, priK
@@ -114,21 +74,39 @@ def generate_msToken(randomlength=107):
     return random_str
 
 
-def generate_ttwid():
-    url = f"https://www.douyin.com/discover?modal_id=7376449060384935209"
-    ttwid = None
+def generate_dynamic_msToken(ttwid=None, proxies=None):
+    """msToken"""
     try:
-        headers = {
-            'user-agent': "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
-            "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8"
-        }
-        response = requests.get(url, headers=headers, verify=False)
-        cookies_dict = response.cookies.get_dict()
-        ttwid = cookies_dict.get('ttwid')
-        return ttwid
-    except Exception as e:
-        return ttwid
+        from utils.mstoken import get_mstoken
+        return get_mstoken(ttwid=ttwid, proxies=proxies) or ''
+    except Exception:
+        return ''
+
+
+_pure_signer = None
+_xb_signer = None
+
+
+def _pure_sign():
+    global _pure_signer
+    if _pure_signer is None:
+        from utils.ab_pure import ABogusPureSigner
+        _pure_signer = ABogusPureSigner(fixed=False)
+    return _pure_signer
+
+
+def _xb_sign():
+    global _xb_signer
+    if _xb_signer is None:
+        from utils.xbogus_pure import XbogusSigner
+        _xb_signer = XbogusSigner()
+    return _xb_signer
+
+
+def generate_a_bogus_pure(api_path, query):
+    """a_bogus"""
+    return _pure_sign().sign(f'https://www.douyin.com{api_path}?{query}')
+
 
 
 def generate_fake_webid(random_length=19):
@@ -161,24 +139,6 @@ def generate_webid(auth=None, url=""):
         return generate_fake_webid()
 
 
-def ws_accept_key(ws_key):
-    """calc the Sec-WebSocket-Accept key by Sec-WebSocket-key
-    come from client, the return value used for handshake
-
-    :ws_key: Sec-WebSocket-Key come from client
-    :returns: Sec-WebSocket-Accept
-
-    """
-    import hashlib
-    import base64
-    try:
-        magic = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11'
-        sha1 = hashlib.sha1()
-        sha1.update(ws_key + magic)
-        return base64.b64encode(sha1.digest())
-    except Exception as e:
-        return None
-
 
 def generate_csrf_token(cookies_str):
     csrf_token_1, csrf_token_2 = None, None
@@ -191,13 +151,13 @@ def generate_csrf_token(cookies_str):
             'pragma': 'no-cache',
             'priority': 'u=1, i',
             'referer': 'https://www.douyin.com/?recommend=1',
-            'sec-ch-ua': '"Microsoft Edge";v="125", "Chromium";v="125", "Not.A/Brand";v="24"',
+            'sec-ch-ua': get_profile()["sec_ch_ua"],
             'sec-ch-ua-mobile': '?0',
-            'sec-ch-ua-platform': '"Windows"',
+            'sec-ch-ua-platform': get_profile()["sec_ch_ua_platform"],
             'sec-fetch-dest': 'empty',
             'sec-fetch-mode': 'cors',
             'sec-fetch-site': 'same-origin',
-            'user-agent': "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
+            'user-agent': get_profile()["ua"],
             'x-secsdk-csrf-request': '1',
             'x-secsdk-csrf-version': '1.2.22',
         }
