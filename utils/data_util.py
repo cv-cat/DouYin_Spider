@@ -61,6 +61,19 @@ def handle_work_info(data):
     images = data['images']
     if not isinstance(images, list):
         images = []
+    # Extract image URLs from dict objects if needed
+    image_urls = []
+    for img in images:
+        if isinstance(img, dict):
+            url_list = img.get('url_list', [])
+            if url_list:
+                image_urls.append(url_list[0])
+            else:
+                dl_list = img.get('download_url_list', [])
+                if dl_list:
+                    image_urls.append(dl_list[0])
+        elif isinstance(img, str):
+            image_urls.append(img)
     create_time = data['create_time']
 
     text_extra = data['text_extra'] if 'text_extra' in data else []
@@ -90,7 +103,7 @@ def handle_work_info(data):
         'collect_count': collect_count,
         'share_count': share_count,
         'video_addr': video_addr,
-        'images': images,
+        'images': image_urls,
         'topics': topics,
         'create_time': create_time,
         'video_cover': video_cover,
