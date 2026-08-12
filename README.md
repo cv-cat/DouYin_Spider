@@ -20,30 +20,37 @@
 </div>
 
 
-## ❤️Sponsor
+## 🍴 Fork 说明
 
-> [想出现在这里？](mailto:992822653@qq.com)
+本项目 Fork 自 [cv-cat/DouYin_Spider](https://github.com/cv-cat/DouYin_Spider)，在原 SDK 基础上做了以下增强：
 
-<details open>
-<summary>点击折叠</summary>
+### 🖥️ 新增 Web 控制台（`webapp/`）
+基于原 SDK 封装的完整 Web 应用，覆盖 SDK 全部能力：
+- **后端**：FastAPI + SQLite + asyncio，同步 SDK 调用走线程池
+- **前端**：Vue 3 + Vite + TypeScript + Element Plus，深色主题（抖音品牌色）
+- **登录**：扫码 / Cookie 粘贴 / 有头浏览器三种方式，Playwright headless 自动提取私信签名凭证，支持多账号切换
+- **实时**：WebSocket 推送直播间事件、私信入站、任务进度
+- **任务**：长任务（采集 / 搜索 / 评论 / 关注粉丝）进度与结果管理
 
-<div align="center">
+详见 [`webapp/README.md`](./webapp/README.md)。
 
-[![FastAIToken](https://github.com/TheSmallHanCat/flow2api/blob/main/static/sponsors/fastaitoken-banner.png)](https://www.fastaitoken.com/register?aff=48J4VXUABAAV)
+### 🐳 Dockerfile 改造
+多阶段构建（Node 构建前端 → Python 运行后端），内置 Playwright + Chromium，入口改为 `uvicorn webapp.backend.main:app`，暴露端口 8000。
 
-</div>
+### 📦 依赖增补（`requirements.txt`）
+- SDK 隐式依赖：`websocket-client`、`protobuf`、`aiohttp`、`blackboxprotobuf`
+- 登录自动化：`playwright`
+- Web 后端：`fastapi`、`uvicorn[standard]`、`pydantic>=2`
 
-**FastAIToken** 是面向开发者的 AI API 聚合平台，支持 OpenAI、Claude、Gemini 等主流大模型，兼容 OpenAI API 协议，可无缝接入 **Claude Code、Codex、Gemini CLI、Cherry Studio、Cline、Continue** 等各类 AI 开发工具。平台采用 **充值 1:1（1 元 = 1 美元 API 额度）**，帮助开发者以更低成本、更高效率地使用全球领先的大模型服务。
+### 🔧 纯 Python 签名
+将原 Node.js 签名脚本替换为纯 Python 实现（`X-Bogus` 等），移除 Node 运行时依赖。
 
-平台提供多个可选分组与公开状态页，开发者可根据成本、响应速度和稳定性自由选择不同渠道，并享受 **7×24 小时真人技术支持**（非机器人）。
+### 💬 私信增强
+新增浏览器登录与 protobuf 兼容的私信收发。
 
-**主要做 AI 开发接入？可以试试 [FastAIToken](https://www.fastaitoken.com/register?aff=48J4VXUABAAV)，兼容 Codex / Claude Code / Gemini CLI 等主流工具。**
-
+> 原项目版权归原作者所有，本 Fork 仅供学习研究。上游：[cv-cat/DouYin_Spider](https://github.com/cv-cat/DouYin_Spider)
 
 ---
-
-
-</details>
 
 **✨ 专业的抖音数据采集与交互解决方案，支持数据爬取、直播间监听、私信收发等功能**
 
@@ -168,15 +175,9 @@ python dy_apis/douyin_recv_msg.py
 
 ## 🧸额外说明
 1. 感谢star⭐和follow📰！不时更新
-2. 作者的联系方式在主页里，有问题可以随时联系我
-3. 可以关注下作者的其他项目，欢迎 PR 和 issue
-4. 感谢赞助！如果此项目对您有帮助，请作者喝一杯奶茶~~ （开心一整天😊😊）
-5. thank you~~~
-
-<div align="center">
-  <img src="./author/wx_pay.png" width="400px" alt="微信赞赏码"> 
-  <img src="./author/zfb_pay.jpg" width="400px" alt="支付宝收款码">
-</div>
+2. 原作者的联系方式在主页里，有问题可以随时联系
+3. 可以关注下原作者的其他项目，欢迎 PR 和 issue
+4. thank you~~~
 
 
 ## 📈 Star 趋势

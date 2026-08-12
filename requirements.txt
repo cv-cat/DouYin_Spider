@@ -11,3 +11,14 @@ requests
 retry
 urllib3
 websockets
+# SDK 隐式依赖
+websocket-client
+protobuf
+aiohttp
+blackboxprotobuf
+# 登录(Playwright 浏览器自动化)
+playwright
+# Web 应用后端
+fastapi
+uvicorn[standard]
+pydantic>=2

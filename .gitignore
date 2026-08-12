@@ -37,3 +37,6 @@ datas
 
 # 本地环境变量（cookie 与登录凭证，勿入库）
 .env
+
+# Web 控制台运行时数据（SQLite 等，勿入库）
+webapp/data/
