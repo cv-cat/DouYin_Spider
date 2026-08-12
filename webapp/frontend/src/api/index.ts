@@ -84,6 +84,8 @@ export const tasksApi = {
 
 // ---------- 下载 ----------
 export const downloadsApi = {
-  tree: () => http.get('/downloads/tree').then((r) => r.data),
+  children: (path?: string) =>
+    http.get('/downloads/children', { params: path ? { path } : undefined }).then((r) => r.data),
   fileUrl: (path: string) => `/api/downloads/file?path=${encodeURIComponent(path)}`,
+  dirUrl: (path: string) => `/api/downloads/dir?path=${encodeURIComponent(path)}`,
 }

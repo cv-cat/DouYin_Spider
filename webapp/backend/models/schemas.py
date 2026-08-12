@@ -190,6 +190,7 @@ class FileNode(BaseModel):
     path: str
     is_dir: bool
     size: int = 0
+    has_children: bool = False
     children: list["FileNode"] = Field(default_factory=list)
 
 
