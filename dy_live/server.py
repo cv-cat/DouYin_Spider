@@ -115,6 +115,32 @@ class DouyinLive:
         print(f"status_code: {close_status_code}, msg: {close_msg}")
         print("### ===closed=== ###\033[m")
 
+    def start_ws(self):
+        reconnect_attempt = 0
+        while True:
+            try:
+                should_reconnect = self._run_websocket()
+            except KeyboardInterrupt:
+                if self.ws:
+                    self.ws.close()
+                return
+
+            if (not should_reconnect or
+                    not self.auto_reconnect or
+                    reconnect_attempt >= self.max_reconnect_attempts):
+                return
+
+            delay = min(
+                self.reconnect_base_delay * (2 ** reconnect_attempt),
+                self.reconnect_max_delay,
+            )
+            reconnect_attempt += 1
+            print(
+                f"WebSocket reconnect {reconnect_attempt}/"
+                f"{self.max_reconnect_attempts} in {delay} seconds."
+            )
+            time.sleep(delay)
+
     def _should_reconnect(self, run_failed):
         return (not self._stop_requested and
                 ((run_failed and self._retryable_error) or
@@ -187,32 +213,6 @@ class DouyinLive:
         )
         run_failed = self.ws.run_forever(origin='https://live.douyin.com')
         return self._should_reconnect(run_failed)
-
-    def start_ws(self):
-        reconnect_attempt = 0
-        while True:
-            try:
-                should_reconnect = self._run_websocket()
-            except KeyboardInterrupt:
-                if self.ws:
-                    self.ws.close()
-                return
-
-            if (not should_reconnect or
-                    not self.auto_reconnect or
-                    reconnect_attempt >= self.max_reconnect_attempts):
-                return
-
-            delay = min(
-                self.reconnect_base_delay * (2 ** reconnect_attempt),
-                self.reconnect_max_delay,
-            )
-            reconnect_attempt += 1
-            print(
-                f"WebSocket reconnect {reconnect_attempt}/"
-                f"{self.max_reconnect_attempts} in {delay} seconds."
-            )
-            time.sleep(delay)
 
 
 if __name__ == '__main__':
