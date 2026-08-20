@@ -4,7 +4,7 @@ import threading
 import time
 from urllib.parse import urlencode
 
-from websocket import WebSocketApp
+from websocket import WebSocketApp, WebSocketException
 
 import static.Live_pb2 as Live_pb2
 from dy_apis.douyin_api import DouyinAPI
@@ -29,6 +29,7 @@ class DouyinLive:
         self.reconnect_base_delay = max(0, reconnect_base_delay)
         self.reconnect_max_delay = max(0, reconnect_max_delay)
         self._connection_closed = False
+        self._retryable_error = False
         self._stop_requested = False
 
     def ping(self, ws):
@@ -101,6 +102,10 @@ class DouyinLive:
         print("\033[31m### error ###")
         print(error)
         print("### ===error=== ###\033[m")
+        self._retryable_error = isinstance(
+            error,
+            (OSError, WebSocketException),
+        )
         if isinstance(error, (KeyboardInterrupt, SystemExit)):
             self._stop_requested = True
 
@@ -112,10 +117,12 @@ class DouyinLive:
 
     def _should_reconnect(self, run_failed):
         return (not self._stop_requested and
-                (run_failed or self._connection_closed))
+                ((run_failed and self._retryable_error) or
+                 (not run_failed and self._connection_closed)))
 
     def _run_websocket(self):
         self._connection_closed = False
+        self._retryable_error = False
         self._stop_requested = False
         room_info = DouyinAPI.get_live_info(self.auth_, self.live_id)
         room_id = room_info['room_id']

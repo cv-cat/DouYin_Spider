@@ -2,6 +2,7 @@ import unittest
 from unittest.mock import Mock, patch
 
 from dy_live.server import DouyinLive
+from websocket import WebSocketConnectionClosedException
 
 
 class DouyinLiveReconnectTest(unittest.TestCase):
@@ -13,6 +14,7 @@ class DouyinLiveReconnectTest(unittest.TestCase):
         live.reconnect_base_delay = 1
         live.reconnect_max_delay = 2
         live._connection_closed = False
+        live._retryable_error = False
         live._stop_requested = False
         return live
 
@@ -66,6 +68,24 @@ class DouyinLiveReconnectTest(unittest.TestCase):
             live.on_close(None, 1000, 'closed')
 
         self.assertTrue(live._should_reconnect(False))
+
+    def test_connection_error_requests_reconnect(self):
+        live = self.make_live()
+
+        with patch('builtins.print'):
+            live.on_error(None, WebSocketConnectionClosedException())
+            live.on_close(None, None, None)
+
+        self.assertTrue(live._should_reconnect(True))
+
+    def test_program_error_does_not_request_reconnect(self):
+        live = self.make_live()
+
+        with patch('builtins.print'):
+            live.on_error(None, ValueError('invalid frame'))
+            live.on_close(None, None, None)
+
+        self.assertFalse(live._should_reconnect(True))
 
 
 if __name__ == '__main__':
