@@ -67,8 +67,10 @@ class DouyinRecvMsg:
         print("\033[31m### error ###")
         print(error)
         print("### ===error=== ###\033[m")
-        if type(error) == ConnectionRefusedError or type(
-                error) == websocket._exceptions.WebSocketConnectionClosedException and self.auto_reconnect:
+        if self.auto_reconnect and isinstance(
+                error,
+                (ConnectionRefusedError,
+                 websocket._exceptions.WebSocketConnectionClosedException)):
             self.start()
 
     def on_close(self, ws, close_status_code, close_msg):

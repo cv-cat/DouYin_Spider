@@ -18,10 +18,16 @@ sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 
 class DouyinLive:
-    def __init__(self, live_id, auth_):
+    def __init__(self, live_id, auth_, auto_reconnect=True,
+                 max_reconnect_attempts=5, reconnect_base_delay=1,
+                 reconnect_max_delay=30):
         self.auth_ = auth_
         self.live_id = live_id
         self.ws = None
+        self.auto_reconnect = auto_reconnect
+        self.max_reconnect_attempts = max(0, max_reconnect_attempts)
+        self.reconnect_base_delay = max(0, reconnect_base_delay)
+        self.reconnect_max_delay = max(0, reconnect_max_delay)
 
     def ping(self, ws):
         while True:
@@ -95,13 +101,11 @@ class DouyinLive:
         print("### ===error=== ###\033[m")
 
     def on_close(self, ws, close_status_code, close_msg):
-        # 此处判断是否需要重连 判断直播间是否关闭
-        self.start_ws()
         print("\033[31m### closed ###")
         print(f"status_code: {close_status_code}, msg: {close_msg}")
         print("### ===closed=== ###\033[m")
 
-    def start_ws(self):
+    def _run_websocket(self):
         room_info = DouyinAPI.get_live_info(self.auth_, self.live_id)
         room_id = room_info['room_id']
         user_id = room_info['user_id']
@@ -163,11 +167,36 @@ class DouyinLive:
             on_close=self.on_close,
             on_open=self.on_open
         )
-        try:
-            self.ws.run_forever(origin='https://live.douyin.com')
-        except Exception as e:
-            print(str(e))
-            self.ws.close()
+        self.ws.run_forever(origin='https://live.douyin.com')
+
+    def start_ws(self):
+        reconnect_attempt = 0
+        while True:
+            try:
+                self._run_websocket()
+            except KeyboardInterrupt:
+                if self.ws:
+                    self.ws.close()
+                return
+            except Exception as error:
+                print(str(error))
+                if self.ws:
+                    self.ws.close()
+
+            if (not self.auto_reconnect or
+                    reconnect_attempt >= self.max_reconnect_attempts):
+                return
+
+            delay = min(
+                self.reconnect_base_delay * (2 ** reconnect_attempt),
+                self.reconnect_max_delay,
+            )
+            reconnect_attempt += 1
+            print(
+                f"WebSocket reconnect {reconnect_attempt}/"
+                f"{self.max_reconnect_attempts} in {delay} seconds."
+            )
+            time.sleep(delay)
 
 
 if __name__ == '__main__':
