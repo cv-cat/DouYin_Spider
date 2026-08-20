@@ -101,12 +101,11 @@
 ## 🛠️ 快速开始
 ### ⛳运行环境
 - Python 3.7+
-- Node.js 18+
 
 ### 🎯安装依赖
 ```
 pip install -r requirements.txt
-npm install
+playwright install chromium
 ```
 
 ### 🎨配置文件

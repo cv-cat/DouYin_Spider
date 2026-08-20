@@ -1,13 +1,17 @@
 aiofiles
+aiohttp
 beautifulsoup4
 ecdsa
 loguru
 openpyxl
 pillow
+playwright
 protobuf3_to_dict
+protobuf>=5.27.1
 python-dotenv
 qrcode
 requests
 retry
 urllib3
+websocket-client
 websockets
