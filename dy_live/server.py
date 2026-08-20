@@ -28,6 +28,8 @@ class DouyinLive:
         self.max_reconnect_attempts = max(0, max_reconnect_attempts)
         self.reconnect_base_delay = max(0, reconnect_base_delay)
         self.reconnect_max_delay = max(0, reconnect_max_delay)
+        self._connection_closed = False
+        self._stop_requested = False
 
     def ping(self, ws):
         while True:
@@ -99,13 +101,22 @@ class DouyinLive:
         print("\033[31m### error ###")
         print(error)
         print("### ===error=== ###\033[m")
+        if isinstance(error, (KeyboardInterrupt, SystemExit)):
+            self._stop_requested = True
 
     def on_close(self, ws, close_status_code, close_msg):
+        self._connection_closed = True
         print("\033[31m### closed ###")
         print(f"status_code: {close_status_code}, msg: {close_msg}")
         print("### ===closed=== ###\033[m")
 
+    def _should_reconnect(self, run_failed):
+        return (not self._stop_requested and
+                (run_failed or self._connection_closed))
+
     def _run_websocket(self):
+        self._connection_closed = False
+        self._stop_requested = False
         room_info = DouyinAPI.get_live_info(self.auth_, self.live_id)
         room_id = room_info['room_id']
         user_id = room_info['user_id']
@@ -167,23 +178,21 @@ class DouyinLive:
             on_close=self.on_close,
             on_open=self.on_open
         )
-        self.ws.run_forever(origin='https://live.douyin.com')
+        run_failed = self.ws.run_forever(origin='https://live.douyin.com')
+        return self._should_reconnect(run_failed)
 
     def start_ws(self):
         reconnect_attempt = 0
         while True:
             try:
-                self._run_websocket()
+                should_reconnect = self._run_websocket()
             except KeyboardInterrupt:
                 if self.ws:
                     self.ws.close()
                 return
-            except Exception as error:
-                print(str(error))
-                if self.ws:
-                    self.ws.close()
 
-            if (not self.auto_reconnect or
+            if (not should_reconnect or
+                    not self.auto_reconnect or
                     reconnect_attempt >= self.max_reconnect_attempts):
                 return
 
