@@ -17,7 +17,7 @@ from fastapi.staticfiles import StaticFiles
 
 from webapp.backend import config, deps
 from webapp.backend.routers import (
-    accounts, crawl, search, live, messages, interact, tasks, downloads,
+    accounts, crawl, search, live, messages, interact, tasks, downloads, analysis,
 )
 
 
@@ -35,7 +35,7 @@ def create_app() -> FastAPI:
     )
 
     # 业务路由
-    for r in (accounts, crawl, search, live, messages, interact, tasks, downloads):
+    for r in (accounts, crawl, search, live, messages, interact, tasks, downloads, analysis):
         app.include_router(r.router, prefix=config.API_PREFIX)
 
     # 生产态:托管前端构建产物

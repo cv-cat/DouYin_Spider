@@ -89,3 +89,14 @@ export const downloadsApi = {
   fileUrl: (path: string) => `/api/downloads/file?path=${encodeURIComponent(path)}`,
   dirUrl: (path: string) => `/api/downloads/dir?path=${encodeURIComponent(path)}`,
 }
+
+// ---------- 视频分析 ----------
+export const analysisApi = {
+  users: () => http.get('/analysis/users').then((r) => r.data),
+  reports: () => http.get('/analysis/reports').then((r) => r.data),
+  run: (userDir: string, maxFrames = 20) =>
+    http.post('/analysis/run', null, { params: { user_dir: userDir, max_frames: maxFrames } }).then((r) => r.data),
+  status: (jobId: string) => http.get(`/analysis/status/${jobId}`).then((r) => r.data),
+  reportUrl: (filename: string) => `/api/analysis/report/${filename}`,
+  reportDownloadUrl: (filename: string) => `/api/analysis/report/${filename}/download`,
+}

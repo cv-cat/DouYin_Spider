@@ -52,7 +52,13 @@ html, body, #app {
   border-right: 1px solid var(--dy-border-soft);
   display: flex;
   flex-direction: column;
+  transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
 }
+.layout .sidebar.collapsed { width: 64px; }
+.layout .sidebar.collapsed .logo { padding: 20px 14px; justify-content: center; }
+.layout .sidebar.collapsed .el-menu-item { justify-content: center; padding: 0 !important; }
+.layout .sidebar.collapsed .el-menu-item span { display: none; }
 .layout .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
 .layout .main .content { flex: 1; overflow: auto; padding: 22px 28px; }
 
@@ -76,12 +82,6 @@ html, body, #app {
   box-shadow: 0 4px 14px rgba(254, 44, 85, 0.35);
 }
 .logo .logo-text { white-space: nowrap; }
-.sidebar-foot {
-  margin-top: auto;
-  padding: 14px 18px;
-  font-size: 12px;
-  border-top: 1px solid var(--dy-border-soft);
-}
 
 /* Element Plus 菜单深色覆盖 */
 .el-menu { border-right: none !important; background: transparent !important; }
@@ -108,6 +108,13 @@ html, body, #app {
   padding: 0 28px;
   background: var(--dy-bg-soft);
   border-bottom: 1px solid var(--dy-border-soft);
+  position: relative;
+}
+.topbar .topbar-gradient {
+  position: absolute; top: 0; left: 0; right: 0;
+  height: 2px;
+  background: var(--dy-grad);
+  opacity: 0.6;
 }
 .topbar .title { font-size: 17px; font-weight: 600; color: #fff; }
 .topbar .right { display: flex; align-items: center; gap: 10px; }
@@ -208,3 +215,15 @@ pre, .code-block {
   background-clip: text;
   -webkit-text-fill-color: transparent;
 }
+
+/* 页面过渡 */
+.page-fade-enter-active, .page-fade-leave-active { transition: opacity 0.2s ease, transform 0.2s ease; }
+.page-fade-enter-from { opacity: 0; transform: translateY(6px); }
+.page-fade-leave-to { opacity: 0; transform: translateY(-6px); }
+
+/* 侧边栏页脚 */
+.sidebar-foot { margin-top: auto; padding: 14px 18px; border-top: 1px solid var(--dy-border-soft); }
+.sidebar-foot .foot-row { font-size: 12px; line-height: 1.5; }
+
+/* 页面描述文案 */
+.page-desc { color: var(--dy-muted); font-size: 13px; }

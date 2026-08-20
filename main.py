@@ -6,6 +6,7 @@ from loguru import logger
 from dy_apis.douyin_api import DouyinAPI
 from utils.common_util import init
 from utils.data_util import handle_work_info, download_work, save_to_xlsx
+from utils.video_analyzer import analyze_user_videos, generate_html_report
 
 
 class Data_Spider():
@@ -109,6 +110,45 @@ class Data_Spider():
             file_path = os.path.abspath(os.path.join(base_path['excel'], f'{excel_name}.xlsx'))
             save_to_xlsx(work_info_list, file_path)
 
+    @staticmethod
+    def analyze_user_videos(media_dir, output_dir=None):
+        """
+        分析已下载用户的所有视频，生成可视化 HTML 报告
+
+        :param media_dir: 用户媒体目录（如 datas/media_datas/野阪泉_xxx/）
+        :param output_dir: 报告输出目录（默认 datas/analysis_reports/）
+        :return: 报告文件路径
+        """
+        from datetime import datetime
+        if output_dir is None:
+            output_dir = os.path.abspath(os.path.join(
+                os.path.dirname(__file__), 'datas/analysis_reports'
+            ))
+        os.makedirs(output_dir, exist_ok=True)
+
+        user_name = os.path.basename(media_dir.rstrip('/'))
+        if '_' in user_name:
+            user_name = user_name.split('_')[0]
+
+        logger.info(f'开始分析用户视频: {media_dir}')
+        analyses = analyze_user_videos(media_dir)
+
+        if not analyses:
+            logger.warning('未找到可分析的视频')
+            return None
+
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        output_path = os.path.join(output_dir, f'{user_name}_{timestamp}.html')
+        generate_html_report(analyses, output_path, user_name)
+
+        # 统计摘要
+        video_count = sum(1 for a in analyses if a['video_info']['duration'] > 0)
+        total_likes = sum(a.get('meta', {}).get('digg_count', 0) for a in analyses)
+        logger.info(f'报告已生成: {output_path}')
+        logger.info(f'分析摘要: {video_count} 个视频, 总点赞 {total_likes:,}')
+
+        return output_path
+
 if __name__ == '__main__':
     """
         此文件为爬虫的入口文件，可以直接运行
@@ -131,23 +171,27 @@ if __name__ == '__main__':
     # data_spider.spider_some_work(auth, works, base_path, 'all', 'test')
     #
     # # 2 爬取用户的所有作品信息 用户链接 如下所示 注意此url会过期！
-    # user_url = 'https://www.douyin.com/user/MS4wLjABAAAAULqT-SrJDT7RqeoxeGg1hB14Ia5UI9Pm66kzKmI1ITD2Fo3bUhqYePBaztkzj7U5?from_tab_name=main&relation=0&vid=7227654252435361061'
-    # data_spider.spider_user_all_work(auth, user_url, base_path, 'all')
+    user_url = 'https://www.douyin.com/user/MS4wLjABAAAAEpHYBN7gripYikJHoXPpSQhUSTCiwT3dSKBQ7Q_L2qQ?from_tab_name=main&modal_id=7663647531092321194'
+    data_spider.spider_user_all_work(auth, user_url, base_path, 'all')
 
     # 3 搜索指定关键词的作品
-    query = "榴莲"
-    require_num = 20  # 搜索的数量
-    sort_type = '0'  # 排序方式 0 综合排序, 1 最多点赞, 2 最新发布
-    publish_time = '0'  # 发布时间 0 不限, 1 一天内, 7 一周内, 180 半年内
-    filter_duration = ""  # 视频时长 空字符串 不限, 0-1 一分钟内, 1-5 1-5分钟内, 5-10000 5分钟以上
-    search_range = "0"  # 搜索范围 0 不限, 1 最近看过, 2 还未看过, 3 关注的人
-    content_type = "0"  # 内容形式 0 不限, 1 视频, 2 图文
+    # query = "榴莲"
+    # require_num = 20  # 搜索的数量
+    # sort_type = '0'  # 排序方式 0 综合排序, 1 最多点赞, 2 最新发布
+    # publish_time = '0'  # 发布时间 0 不限, 1 一天内, 7 一周内, 180 半年内
+    # filter_duration = ""  # 视频时长 空字符串 不限, 0-1 一分钟内, 1-5 1-5分钟内, 5-10000 5分钟以上
+    # search_range = "0"  # 搜索范围 0 不限, 1 最近看过, 2 还未看过, 3 关注的人
+    # content_type = "0"  # 内容形式 0 不限, 1 视频, 2 图文
 
     # data_spider.spider_some_search_work(auth, query, require_num, base_path, 'all', sort_type, publish_time, filter_duration, search_range, content_type)
 
     # 4 私信：用户链接转 uid 后建对话发一条
-    user_url = 'https://www.douyin.com/user/MS4wLjABAAAAaB23ankxsw7PIgXnKxCcLC9iJIadZMQQpS-KWVO8Y306zOksK9cUvT5QdoOIcsS6?from_tab_name=live'
-    content = "在吗"
-    to_user_id = DouyinAPI.get_user_info(auth, user_url)['user']['uid']
-    conversation_id, conversation_short_id, ticket = DouyinAPI.create_conversation(auth, to_user_id)
-    DouyinAPI.send_msg(auth, conversation_id, conversation_short_id, ticket, content)
+    # user_url = 'https://www.douyin.com/user/MS4wLjABAAAAaB23ankxsw7PIgXnKxCcLC9iJIadZMQQpS-KWVO8Y306zOksK9cUvT5QdoOIcsS6?from_tab_name=live'
+    # content = "在吗"
+    # to_user_id = DouyinAPI.get_user_info(auth, user_url)['user']['uid']
+    # conversation_id, conversation_short_id, ticket = DouyinAPI.create_conversation(auth, to_user_id)
+    # DouyinAPI.send_msg(auth, conversation_id, conversation_short_id, ticket, content)
+
+    # 5 视频逐帧分析：分析已下载用户的所有视频，生成可视化 HTML 报告
+    # 使用方式：先爬取用户视频（步骤2），再运行分析
+    # Data_Spider.analyze_user_videos(base_path['media'])

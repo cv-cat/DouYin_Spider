@@ -8,30 +8,48 @@
       <el-button @click="accountStore.refresh()">刷新</el-button>
     </div>
 
-    <el-table :data="accountStore.accounts" v-loading="accountStore.loading" border>
-      <el-table-column prop="id" label="ID" width="60" />
-      <el-table-column prop="label" label="标签" />
-      <el-table-column label="状态" width="100">
-        <template #default="{ row }">
-          <el-tag :type="row.status === 'valid' ? 'success' : row.status === 'invalid' ? 'danger' : 'info'" size="small">{{ row.status }}</el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column label="私信凭证" width="100">
-        <template #default="{ row }">
-          <el-tag :type="row.has_pm_credential ? 'success' : 'info'" size="small">{{ row.has_pm_credential ? '有' : '无' }}</el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column prop="created_at" label="创建时间" width="180" />
-      <el-table-column label="操作" width="280">
-        <template #default="{ row }">
-          <el-button size="small" @click="accountStore.setActive(row.id)">设为活跃</el-button>
-          <el-button size="small" @click="validate(row.id)">校验</el-button>
-          <el-popconfirm title="确认删除?" @confirm="accountStore.remove(row.id)">
-            <template #reference><el-button size="small" type="danger">删除</el-button></template>
-          </el-popconfirm>
-        </template>
-      </el-table-column>
-    </el-table>
+    <!-- 活跃账号卡片 -->
+    <el-card class="mb-4" v-if="accountStore.active">
+      <template #header><span> 当前活跃账号</span></template>
+      <div class="active-card">
+        <div class="active-avatar">{{ accountStore.active.label.charAt(0) }}</div>
+        <div class="active-info">
+          <div class="active-label">{{ accountStore.active.label }}</div>
+          <div class="active-status">
+            <el-tag :type="accountStore.active.status === 'valid' ? 'success' : 'danger'" size="small">{{ accountStore.active.status }}</el-tag>
+            <el-tag :type="accountStore.active.has_pm_credential ? 'success' : 'info'" size="small">{{ accountStore.active.has_pm_credential ? '私信可用' : '私信不可用' }}</el-tag>
+          </div>
+        </div>
+      </div>
+    </el-card>
+
+    <el-card>
+      <template #header><span> 所有账号</span></template>
+      <el-table :data="accountStore.accounts" v-loading="accountStore.loading" border>
+        <el-table-column prop="id" label="ID" width="60" />
+        <el-table-column prop="label" label="标签" />
+        <el-table-column label="状态" width="100">
+          <template #default="{ row }">
+            <el-tag :type="row.status === 'valid' ? 'success' : row.status === 'invalid' ? 'danger' : 'info'" size="small">{{ row.status }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="私信凭证" width="100">
+          <template #default="{ row }">
+            <el-tag :type="row.has_pm_credential ? 'success' : 'info'" size="small">{{ row.has_pm_credential ? '有' : '无' }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="created_at" label="创建时间" width="180" />
+        <el-table-column label="操作" width="280">
+          <template #default="{ row }">
+            <el-button size="small" @click="accountStore.setActive(row.id)">设为活跃</el-button>
+            <el-button size="small" @click="validate(row.id)">校验</el-button>
+            <el-popconfirm title="确认删除?" @confirm="accountStore.remove(row.id)">
+              <template #reference><el-button size="small" type="danger">删除</el-button></template>
+            </el-popconfirm>
+          </template>
+        </el-table-column>
+      </el-table>
+    </el-card>
 
     <!-- QR 登录弹窗 -->
     <el-dialog v-model="qrDlg" title="扫码登录" width="420px" align-center @close="stopQrPoll">
@@ -185,6 +203,17 @@ async function validate(id: number) {
 </script>
 
 <style scoped>
+.mb-4 { margin-bottom: 16px; }
+.active-card {
+  display: flex; align-items: center; gap: 16px; padding: 4px 0;
+}
+.active-avatar {
+  width: 48px; height: 48px; border-radius: 14px;
+  background: var(--dy-grad); display: flex; align-items: center; justify-content: center;
+  font-size: 22px; font-weight: 700; color: #fff;
+}
+.active-label { font-size: 16px; font-weight: 600; color: #fff; }
+.active-status { display: flex; gap: 8px; margin-top: 4px; }
 .qr-box { display: flex; flex-direction: column; align-items: center; padding: 6px 4px 4px; }
 
 .qr-frame {

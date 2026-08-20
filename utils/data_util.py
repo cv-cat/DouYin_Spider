@@ -133,13 +133,27 @@ def save_to_xlsx(datas, file_path):
     wb.save(file_path)
     logger.info(f'数据保存至 {file_path}')
 
+def _get_media_headers():
+    """获取下载媒体文件所需的请求头"""
+    from builder.header import HeaderBuilder, HeaderType
+    header = HeaderBuilder.build(HeaderType.GET)
+    header.set_referer('https://www.douyin.com/')
+    header.set_header('sec-fetch-dest', 'video')
+    header.set_header('sec-fetch-mode', 'no-cors')
+    header.set_header('sec-fetch-site', 'cross-site')
+    header.set_header('range', 'bytes=0-')
+    return header.get()
+
+
 def download_media(path, name, url, type):
+    headers = _get_media_headers()
     if type == 'image':
-        content = requests.get(url).content
+        content = requests.get(url, headers=headers).content
         with open(path + '/' + name + '.jpg', mode="wb") as f:
             f.write(content)
     elif type == 'video':
-        res = requests.get(url, stream=True)
+        headers = _get_media_headers()
+        res = requests.get(url, headers=headers, stream=True)
         size = 0
         chunk_size = 1024 * 1024
         with open(path + '/' + name + '.mp4', mode="wb") as f:

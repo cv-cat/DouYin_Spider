@@ -141,48 +141,51 @@ class AccountManager:
         from playwright.async_api import async_playwright
         from builder.auth import DouyinAuth
 
-        async with async_playwright() as p:
-            browser = await p.chromium.launch(
-                headless=headless, args=["--disable-blink-features=AutomationControlled"])
-            context = await browser.new_context()
-            if cookie_str:
-                await context.add_cookies([
-                    {"name": part.strip().partition("=")[0],
-                     "value": part.strip().partition("=")[2],
-                     "domain": ".douyin.com", "path": "/"}
-                    for part in cookie_str.split(";") if part.strip()
-                ])
-            page = await context.new_page()
-            await page.goto("https://www.douyin.com/")
-            try:
-                await page.wait_for_load_state("load", timeout=15000)
-            except Exception:
-                pass
-            web_protect = ""
-            keys = ""
-            # 滚动等待 cookies(msToken/biz_trace_id)生成;需要凭证时同时等 localStorage
-            for _ in range(8):
-                await asyncio.sleep(3)
+        try:
+            async with async_playwright() as p:
+                browser = await p.chromium.launch(
+                    headless=headless, args=["--disable-blink-features=AutomationControlled"])
+                context = await browser.new_context()
+                if cookie_str:
+                    await context.add_cookies([
+                        {"name": part.strip().partition("=")[0],
+                         "value": part.strip().partition("=")[2],
+                         "domain": ".douyin.com", "path": "/"}
+                        for part in cookie_str.split(";") if part.strip()
+                    ])
+                page = await context.new_page()
+                await page.goto("https://www.douyin.com/")
                 try:
-                    await page.mouse.wheel(0, 600)
+                    await page.wait_for_load_state("load", timeout=15000)
                 except Exception:
                     pass
-                if need_credential:
+                web_protect = ""
+                keys = ""
+                # 滚动等待 cookies(msToken/biz_trace_id)生成;需要凭证时同时等 localStorage
+                for _ in range(8):
+                    await asyncio.sleep(3)
                     try:
-                        keys = await page.evaluate(
-                            'localStorage["security-sdk/s_sdk_crypt_sdk"]')
-                        web_protect = await page.evaluate(
-                            'localStorage["security-sdk/s_sdk_sign_data_key/web_protect"]')
+                        await page.mouse.wheel(0, 600)
                     except Exception:
-                        continue
-                    if keys and web_protect:
-                        break
-                else:
-                    names = {c["name"] for c in await context.cookies()}
-                    if "msToken" in names and "biz_trace_id" in names:
-                        break
-            cookies = {c["name"]: c["value"] for c in await context.cookies()}
-            await browser.close()
+                        pass
+                    if need_credential:
+                        try:
+                            keys = await page.evaluate(
+                                'localStorage["security-sdk/s_sdk_crypt_sdk"]')
+                            web_protect = await page.evaluate(
+                                'localStorage["security-sdk/s_sdk_sign_data_key/web_protect"]')
+                        except Exception:
+                            continue
+                        if keys and web_protect:
+                            break
+                    else:
+                        names = {c["name"] for c in await context.cookies()}
+                        if "msToken" in names and "biz_trace_id" in names:
+                            break
+                cookies = {c["name"]: c["value"] for c in await context.cookies()}
+                await browser.close()
+        except Exception as e:
+            raise RuntimeError(f"Playwright 启动失败,请确保已安装 chromium: playwright install chromium。详情: {e}")
 
         # 兜底:cookie 里缺 msToken/biz_trace_id 时补上,避免后续 KeyError
         if "msToken" not in cookies:
@@ -347,8 +350,10 @@ class AccountManager:
             try:
                 auth = await self._playwright_auth(cookie_str=cookies, need_credential=True, timeout=60)
                 return self._persist_auth(label, auth, status="valid")
-            except Exception:
-                pass  # Playwright 不可用或提取失败,降级为仅 cookies
+            except Exception as e:
+                from loguru import logger
+                logger.warning(f"Cookie 登录提取凭证失败,降级为仅 cookies 模式: {e}")
+                # 降级为仅 cookies
         auth = DouyinAuth()
         auth.perepare_auth(cookies, "", "")
         return self._persist_auth(label, auth, status="valid")
