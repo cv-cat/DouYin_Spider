@@ -207,32 +207,40 @@ class AccountManager:
 
     # ---------- QR 登录(浏览器弹窗截图法,绕过 SSO 风控) ----------
     async def qr_start(self) -> dict:
-        """在 Playwright 里打开抖音登录弹窗,截取二维码。浏览器自带风控处理。"""
+        """在 Playwright 里打开抖音登录弹窗,截取二维码。浏览器自带风控处理。
+        使用 headless=False + Xvfb 虚拟显示,避免抖音检测 headless 拒绝弹窗。"""
         from playwright.async_api import async_playwright
 
         pw = await async_playwright().start()
         browser = await pw.chromium.launch(
-            headless=True, args=["--disable-blink-features=AutomationControlled"])
+            headless=False, args=["--disable-blink-features=AutomationControlled",
+                                  "--no-sandbox", "--disable-gpu",
+                                  "--display=:99"])
         context = await browser.new_context(
             user_agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
-                       "(KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36")
+                       "(KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36",
+            viewport={"width": 1280, "height": 720})
         page = await context.new_page()
         await page.goto("https://www.douyin.com/")
         try:
             await page.wait_for_load_state("load", timeout=15000)
         except Exception:
             pass
-        await asyncio.sleep(2)
-        # 点「登录」打开弹窗
+        await asyncio.sleep(3)
+        # 点「登录」按钮打开弹窗 — 优先点击 BUTTON 元素(更可靠)
         try:
-            await page.evaluate('''() => {
-                const nodes = Array.from(document.querySelectorAll('button, span, div, a, li'));
-                const hit = nodes.find(n => ['登录','登 录'].includes((n.textContent||'').trim()));
-                if (hit) hit.click();
-            }''')
+            btn = page.locator("button:has-text('登录')")
+            if await btn.count() > 0:
+                await btn.first.click()
+            else:
+                await page.evaluate('''() => {
+                    const nodes = Array.from(document.querySelectorAll('button, span, div, a, li'));
+                    const hit = nodes.find(n => ['登录','登 录'].includes((n.textContent||'').trim()));
+                    if (hit) hit.click();
+                }''')
         except Exception:
             pass
-        await asyncio.sleep(3)
+        await asyncio.sleep(5)
         # 尝试切到「扫码登录」tab(弹窗可能默认手机号登录)
         try:
             await page.evaluate('''() => {
@@ -242,7 +250,7 @@ class AccountManager:
             }''')
         except Exception:
             pass
-        await asyncio.sleep(2)
+        await asyncio.sleep(3)
         # 截取二维码:用 JS 找最大的正方形 data:image img(抖音把 QR 编成 data URL),按坐标裁剪
         qr_bytes = None
         try:

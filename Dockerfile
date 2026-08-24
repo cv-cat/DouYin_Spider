@@ -11,7 +11,7 @@ FROM python:3.10-slim
 WORKDIR /app
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    curl gnupg build-essential git \
+    curl gnupg build-essential git xvfb \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
@@ -28,7 +28,10 @@ COPY --from=frontend /build/dist ./webapp/frontend/dist
 
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONPATH=/app
+ENV DISPLAY=:99
 
 EXPOSE 8000
 
+RUN chmod +x entrypoint.sh
+ENTRYPOINT ["./entrypoint.sh"]
 CMD ["uvicorn", "webapp.backend.main:app", "--host", "0.0.0.0", "--port", "8000"]
