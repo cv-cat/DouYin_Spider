@@ -110,8 +110,6 @@ npm install
 ```
 
 ### 🎨配置文件
-这里以小红书的cookie获取为例
-
 现在推荐只配置 `DY_COOKIES`：主站 `Auth` 会被作品接口、直播 REST/WebSocket 和创作者中心共同复用。
 `DY_LIVE_COOKIES` 仍可作为旧版独立直播浏览器的显式覆盖，但不再是必填项。
 
