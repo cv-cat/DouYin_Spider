@@ -1,0 +1,4 @@
+interface:
+  display_name: "抖音精准评论筛选"
+  short_description: "筛选近期湖北高意向评论并排除低质量或明显非目标用户"
+  default_prompt: "Use $douyin-target-comment-filter to collect and rank recent high-confidence target comments from a Douyin video."

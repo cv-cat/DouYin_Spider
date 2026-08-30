@@ -1,4 +1,5 @@
 aiofiles
+aiohttp
 beautifulsoup4
 ecdsa
 loguru

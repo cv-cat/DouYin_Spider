@@ -108,7 +108,7 @@ class DouyinAPI:
                          auth.msToken)
         params.with_a_bogus()
         resp = requests.get(f'{DouyinAPI.douyin_url}{api}', headers=headers.get(), cookies=auth.cookie,
-                            params=params.get(), verify=False)
+                            params=params.get(), verify=False, timeout=kwargs.get("timeout", 15))
         return json.loads(resp.text)
 
     @staticmethod
@@ -127,11 +127,14 @@ class DouyinAPI:
             url = f'https://www.douyin.com/video/{aweme_id}'
         headers = HeaderBuilder().build(HeaderType.GET)
         headers.set_referer(url)
+        if auth.ticket and auth.ts_sign and auth.private_key:
+            headers.with_bd(api, auth)
         params = Params()
         params.add_param("device_platform", "webapp")
         params.add_param("aid", "6383")
         params.add_param("channel", "channel_pc_web")
         params.add_param("aweme_id", aweme_id)
+        params.add_param("pc_img_format", "webp")
         params.add_param("update_version_code", "170400")
         params.add_param("pc_client_type", "1")
         params.add_param("version_code", "190500")
@@ -186,14 +189,21 @@ class DouyinAPI:
         params.add_param("aid", "6383")
         params.add_param("channel", "channel_pc_web")
         params.add_param("aweme_id", aweme_id)
+        params.add_param("pc_img_format", "webp")
         params.add_param("cursor", cursor)
-        params.add_param("count", "5")
+        params.add_param("count", str(kwargs.get("count", "20")))
+        if kwargs.get("sort_type"):
+            params.add_param("sort_type", str(kwargs["sort_type"]))
         params.add_param("item_type", "0")
+        params.add_param("insert_ids", "")
         params.add_param("whale_cut_token", "")
         params.add_param("cut_version", "1")
         params.add_param("rcFT", "")
         params.add_param("update_version_code", "170400")
         params.add_param("pc_client_type", "1")
+        params.add_param("pc_libra_divert", "Windows")
+        params.add_param("support_h265", "1")
+        params.add_param("support_dash", "1")
         params.add_param("version_code", "170400")
         params.add_param("version_name", "17.4.0")
         params.add_param("cookie_enabled", "true")
@@ -214,13 +224,19 @@ class DouyinAPI:
         params.add_param("downlink", "10")
         params.add_param("effective_type", "4g")
         params.add_param("round_trip_time", "0")
+        params.add_param("uifid", auth.cookie.get("UIFID", auth.cookie.get("UIFID_TEMP", "")))
         params.with_web_id(auth, url)
         params.add_param("verifyFp", auth.cookie['s_v_web_id'])
         params.add_param("fp", auth.cookie['s_v_web_id'])
         params.add_param("msToken", auth.msToken)
         params.with_a_bogus()
+        if auth.ticket and auth.ts_sign and auth.private_key:
+            headers.with_bd(api, auth)
+        uifid = auth.cookie.get("UIFID", auth.cookie.get("UIFID_TEMP", ""))
+        if uifid:
+            headers.set_header("uifid", uifid)
         resp = requests.get(f'{DouyinAPI.douyin_url}{api}', headers=headers.get(), cookies=auth.cookie,
-                            params=params.get(), verify=False)
+                            params=params.get(), verify=False, timeout=kwargs.get("timeout", 30))
         resp_json = json.loads(resp.text)
         return resp_json
 
@@ -388,7 +404,7 @@ class DouyinAPI:
         params.add_param('fp', auth.cookie['s_v_web_id'])
         params.with_a_bogus()
         resp = requests.get(f'{DouyinAPI.douyin_url}{api}', headers=headers.get(), cookies=auth.cookie,
-                            params=params.get(), verify=False)
+                            params=params.get(), verify=False, timeout=kwargs.get("timeout", 15))
         return json.loads(resp.text)
 
     @staticmethod
@@ -998,7 +1014,16 @@ class DouyinAPI:
         params.with_a_bogus(data)
         res = requests.post(f'{DouyinAPI.douyin_url}{api}', headers=headers.get(), params=params.get(),
                             cookies=auth.cookie, data=data, verify=False)
-        return res.json()
+        try:
+            return res.json()
+        except ValueError:
+            return {
+                "status_code": -1,
+                "http_status": res.status_code,
+                "content_type": res.headers.get("content-type", ""),
+                "location": res.headers.get("location", ""),
+                "response_preview": res.text[:500],
+            }
 
     @staticmethod
     def move_collect_aweme(auth, aweme_id: str, collect_name: str, collect_id: str, **kwargs):

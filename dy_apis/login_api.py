@@ -61,14 +61,33 @@ class DYLoginApi:
             return auth
 
     # 扫码登录并抓 ticket
-    async def login_grab_ticket(self, headless=False, timeout=180):
+    async def login_grab_ticket(self, headless=False, timeout=300, target_url=None, executable_path=None):
         async with async_playwright() as p:
-            browser = await p.chromium.launch(
-                headless=headless,
-                args=['--disable-blink-features=AutomationControlled'],
-            )
+            browser = None
+            launch_errors = []
+            launch_targets = []
+            if executable_path:
+                launch_targets.append(("指定浏览器", {"executable_path": executable_path}))
+            launch_targets.extend([
+                ("msedge", {"channel": "msedge"}),
+                ("chrome", {"channel": "chrome"}),
+                ("chromium", {}),
+            ])
+            for label, target_kwargs in launch_targets:
+                try:
+                    kwargs = {
+                        "headless": headless,
+                        "args": ['--disable-blink-features=AutomationControlled'],
+                    }
+                    kwargs.update(target_kwargs)
+                    browser = await p.chromium.launch(**kwargs)
+                    break
+                except Exception as exc:
+                    launch_errors.append(f"{label}: {exc}")
+            if browser is None:
+                raise RuntimeError("无法启动可用浏览器：" + " | ".join(launch_errors))
             page = await browser.new_page()
-            await page.goto(self.home_url)
+            await page.goto(target_url or self.home_url)
             await page.wait_for_load_state("load")
             await asyncio.sleep(2)
             await page.evaluate('''() => {
@@ -80,19 +99,25 @@ class DYLoginApi:
             deadline = time.time() + timeout
             keys_str = None
             web_protect_str = None
+            logged_in = False
             while time.time() < deadline:
                 await asyncio.sleep(2)
                 try:
                     keys_str = await page.evaluate('localStorage["security-sdk/s_sdk_crypt_sdk"]')
                     web_protect_str = await page.evaluate('localStorage["security-sdk/s_sdk_sign_data_key/web_protect"]')
+                    current_cookies = {
+                        cookie['name']: cookie['value']
+                        for cookie in await page.context.cookies()
+                    }
+                    logged_in = bool(current_cookies.get('sessionid') or current_cookies.get('sessionid_ss'))
                 except Exception:
                     # 登录跳转瞬间执行上下文被销毁，下一轮重试
                     continue
-                if keys_str and web_protect_str:
+                if logged_in and keys_str and web_protect_str:
                     break
-            if not (keys_str and web_protect_str):
+            if not (logged_in and keys_str and web_protect_str):
                 await browser.close()
-                raise TimeoutError("登录超时：未抓到 ticket")
+                raise TimeoutError("登录超时：未检测到有效登录 Cookie")
             cookies = {cookie['name']: cookie['value'] for cookie in await page.context.cookies()}
             await browser.close()
             auth = DouyinAuth()

@@ -1,0 +1,6 @@
+interface:
+  display_name: "抖音评论区女生筛选"
+  short_description: "抓取湖北评论并进行两轮女生性别清洗"
+  default_prompt: "Use $douyin-female-comment-filter to filter female commenters with Hubei IP from this Douyin video link."
+policy:
+  allow_implicit_invocation: true

@@ -32,6 +32,7 @@ datas
 /newsign/
 /.idea
 /.claude
+/.agents
 /test_search_oldab.py
 /new/
 
