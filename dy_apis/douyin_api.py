@@ -1347,9 +1347,10 @@ class DouyinAPI:
         follower_list = []
         while True:
             res_json = DouyinAPI.get_user_follower_list(auth, user_id, sec_id, max_time, count)
-            followers = res_json["followers"]
+            # 用户隐私受限（status_code=2096）时 followers 为 null 且无 has_more 字段，防空值崩溃
+            followers = res_json["followers"] or []
             follower_list.extend(followers)
-            if res_json["has_more"] != 1 or len(follower_list) >= num:
+            if res_json.get("has_more") != 1 or len(follower_list) >= num:
                 break
             max_time = res_json["min_time"]
         if len(follower_list) > num:
@@ -1357,7 +1358,7 @@ class DouyinAPI:
         return follower_list
 
     @staticmethod
-    def get_user_following_list(auth, user_id: str, sec_id: str, max_time: str = '0', count: str = '20', **kwargs):
+    def get_user_following_list(auth, user_id: str, sec_id: str, max_time: str = None, count: str = '20', **kwargs):
         """
         获取用户的关注列表
         :param auth: DouyinAuth object.
@@ -1367,6 +1368,10 @@ class DouyinAPI:
         :param count: 数量.
         :return:
         """
+        # 同 follower/list：max_time 传**当前秒级时间戳**、source_type=1 才返回 followings；
+        # 传 max_time=0 时服务端走推荐分支，返回 followings=[]（total 也是 0，status_code 仍是 0，别被骗）
+        if not max_time or max_time == '0':
+            max_time = str(int(time.time()))
         api = "/aweme/v1/web/user/following/list/"
         headers = HeaderBuilder().build(HeaderType.GET)
         refer = f"https://www.douyin.com/user/{sec_id}"
@@ -1440,9 +1445,10 @@ class DouyinAPI:
         following_list = []
         while True:
             res_json = DouyinAPI.get_user_following_list(auth, user_id, sec_id, max_time, count)
-            followings = res_json["followings"]
+            # 用户隐私受限（status_code=2096）时 followings 为 null 且无 has_more 字段，防空值崩溃
+            followings = res_json["followings"] or []
             following_list.extend(followings)
-            if res_json["has_more"] != 1 or len(following_list) >= num:
+            if res_json.get("has_more") != 1 or len(following_list) >= num:
                 break
             max_time = res_json["min_time"]
         if len(following_list) > num:
