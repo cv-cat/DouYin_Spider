@@ -1581,64 +1581,112 @@ class DouyinAPI:
 
 
     @staticmethod
-    def get_rank_list(auth, room_id: str, anchor_id: str, sec_anchor_id: str):
+    def _get_live_rank(auth, api: str, room_id: str, endpoint_params,
+                       web_rid: str = '', enter_from: str = 'web_live', **kwargs):
+        """请求直播间榜单接口，并保持 query 字段顺序与 PC Web 实录一致。"""
         headers = HeaderBuilder().build(HeaderType.GET)
-        refer = "https://live.douyin.com"
-        headers.set_referer(refer)
-        url = "https://live.douyin.com/webcast/ranklist/audience/"
-        params = Params()
+        referer = f'{DouyinAPI.live_url}/{web_rid}' if web_rid else DouyinAPI.live_url
+        headers.set_referer(referer)
 
-        # params = {
-        #     "aid": "6383",
-        #     "app_name": "douyin_web",
-        #     "live_id": "1",
-        #     "device_platform": "web",
-        #     "language": "zh-CN",
-        #     "enter_from": "web_live",
-        #     "cookie_enabled": "true",
-        #     "screen_width": "2560",
-        #     "screen_height": "1600",
-        #     "browser_language": "zh-CN",
-        #     "browser_platform": "Win32",
-        #     "browser_name": "Chrome",
-        #     "browser_version": "138.0.0.0",
-        #     "webcast_sdk_version": "2450",
-        #     "room_id": "7527483067720583955",
-        #     "anchor_id": "3998258005032616",
-        #     "sec_anchor_id": "MS4wLjABAAAA2F3NX6RiboGdfcX98Hpp3JESCY-Z8Tw8jQD8aqs25qhdnQSvMyyAbVvnLq5NT_rN",
-        #     "ignoreToast": "true",
-        #     "rank_type": "30",
-        #     "update_scene": "rank_message",
-        #     "msToken": "-HpOqCxjx1MRFQP00onCIVOe7UekYXQKcayCMuaffyovdtusmV13ZavT6mmX24sWMlGVdZza4F-MWiGt6iddfmElCqbOu59e-RiUXuBfYxqkbM-OZRHlLQn6dcDCagr8olEfvFxMvSye3lYz4-_pvuAkUQjA-a8oShkGqRiUXlrD",
-        #     "a_bogus": "OXsfhHXEd2WbedKSYCY5t53lU8DlNsuyFBiQbinue5Cuch0bDmPtknebJxow1Mjo5SpziCl77EUMbxxb0VXi11HpqmkvS8JWbTICVh8LgqqRTFisEHRTewgEHJebWOJEm5ojJ1k3ItmP2EA4L1riUQAjCAaj4Qkp/rrRda4aNItggzs9FNqxuxSDOXFNBRI4YE=="
-        # }
-        params.add_param("aid", "6383")
-        params.add_param("app_name", "douyin_web")
-        params.add_param("live_id", "1")
-        params.add_param("device_platform", "web")
-        params.add_param("language", "zh-CN")
-        params.add_param("enter_from", "web_live")
-        params.add_param("cookie_enabled", "true")
-        params.add_param("screen_width", get_profile()["screen_width"])
-        params.add_param("screen_height", get_profile()["screen_height"])
-        params.add_param("browser_language", "zh-CN")
-        params.add_param("browser_platform", get_profile()["platform"])
-        params.add_param("browser_name", get_profile()["browser_name"])
-        params.add_param("browser_version", get_profile()["browser_version"])
-        params.add_param("webcast_sdk_version", "2450")
-        params.add_param("room_id", room_id)
-        params.add_param("anchor_id", anchor_id)
-        params.add_param("sec_anchor_id", sec_anchor_id)
-        params.add_param("ignoreToast", "true")
-        params.add_param("rank_type", "30")
-        params.add_param("update_scene", "rank_message")
-        params.add_param("msToken", auth.msToken)
+        profile = get_profile()
+        params = Params()
+        for key, value in (
+            ('aid', '6383'),
+            ('app_name', 'douyin_web'),
+            ('live_id', '1'),
+            ('device_platform', 'web'),
+            ('language', 'zh-CN'),
+            ('enter_from', enter_from),
+            ('cookie_enabled', 'true'),
+            ('screen_width', profile['screen_width']),
+            ('screen_height', profile['screen_height']),
+            ('browser_language', 'zh-CN'),
+            ('browser_platform', profile['platform']),
+            ('browser_name', profile['browser_name']),
+            ('browser_version', profile['browser_version']),
+            ('os_name', 'Windows'),
+            ('os_version', '10'),
+            ('webcast_sdk_version', '2450'),
+            ('room_id', str(room_id)),
+        ):
+            params.add_param(key, value)
+        for key, value in endpoint_params:
+            if value is not None:
+                params.add_param(key, value)
+        params.add_param('msToken', auth.msToken)
         params.with_a_bogus(host=LIVE_HOST)
-        response = requests.get(url, headers=headers.get(), params=params.get(),
-                           cookies=auth.cookie, verify=False)
+
+        url = f'{DouyinAPI.live_url}{api}'
+        request_kwargs = {
+            'headers': headers.get(),
+            'params': params.get(),
+            'verify': False,
+            'timeout': kwargs.get('timeout', 30),
+        }
+        if kwargs.get('proxies') is not None:
+            request_kwargs['proxies'] = kwargs['proxies']
+        if hasattr(auth, 'request'):
+            response = auth.request('GET', url, **request_kwargs)
+        else:
+            response = requests.get(url, cookies=auth.cookie, **request_kwargs)
 
         check_risk_response(response)
         return response.json()
+
+    @staticmethod
+    def get_live_contribution_rank(auth, room_id: str, anchor_id: str,
+                                   sec_anchor_id: str, web_rid: str = '',
+                                   ignore_toast: bool = True,
+                                   rank_type: str = '30',
+                                   update_scene: str = None, **kwargs):
+        """获取直播间贡献榜。
+
+        ``room_id`` / ``anchor_id`` / ``sec_anchor_id`` 可由
+        :meth:`get_live_info` 返回；传入 ``web_rid`` 时会生成与浏览器一致的
+        直播间 Referer。``update_scene`` 仅为兼容旧调用保留，当前 PC Web
+        请求默认不再发送该字段。
+        """
+        ignore_toast = str(ignore_toast).lower() if isinstance(ignore_toast, bool) \
+            else str(ignore_toast)
+        return DouyinAPI._get_live_rank(
+            auth,
+            '/webcast/ranklist/audience/',
+            room_id,
+            (
+                ('anchor_id', str(anchor_id)),
+                ('sec_anchor_id', sec_anchor_id),
+                ('ignoreToast', ignore_toast),
+                ('rank_type', str(rank_type)),
+                ('update_scene', update_scene),
+            ),
+            web_rid=web_rid,
+            **kwargs,
+        )
+
+    @staticmethod
+    def get_live_thousand_ticket_rank(auth, room_id: str, web_rid: str = '',
+                                      seats_type: str = '2', **kwargs):
+        """获取直播间千票榜（页面中的“1000贡献用户”列表）。
+
+        该接口要求完整登录态；若返回 ``status_code=20003``，需从
+        ``live.douyin.com`` 的已登录请求中刷新 ``DY_COOKIES``。
+        """
+        return DouyinAPI._get_live_rank(
+            auth,
+            '/webcast/ranklist/paygrade_seats/',
+            room_id,
+            (('seats_type', str(seats_type)),),
+            web_rid=web_rid,
+            **kwargs,
+        )
+
+    @staticmethod
+    def get_rank_list(auth, room_id: str, anchor_id: str, sec_anchor_id: str,
+                      **kwargs):
+        """兼容旧版本：等价于 :meth:`get_live_contribution_rank`。"""
+        return DouyinAPI.get_live_contribution_rank(
+            auth, room_id, anchor_id, sec_anchor_id, **kwargs
+        )
 
     @staticmethod
     def get_webcast_detail(auth, user_id, room_id, url: str):
