@@ -7,6 +7,7 @@ from urllib.parse import urlencode
 from websocket import WebSocketApp
 
 import static.Live_pb2 as Live_pb2
+from dy_live.pk import PK_MESSAGES, PKMessageHandler, print_pk_event
 from dy_apis.douyin_api import DouyinAPI
 from builder.header import HeaderBuilder
 from builder.params import Params
@@ -14,14 +15,18 @@ import utils.common_util as common_util
 from utils.dy_util import generate_signature
 
 # Windows 控制台是 GBK，弹幕含 emoji 会 UnicodeEncodeError，按 UTF-8 输出
-sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+if hasattr(sys.stdout, 'reconfigure'):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 
 class DouyinLive:
-    def __init__(self, live_id, auth_):
+    def __init__(self, live_id, auth_, on_pk_event=None):
         self.auth_ = auth_
         self.live_id = live_id
         self.ws = None
+        # Optional structured PK consumer; normal CLI printing stays enabled.
+        self.on_pk_event = on_pk_event
+        self.pk_handler = PKMessageHandler()
 
     def ping(self, ws):
         while True:
@@ -36,6 +41,8 @@ class DouyinLive:
 
     def on_open(self, ws):
         print("\033[32m### opened ###\033[m")
+        # A reconnect may have missed an entire battle or a channel change.
+        self.pk_handler = PKMessageHandler()
         if hasattr(self.auth_, "live_websocket_connected"):
             self.auth_.live_websocket_connected = True
         threading.Thread(target=self.ping, args=(ws,)).start()
@@ -44,7 +51,11 @@ class DouyinLive:
         try:
             frame = Live_pb2.PushFrame()
             frame.ParseFromString(message)
-            origin_bytes = gzip.decompress(frame.payload)
+            if frame.payloadType in ('hb', 'ack') or not frame.payload:
+                return
+            origin_bytes = frame.payload
+            if origin_bytes.startswith(b'\x1f\x8b'):
+                origin_bytes = gzip.decompress(origin_bytes)
             response = Live_pb2.LiveResponse()
             response.ParseFromString(origin_bytes)
             if hasattr(self.auth_, "live_websocket_verified"):
@@ -59,7 +70,19 @@ class DouyinLive:
                 s.logId = frame.logId
                 ws.send(s.SerializeToString(), opcode=0x02)
             for item in response.messagesList:
-                if item.method == 'WebcastGiftMessage':
+                if item.method.removeprefix('Webcast') in PK_MESSAGES:
+                    try:
+                        event = self.pk_handler.handle(item.method, item.payload, item.msgId)
+                        if event is not None:
+                            print_pk_event(event)
+                            if self.on_pk_event is not None:
+                                self.on_pk_event(event)
+                    except Exception as exc:
+                        # One malformed PK payload/callback must not swallow the
+                        # other PK/chat/gift items in this response.
+                        print(f'[PK 消息处理失败] method={item.method} msg_id={item.msgId}: {exc}')
+                    continue
+                elif item.method == 'WebcastGiftMessage':
                     message = Live_pb2.GiftMessage()
                     message.ParseFromString(item.payload)
                     # print(f'\033[1;37;40m[礼物]SEC_UID = {message.user.sec_uid} - {message.user.nickname}\033[m 送出 \033[4;30;44m{message.gift.name}\033[m x {message.comboCount}')
