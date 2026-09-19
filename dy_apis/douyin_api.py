@@ -1,5 +1,6 @@
 import base64
 import hashlib
+import html
 import json
 import re
 import time
@@ -955,23 +956,59 @@ class DouyinAPI:
         text = res.text or ""
         if "roomId" in text:
             try:
-                def _first(pattern):
-                    match = re.search(pattern, text)
+                # New live pages embed a server-rendered JSON blob whose
+                # quotes are escaped (and may be HTML-escaped one more time).
+                # Normalize those representations before matching.  The old
+                # parser required every field to occur in one legacy blob, so
+                # rooms such as /Zmm5277 incorrectly returned None even though
+                # roomId/anchor/sec_uid were present in the document.
+                normalized = html.unescape(text)
+                for _ in range(2):
+                    normalized = normalized.replace(r'\"', '"')
+
+                def _first(pattern, source=normalized):
+                    match = re.search(pattern, source, re.S)
                     return match.group(1) if match else ""
-                room_id = _first(r'\\"roomId\\"\s*:\s*\\"(\d+)\\"')
-                user_id = _first(r'\\"user_unique_id\\"\s*:\s*\\"(\d+)\\"')
-                anchor_id = _first(r'\\"anchor\\"\s*:\s*\\{[^{}]*?\\"id_str\\"\s*:\s*\\"(\d+)\\"')
-                sec_uid = _first(r'\\"sec_uid\\"\s*:\s*\\"([^\"]+)\\"')
+
+                # Ignore the bootstrap roomId=0 placeholder and select the
+                # concrete numeric room id emitted by the live page.
+                room_id = _first(r'"(?:roomId|room_id)"\s*:\s*"(\d{8,})"')
+                user_unique_id = _first(r'"user_unique_id"\s*:\s*"(\d+)"')
+                # ``user_id`` may also occur in the viewer/session (odin)
+                # object.  Prefer the webcast user_unique_id, matching the
+                # legacy parser and the value required by get_webcast_detail.
+                user_id = user_unique_id or _first(r'"user_id"\s*:\s*"(\d+)"')
+                anchor_id = _first(
+                    r'"anchor"\s*:\s*\{[^{}]{0,1200}?"id_str"\s*:\s*"(\d+)"'
+                )
+                sec_uid = _first(r'"sec_uid"\s*:\s*"([^"]+)"')
+                status_match = re.search(
+                    r'"roomInfo"\s*:\s*\{[^{}]{0,2000}?"status"\s*:\s*([^,}]+)',
+                    normalized,
+                    re.S,
+                )
+                title_match = re.search(
+                    r'"roomInfo"\s*:\s*\{[^{}]{0,2000}?"title"\s*:\s*"(.*?)"',
+                    normalized,
+                    re.S,
+                )
+                room_status = status_match.group(1).strip() if status_match else ""
+                room_title = title_match.group(1) if title_match else ""
+                # user_unique_id is what the webcast handshake needs.  Keep a
+                # final anchor fallback for sparse server-rendered responses.
+                user_id = user_id or anchor_id
                 if room_id and user_id:
                     if hasattr(auth_, "live_rest_verified"):
                         auth_.live_rest_verified = True
                     return {
                         "room_id": room_id,
                         "user_id": user_id,
-                        "user_unique_id": user_id,
+                        "user_unique_id": user_unique_id or user_id,
                         "anchor_id": anchor_id or user_id,
                         "sec_uid": sec_uid,
                         "ttwid": ttwid,
+                        "room_status": room_status,
+                        "room_title": room_title,
                     }
             except Exception:
                 pass
