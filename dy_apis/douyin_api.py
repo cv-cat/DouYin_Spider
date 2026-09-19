@@ -28,6 +28,33 @@ from utils.dy_util import splice_url, generate_a_bogus, generate_msToken, trans_
 LIVE_HOST = 'live.douyin.com'
 
 
+class LivePKAPIError(RuntimeError):
+    """PK 上下文查询失败；保留上游业务码及原始响应供调用方处理。"""
+
+    def __init__(self, endpoint, response):
+        self.endpoint = endpoint
+        self.response = response
+        self.status_code = response.get('status_code')
+        super().__init__(f'{endpoint}: status_code={self.status_code}')
+
+
+def _live_id(data, name):
+    value = data.get(f'{name}_str') or data.get(name)
+    return str(value) if value not in (None, '', 0, '0') else None
+
+
+def _live_web_rid(value):
+    value = str(value).strip()
+    if value.isascii() and value.isdigit():
+        return value
+    parsed = urllib.parse.urlparse(value)
+    rid = parsed.path.strip('/')
+    if (parsed.scheme in ('http', 'https') and parsed.hostname == LIVE_HOST
+            and rid.isascii() and rid.isdigit()):
+        return rid
+    raise ValueError('web_rid 需要直播间号或 https://live.douyin.com/<直播间号>')
+
+
 
 def check_risk_response(resp):
     """抖音风控拒绝时返回 HTTP 200 + 空 body 或 HTML 挑战页，原因只在响应头里，
@@ -1584,6 +1611,17 @@ class DouyinAPI:
     def _get_live_rank(auth, api: str, room_id: str, endpoint_params,
                        web_rid: str = '', enter_from: str = 'web_live', **kwargs):
         """请求直播间榜单接口，并保持 query 字段顺序与 PC Web 实录一致。"""
+        return DouyinAPI._get_live_web(
+            auth, api,
+            (('webcast_sdk_version', '2450'), ('room_id', str(room_id)),
+             *endpoint_params),
+            web_rid=web_rid, enter_from=enter_from, **kwargs,
+        )
+
+    @staticmethod
+    def _get_live_web(auth, api: str, endpoint_params, web_rid: str = '',
+                      enter_from: str = 'link_share', **kwargs):
+        """直播 GET 公共参数；签名、登录会话与其他直播接口共用。"""
         headers = HeaderBuilder().build(HeaderType.GET)
         referer = f'{DouyinAPI.live_url}/{web_rid}' if web_rid else DouyinAPI.live_url
         headers.set_referer(referer)
@@ -1606,8 +1644,6 @@ class DouyinAPI:
             ('browser_version', profile['browser_version']),
             ('os_name', 'Windows'),
             ('os_version', '10'),
-            ('webcast_sdk_version', '2450'),
-            ('room_id', str(room_id)),
         ):
             params.add_param(key, value)
         for key, value in endpoint_params:
@@ -1632,6 +1668,133 @@ class DouyinAPI:
 
         check_risk_response(response)
         return response.json()
+
+    @staticmethod
+    def get_live_room_enter(auth, web_rid: str, **kwargs):
+        """房间资料原始响应，包含真实 room_id、owner 和 linker_map。"""
+        web_rid = _live_web_rid(web_rid)
+        return DouyinAPI._get_live_web(
+            auth, '/webcast/room/web/enter/', (('web_rid', web_rid),),
+            web_rid=web_rid, **kwargs,
+        )
+
+    @staticmethod
+    def get_live_linkmic_list(auth, room_id: str, channel_id: str,
+                              anchor_id: str, web_rid: str = '', **kwargs):
+        """连麦快照原始响应；没有 battle_stats 时表示当前没有可用 PK 快照。"""
+        return DouyinAPI._get_live_web(
+            auth, '/webcast/linkmic/list/',
+            (('room_id', str(room_id)), ('channel_id', str(channel_id)),
+             ('offset', '0'), ('count', '50'), ('link_status', '4'),
+             ('scene', '1'), ('request_source', 'audience_enter_room'),
+             ('anchor_id', str(anchor_id))),
+            web_rid=web_rid, **kwargs,
+        )
+
+    @staticmethod
+    def get_live_pk_contribution_rank(auth, channel_id: str, anchor_id: str,
+                                       web_rid: str = '', **kwargs):
+        """本频道当前 PK 的单侧贡献榜，返回上游 JSON（包括业务错误码）。
+
+        不是直播间常规贡献榜。接口没有 battle_id 或已验证的翻页参数。
+        users[].score=0 可能是接口未提供有效分数，不代表用户没有贡献。
+        """
+        return DouyinAPI._get_live_web(
+            auth, '/webcast/linkmic/battle/ranklist_armies/',
+            (('channel_id', str(channel_id)), ('anchor_id', str(anchor_id))),
+            web_rid=web_rid, **kwargs,
+        )
+
+    @staticmethod
+    def get_live_pk_context(auth, web_rid: str, channel_id: str = None, **kwargs):
+        """自动发现双人 PK 上下文；其他模式可显式提供 channel_id。
+
+        battle_id=None 表示没有可用的 PK 上下文。上游失败抛出
+        LivePKAPIError，response 属性保留原始 JSON，不把登录失败当作无 PK。
+        finished 只保留服务端值，结束后仍可能返回最后一局快照。
+        """
+        web_rid = _live_web_rid(web_rid)
+        room_response = DouyinAPI.get_live_room_enter(auth, web_rid, **kwargs)
+        if room_response.get('status_code') != 0:
+            raise LivePKAPIError('room/web/enter', room_response)
+        rooms = (room_response.get('data') or {}).get('data') or []
+        room = rooms[0] if rooms else {}
+        room_id = _live_id(room, 'id')
+        anchor_id = _live_id(room.get('owner') or {}, 'id')
+        channel_id = (str(channel_id) if channel_id is not None else
+                      _live_id(room.get('linker_map') or {}, '1'))
+        context = {
+            'web_rid': web_rid, 'room_id': room_id, 'anchor_id': anchor_id,
+            'channel_id': channel_id, 'battle_id': None, 'finished': None,
+            'anchors': [], 'battle_stats': {},
+        }
+        if not room_id or not anchor_id or not channel_id:
+            return context
+        snapshot = DouyinAPI.get_live_linkmic_list(
+            auth, room_id, channel_id, anchor_id, web_rid=web_rid, **kwargs,
+        )
+        if snapshot.get('status_code') != 0:
+            raise LivePKAPIError('linkmic/list', snapshot)
+        stats = (snapshot.get('data') or {}).get('battle_stats') or {}
+        settings = stats.get('battle_settings') or {}
+        context.update(
+            battle_id=_live_id(settings, 'battle_id'),
+            channel_id=_live_id(settings, 'channel_id') or channel_id,
+            finished=settings.get('finished'), battle_stats=stats,
+        )
+        anchors = {anchor_id: {
+            'anchor_id': anchor_id, 'nickname': (room.get('owner') or {}).get('nickname', ''),
+            'room_id': room_id,
+        }}
+        for uid, info in (stats.get('user_infos') or {}).items():
+            user = info.get('user') or {}
+            uid = _live_id(user, 'user_id') or _live_id(user, 'id') or str(uid)
+            anchors[uid] = {
+                'anchor_id': uid, 'nickname': user.get('nick_name') or user.get('nickname', ''),
+                'room_id': _live_id(info, 'room_id'),
+            }
+        # Some modes omit user_infos but still identify sides in scores/armies.
+        for row in (stats.get('battle_scores') or []) + (stats.get('battle_armies') or []):
+            uid = _live_id(row, 'user_id') or _live_id(row, 'anchor_id')
+            if uid:
+                anchors.setdefault(uid, {'anchor_id': uid, 'nickname': '', 'room_id': None})
+        context['anchors'] = list(anchors.values())
+        return context
+
+    @staticmethod
+    def get_live_pk_rank(auth, web_rid: str, side: str = 'current',
+                         channel_id: str = None, **kwargs):
+        """只传房间号/URL 查询 PK 榜；side 为 current 或 both，不自动轮询。
+
+        返回 state、context、context_after、ranks（主播 UID → 原始响应）。
+        state=ok 时查询前后局号一致，仍非服务端原子快照；context_changed
+        的 ranks 不可归档到旧局。api_error 时检查各榜的 status_code。
+        没有可用上下文返回 not_in_pk。上下文请求错误抛 LivePKAPIError。
+        """
+        if side not in ('current', 'both'):
+            raise ValueError("side 只支持 'current' 或 'both'")
+        before = DouyinAPI.get_live_pk_context(auth, web_rid, channel_id, **kwargs)
+        result = {'state': 'not_in_pk', 'context': before,
+                  'context_after': None, 'ranks': {}}
+        if not before['battle_id']:
+            return result
+        anchor_ids = ([before['anchor_id']] if side == 'current' else
+                      [item['anchor_id'] for item in before['anchors']])
+        for anchor_id in anchor_ids:
+            result['ranks'][anchor_id] = DouyinAPI.get_live_pk_contribution_rank(
+                auth, before['channel_id'], anchor_id,
+                web_rid=before['web_rid'], **kwargs,
+            )
+        after = DouyinAPI.get_live_pk_context(auth, web_rid, channel_id, **kwargs)
+        result['context_after'] = after
+        identity = ('room_id', 'anchor_id', 'channel_id', 'battle_id')
+        if any(before[key] != after[key] for key in identity):
+            result['state'] = 'context_changed'
+        elif any(value.get('status_code') != 0 for value in result['ranks'].values()):
+            result['state'] = 'api_error'
+        else:
+            result['state'] = 'ok'
+        return result
 
     @staticmethod
     def get_live_contribution_rank(auth, room_id: str, anchor_id: str,

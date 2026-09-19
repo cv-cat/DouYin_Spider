@@ -1,0 +1,84 @@
+syntax = "proto3";
+package douyin.pk;
+
+// Verified subset of the web live PK protocol (2026-09-19 capture).
+// Unknown fields are retained/ignored by protobuf, not interpreted as ranks.
+message Common {
+  string method = 1;
+  int64 msg_id = 2;
+  int64 room_id = 3;
+  int64 create_time = 4;
+}
+
+message BattleSettings {
+  int64 battle_id = 2;
+  int64 start_time_ms = 3;
+  int64 duration = 4;
+  int64 channel_id = 6;
+  int64 battle_status = 40;
+  string battle_id_str = 42;
+  string channel_id_str = 43;
+}
+
+message UserArmy {
+  int64 user_id = 1;
+  int64 score = 2;
+  string nickname = 3;
+}
+message UserArmies { repeated UserArmy user_armies = 1; }
+message LinkMicArmies {
+  Common common = 1;
+  map<int64, UserArmies> user_armies_map = 2;
+  repeated UserArmies user_armies_list = 3;
+  // Other modes may use this schema; not verified by the double-anchor capture.
+  bytes rank_list_v2 = 4;
+}
+
+message UserScores {
+  int64 score = 1;
+  int64 user_id = 2;
+  string score_relative_text = 4;
+  string score_blur_text = 7;
+  int64 battle_rank = 8;
+  string user_id_str = 21;
+}
+message LinkMicMethod {
+  Common common = 1;
+  int64 message_type = 2;
+  int64 channel_id = 8;
+  int64 start_time_ms = 26;
+  repeated UserScores user_scores = 17;
+  int64 battle_id = 104;
+  string battle_id_str = 114;
+}
+
+message LinkMicBattle {
+  Common common = 1;
+  BattleSettings battle_settings = 2;
+}
+message RankUser {
+  int64 user_id = 1;
+  string nickname = 2;
+  int64 score = 4;
+  string user_id_str = 5;
+}
+message BattleArmy {
+  int64 anchor_id = 1;
+  repeated RankUser rank_list = 2;
+  string anchor_id_str = 3;
+}
+message BattleScore {
+  int32 score = 1;
+  int64 user_id = 2;
+  string user_id_str = 8;
+  string score_relative_text = 12;
+  string score_blur_text = 15;
+  int64 battle_rank = 16;
+}
+message LinkMicBattleFinish {
+  Common common = 1;
+  BattleSettings battle_settings = 2;
+  repeated BattleArmy battle_armies = 3;
+  repeated BattleScore battle_scores = 4;
+  int32 end_reason = 8;
+}
