@@ -148,16 +148,55 @@ message ChatMessage {
 }
 
 message GiftStruct {
-    int64 id = 5;
+    uint64 duration = 4;
+    uint64 id = 5;
+    bool forLinkmic = 7;
+    bool doodle = 8;
+    bool forFansclub = 9;
+    bool combo = 10;
+    uint32 type = 11;
+    uint32 diamondCount = 12;
+    bool isDisplayedOnPanel = 13;
+    uint64 primaryEffectId = 14;
+    Image giftLabelIcon = 15;
     string name = 16;
+    string region = 17;
+    string manual = 18;
+    bool forCustom = 19;
+    Image icon = 21;
+    uint32 actionType = 22;
 }
 
 message GiftMessage {
-    string giftId = 2;
+    uint64 giftId = 2;
+    uint64 fanTicketCount = 3;
+    uint64 groupCount = 4;
+    uint64 repeatCount = 5;
     int64 comboCount = 6;
     User user = 7;
     User toUser = 8;
+    uint32 repeatEnd = 9;
+    uint64 groupId = 11;
+    uint64 incomeTaskgifts = 12;
+    uint64 roomFanTicketCount = 13;
     GiftStruct gift = 15;
+    string logId = 16;
+    uint64 sendType = 17;
+    bytes trayInfo = 21;
+    bytes assetEffectMixInfo = 22;
+    // Some older live payloads used field 24 for the same opaque effect blob.
+    bytes assetEffectMixInfoLegacy = 24;
+    bool displayForSelf = 25;
+    string interactGiftInfo = 26;
+    string diyItemInfo = 27;
+    repeated uint64 minAssetSetList = 28;
+    uint64 totalCount = 29;
+    uint32 clientGiftSource = 30;
+    repeated uint64 toUserIdsList = 32;
+    uint64 sendTime = 33;
+    uint64 forceDisplayEffects = 34;
+    string traceId = 35;
+    uint64 effectDisplayTs = 36;
 }
 
 message MemberMessage {

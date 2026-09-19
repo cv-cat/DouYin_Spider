@@ -276,7 +276,10 @@ class DouyinAPI:
         return result
 
     @staticmethod
-    def get_work_out_comment(auth, url: str, cursor: str = '0', **kwargs) -> dict:
+    def get_work_out_comment(auth, url: str, cursor: str = '0',
+                             count: str = '5', item_type: str = '0',
+                             pc_img_format: str = None,
+                             insert_ids: str = None, **kwargs) -> dict:
         """
         获取作品的全部一级评论.
         :param auth: DouyinAuth object.
@@ -296,9 +299,13 @@ class DouyinAPI:
         params.add_param("aid", "6383")
         params.add_param("channel", "channel_pc_web")
         params.add_param("aweme_id", aweme_id)
+        if pc_img_format:
+            params.add_param("pc_img_format", pc_img_format)
         params.add_param("cursor", cursor)
-        params.add_param("count", "5")
-        params.add_param("item_type", "0")
+        params.add_param("count", str(count))
+        params.add_param("item_type", str(item_type))
+        if insert_ids:
+            params.add_param("insert_ids", insert_ids)
         # whale_cut_token / rcFT 是**空值字段**，浏览器确实发（`whale_cut_token=&...&rcFT=`）。
         # 别再用 parse_qsl 的默认行为去判断"浏览器发没发"——它会静默丢掉空值字段。
         params.add_param("whale_cut_token", "")
@@ -315,6 +322,8 @@ class DouyinAPI:
                             params=params.get(), verify=False)
         check_risk_response(resp)
         resp_json = resp.json()
+        if not isinstance(resp_json, dict):
+            raise RuntimeError('评论接口返回格式错误')
         return resp_json
 
     @staticmethod
@@ -328,14 +337,21 @@ class DouyinAPI:
         cursor = "0"
         comment_list = []
         while True:
-            res_json = DouyinAPI.get_work_out_comment(auth, url, cursor)
-            comments = res_json["comments"]
-            cursor = str(res_json["cursor"])
-            if comments is None or len(comments) == 0:
+            res_json = DouyinAPI.get_work_out_comment(auth, url, cursor,
+                                                      count=kwargs.get('count', '5'),
+                                                      item_type=kwargs.get('item_type', '0'),
+                                                      pc_img_format=kwargs.get('pc_img_format'),
+                                                      insert_ids=kwargs.get('insert_ids'))
+            if res_json.get('status_code') not in (None, 0):
+                raise RuntimeError(f'获取一级评论失败: {res_json.get("status_code")}')
+            comments = res_json.get("comments") or []
+            next_cursor = str(res_json.get("cursor", ""))
+            if not comments:
                 break
             comment_list.extend(comments)
-            if res_json["has_more"] != 1:
+            if res_json.get("has_more") not in (1, True, "1") or next_cursor == cursor:
                 break
+            cursor = next_cursor
         return comment_list
 
     @staticmethod
@@ -373,8 +389,10 @@ class DouyinAPI:
         params.with_web_id(auth, refer)
         params.add_param("msToken", auth.msToken)
         params.with_a_bogus()
-        params.add_param("verifyFp", auth.cookie['s_v_web_id'])
-        params.add_param("fp", auth.cookie['s_v_web_id'])
+        fp = (auth.cookie or {}).get('s_v_web_id', '')
+        if fp:
+            params.add_param("verifyFp", fp)
+            params.add_param("fp", fp)
         resp = requests.get(f'{DouyinAPI.douyin_url}{api}', headers=headers.get(), cookies=auth.cookie,
                             params=params.get(), verify=False)
         check_risk_response(resp)
@@ -390,16 +408,19 @@ class DouyinAPI:
         :return: 二级评论列表.
         """
         cursor = "0"
-        count = '5'
+        count = str(kwargs.get('count', '5'))
         comment_list = []
         while True:
             res_json = DouyinAPI.get_work_inner_comment(auth, comment, cursor, count)
-            comments = res_json["comments"]
-            cursor = str(res_json["cursor"])
-            if type(comments) is list and len(comments) > 0:
+            if res_json.get('status_code') not in (None, 0):
+                raise RuntimeError(f'获取二级评论失败: {res_json.get("status_code")}')
+            comments = res_json.get("comments") or []
+            next_cursor = str(res_json.get("cursor", ""))
+            if isinstance(comments, list) and comments:
                 comment_list.extend(comments)
-            if res_json["has_more"] != 1:
+            if res_json.get("has_more") not in (1, True, "1") or next_cursor == cursor:
                 break
+            cursor = next_cursor
         return comment_list
 
     @staticmethod
@@ -410,11 +431,12 @@ class DouyinAPI:
         :param url: 作品URL.
         :return: 全部评论列表.
         """
-        out_comment_list = DouyinAPI.get_work_all_out_comment(auth, url)
+        out_comment_list = DouyinAPI.get_work_all_out_comment(auth, url, **kwargs)
         for comment in out_comment_list:
             comment['reply_comment'] = []
-            if comment['reply_comment_total'] > 0:
-                inner_comment_list = DouyinAPI.get_work_all_inner_comment(auth, comment)
+            if int(comment.get('reply_comment_total') or 0) > 0:
+                inner_comment_list = DouyinAPI.get_work_all_inner_comment(
+                    auth, comment, **kwargs)
                 comment['reply_comment'] = inner_comment_list
         return out_comment_list
 
@@ -1929,12 +1951,19 @@ class DouyinAPI:
         return res.json()
 
     @staticmethod
-    def sendMsgInRoom(auth, room_id: str, content: str = ''):
+    def sendMsgInRoom(auth, room_id: str, content: str = '', **kwargs):
+        """发送直播间评论。
+
+        直播前端调用 ``/webcast/room/chat/`` 的 GET 接口，房间参数名仍是
+        ``room_id``（值来自前端的 ``room_id_str``）。直播域的 Origin 和
+        bd-ticket 证书也必须按 ``live.douyin.com`` 生成；沿用主站 Origin
+        会得到空响应或业务失败。
+        """
         api = "/webcast/room/chat/"
         headers = HeaderBuilder().build(HeaderType.GET)
-        refer = f"https://live.douyin.com/{room_id}"
-        headers.set_header("Origin", DouyinAPI.douyin_url)
-        headers.with_bd(api, auth)
+        refer = kwargs.get('referer') or f"{DouyinAPI.live_url}/{kwargs.get('web_rid', room_id)}"
+        headers.set_header("Origin", DouyinAPI.live_url)
+        headers.with_bd(api, auth, origin=DouyinAPI.live_url)
         headers.with_csrf(auth.cookie_str)
         headers.set_referer(refer)
         params = Params()
@@ -1943,7 +1972,7 @@ class DouyinAPI:
         params.add_param("live_id", '1')
         params.add_param("device_platform", 'web')
         params.add_param("language", 'zh-CN')
-        params.add_param("enter_from", 'web_others_homepage')
+        params.add_param("enter_from", kwargs.get('enter_from', 'link_share'))
         params.add_param("cookie_enabled", 'true')
         params.add_param("screen_width", get_profile()["screen_width"])
         params.add_param("screen_height", get_profile()["screen_height"])
@@ -1951,9 +1980,14 @@ class DouyinAPI:
         params.add_param("browser_platform", 'Win32')
         params.add_param("browser_name", get_profile()["browser_name"])
         params.add_param("browser_version", get_profile()["browser_version"])
-        params.add_param("room_id", room_id)
+        params.add_param("room_id", str(room_id))
         params.add_param("content", content)
-        params.add_param("type", '0')
+        params.add_param("type", str(kwargs.get('type', '0')))
+        for key in ('episode_info_str', 'flow_time', 'team_id', 'camera_id',
+                    'emoji_id', 'rtf_content', 'paste_edit_method'):
+            value = kwargs.get(key)
+            if value not in (None, ''):
+                params.add_param(key, value)
         params.add_param("msToken", auth.msToken)
         params.with_a_bogus(host=LIVE_HOST)
         res = requests.get(f'{DouyinAPI.live_url}{api}', headers=headers.get(), params=params.get(),
@@ -2024,22 +2058,32 @@ class DouyinAPI:
         params.with_web_id(auth, refer)
         if uifid:
             params.add_param("uifid", uifid)
-        params.add_param("verifyFp", auth.cookie['s_v_web_id'])
-        params.add_param("fp", auth.cookie['s_v_web_id'])
+        fp = (auth.cookie or {}).get('s_v_web_id', '')
+        if fp:
+            params.add_param("verifyFp", fp)
+            params.add_param("fp", fp)
         params.add_param("msToken", auth.msToken)
         data = {
             "aweme_id": aweme_id,
         }
         if reply_id != "":
             data["reply_id"] = reply_id
-        data["comment_send_celltime"] = random.randint(1000, 20000)
-        data["comment_video_celltime"] = random.randint(1000, 20000)
-        data["one_level_comment_rank"] = -1
-        data["paste_edit_method"] = "non_paste"
+        reply_to_reply_id = kwargs.get('reply_to_reply_id', '')
+        if reply_to_reply_id != "":
+            data["reply_to_reply_id"] = reply_to_reply_id
+        data["comment_send_celltime"] = kwargs.get(
+            'comment_send_celltime', random.randint(1000, 20000))
+        data["comment_video_celltime"] = kwargs.get(
+            'comment_video_celltime', random.randint(1000, 20000))
+        data["one_level_comment_rank"] = kwargs.get('one_level_comment_rank', -1)
+        data["paste_edit_method"] = kwargs.get('paste_edit_method', "non_paste")
         data["text"] = content
-        # 必须是字符串 "[]"：空 list 会被 requests 直接从表单里丢掉，
-        # 与参与 a_bogus 计算的 body 对不上
-        data["text_extra"] = "[]"
+        # 前端发送 JSON.stringify(textExtra)，不能把 list 直接交给
+        # requests，否则签名 body 与实际表单编码会不一致。
+        text_extra = kwargs.get('text_extra', [])
+        data["text_extra"] = (text_extra if isinstance(text_extra, str) else
+                               json.dumps(text_extra, ensure_ascii=False,
+                                          separators=(',', ':')))
         params.with_a_bogus(data)
         # uid 在 a_bogus 之后追加，不参与签名
         uid = DouyinAPI._comment_uid(auth)
