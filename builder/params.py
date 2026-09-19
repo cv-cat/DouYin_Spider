@@ -22,8 +22,9 @@ class Params:
         `with_web_id()` / `with_uifid()`，漏掉的就少字段。顺序照实录：
         `round_trip_time` 之后依次 webid、uifid、verifyFp、fp。
 
-        个别接口确实不带其中某项（如 comment/list/reply 不带 uifid），
-        用 `uifid=False` / `verify_fp=False` 关掉，**依据必须是该接口的抓包**。
+        个别接口确实不带其中某项时，用 `uifid=False` / `verify_fp=False`
+        关掉，**依据必须是该接口的抓包**。当前 PC Web 的 comment/list 和
+        comment/list/reply 都带 uifid。
 
         `round_trip_time` 默认 0：44 个接口里的主流取值，以前默认 50 是错的。
         """

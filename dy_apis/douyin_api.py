@@ -1,7 +1,6 @@
 import base64
 import hashlib
 import json
-import random
 import re
 import time
 import urllib
@@ -276,36 +275,74 @@ class DouyinAPI:
         return result
 
     @staticmethod
+    def _with_comment_headers(headers, api: str, auth):
+        """Build the common headers used by the PC Web comment endpoints.
+
+        Current Chrome requests carry the UIFID header and the complete
+        bd-ticket-guard set, including path-specific client data.  Cookie-only
+        callers may not have the signing material; in that case retain the
+        compatible readonly headers instead of failing before the request is
+        sent.
+        """
+        headers.with_uifid(auth)
+        try:
+            if (getattr(auth, 'private_key', None)
+                    and getattr(auth, 'ticket', None)
+                    and getattr(auth, 'ts_sign', None)
+                    and auth.ticket_matches_session()):
+                headers.with_bd(api, auth)
+                # The browser's comment list/reply requests carry the
+                # bd-ticket client-data headers but not the optional dtrait
+                # device header used by publish endpoints.
+                headers.remove_header('x-tt-session-dtrait')
+                return headers
+        except Exception:
+            # Fall back to the four readonly guard headers for legacy cookie
+            # sessions.  The response checker will still expose a risk page
+            # or empty response with its log id if the session is rejected.
+            for key in (
+                    'bd-ticket-guard-client-data',
+                    'bd-ticket-guard-ree-public-key',
+                    'bd-ticket-guard-version',
+                    'bd-ticket-guard-web-version',
+                    'bd-ticket-guard-web-sign-type',
+                    'x-tt-session-dtrait'):
+                headers.remove_header(key)
+        headers.with_bd_readonly(auth)
+        return headers
+
+    @staticmethod
     def get_work_out_comment(auth, url: str, cursor: str = '0',
-                             count: str = '5', item_type: str = '0',
-                             pc_img_format: str = None,
-                             insert_ids: str = None, **kwargs) -> dict:
+                             count: str = '10', item_type: str = '0',
+                             pc_img_format: str = 'webp',
+                             insert_ids: str = '', **kwargs) -> dict:
         """
         获取作品的全部一级评论.
         :param auth: DouyinAuth object.
         :param url: 作品URL.
         :param cursor: 评论游标.
+        :param count: 单页评论数量（PC Web 默认 10）.
+        :param pc_img_format: 图片格式，默认 webp.
+        :param insert_ids: 插入评论 ID，默认发送空字段.
         :return: JSON.
         """
         api = f"/aweme/v1/web/comment/list/"
         aweme_id, url = parse_aweme_id(url)
         headers = HeaderBuilder().build(HeaderType.GET)
         headers.set_referer(url)
-        headers.with_uifid(auth)
-        # 浏览器在这个接口上**带 bd-ticket-guard 全套**（2026-08-16 实录 headers_wire 确认）
-        headers.with_bd_readonly(auth)
+        DouyinAPI._with_comment_headers(headers, api, auth)
         params = Params()
         params.add_param("device_platform", "webapp")
         params.add_param("aid", "6383")
         params.add_param("channel", "channel_pc_web")
         params.add_param("aweme_id", aweme_id)
-        if pc_img_format:
-            params.add_param("pc_img_format", pc_img_format)
+        # PC Web 当前请求固定携带图片格式和空 insert_ids 字段；省略空字段
+        # 会与前端的签名输入不一致，部分会话会返回空评论列表。
+        params.add_param("pc_img_format", pc_img_format or "webp")
         params.add_param("cursor", cursor)
         params.add_param("count", str(count))
         params.add_param("item_type", str(item_type))
-        if insert_ids:
-            params.add_param("insert_ids", insert_ids)
+        params.add_param("insert_ids", "" if insert_ids is None else str(insert_ids))
         # whale_cut_token / rcFT 是**空值字段**，浏览器确实发（`whale_cut_token=&...&rcFT=`）。
         # 别再用 parse_qsl 的默认行为去判断"浏览器发没发"——它会静默丢掉空值字段。
         params.add_param("whale_cut_token", "")
@@ -338,10 +375,10 @@ class DouyinAPI:
         comment_list = []
         while True:
             res_json = DouyinAPI.get_work_out_comment(auth, url, cursor,
-                                                      count=kwargs.get('count', '5'),
+                                                      count=kwargs.get('count', '10'),
                                                       item_type=kwargs.get('item_type', '0'),
-                                                      pc_img_format=kwargs.get('pc_img_format'),
-                                                      insert_ids=kwargs.get('insert_ids'))
+                                                      pc_img_format=kwargs.get('pc_img_format', 'webp'),
+                                                      insert_ids=kwargs.get('insert_ids', ''))
             if res_json.get('status_code') not in (None, 0):
                 raise RuntimeError(f'获取一级评论失败: {res_json.get("status_code")}')
             comments = res_json.get("comments") or []
@@ -370,6 +407,7 @@ class DouyinAPI:
         headers = HeaderBuilder().build(HeaderType.GET)
         refer = f'https://www.douyin.com/video/{aweme_id}'
         headers.set_referer(refer)
+        DouyinAPI._with_comment_headers(headers, api, auth)
         params = Params()
         params.add_param("device_platform", "webapp")
         params.add_param("aid", "6383")
@@ -380,19 +418,14 @@ class DouyinAPI:
         params.add_param("cursor", cursor)
         params.add_param("count", count)
         params.add_param("item_type", "0")
-        # 这个端点**严格校验 a_bogus**（少数几个之一），签名输入必须和浏览器逐字节一致：
-        #   - 公共组用 with_platform()，老的手写参数组缺 pc_libra_divert/support_*
-        #   - **不带 uifid**
-        #   - verifyFp / fp 放在 a_bogus **之后**，不参与签名
-        # 三者错一个就会被判 bdturing（2026-08-16 用浏览器实录逐项比对确认）
+        # 回复接口的 query 顺序与一级评论接口一致：uifid、verifyFp/fp
+        # 参与 a_bogus 前的签名输入，随后才是 msToken 和 a_bogus。
         params.with_platform(round_trip_time='0')
         params.with_web_id(auth, refer)
+        params.with_uifid(auth)
+        params.with_verify_fp(auth)
         params.add_param("msToken", auth.msToken)
         params.with_a_bogus()
-        fp = (auth.cookie or {}).get('s_v_web_id', '')
-        if fp:
-            params.add_param("verifyFp", fp)
-            params.add_param("fp", fp)
         resp = requests.get(f'{DouyinAPI.douyin_url}{api}', headers=headers.get(), cookies=auth.cookie,
                             params=params.get(), verify=False)
         check_risk_response(resp)
@@ -408,7 +441,7 @@ class DouyinAPI:
         :return: 二级评论列表.
         """
         cursor = "0"
-        count = str(kwargs.get('count', '5'))
+        count = str(kwargs.get('count', '3'))
         comment_list = []
         while True:
             res_json = DouyinAPI.get_work_inner_comment(auth, comment, cursor, count)
@@ -2071,10 +2104,10 @@ class DouyinAPI:
         reply_to_reply_id = kwargs.get('reply_to_reply_id', '')
         if reply_to_reply_id != "":
             data["reply_to_reply_id"] = reply_to_reply_id
-        data["comment_send_celltime"] = kwargs.get(
-            'comment_send_celltime', random.randint(1000, 20000))
-        data["comment_video_celltime"] = kwargs.get(
-            'comment_video_celltime', random.randint(1000, 20000))
+        # PC Web 的发送函数默认传 0；随机值是旧版脚本遗留，会让服务端
+        # 把评论当成播放器内操作，导致发布接口偶发业务失败。
+        data["comment_send_celltime"] = kwargs.get('comment_send_celltime', 0)
+        data["comment_video_celltime"] = kwargs.get('comment_video_celltime', 0)
         data["one_level_comment_rank"] = kwargs.get('one_level_comment_rank', -1)
         data["paste_edit_method"] = kwargs.get('paste_edit_method', "non_paste")
         data["text"] = content
