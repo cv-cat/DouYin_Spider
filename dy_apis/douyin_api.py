@@ -1929,12 +1929,19 @@ class DouyinAPI:
         return res.json()
 
     @staticmethod
-    def sendMsgInRoom(auth, room_id: str, content: str = ''):
+    def sendMsgInRoom(auth, room_id: str, content: str = '', **kwargs):
+        """发送直播间评论。
+
+        直播前端调用 ``/webcast/room/chat/`` 的 GET 接口，房间参数名仍是
+        ``room_id``（值来自前端的 ``room_id_str``）。直播域的 Origin 和
+        bd-ticket 证书也必须按 ``live.douyin.com`` 生成；沿用主站 Origin
+        会得到空响应或业务失败。
+        """
         api = "/webcast/room/chat/"
         headers = HeaderBuilder().build(HeaderType.GET)
-        refer = f"https://live.douyin.com/{room_id}"
-        headers.set_header("Origin", DouyinAPI.douyin_url)
-        headers.with_bd(api, auth)
+        refer = kwargs.get('referer') or f"{DouyinAPI.live_url}/{kwargs.get('web_rid', room_id)}"
+        headers.set_header("Origin", DouyinAPI.live_url)
+        headers.with_bd(api, auth, origin=DouyinAPI.live_url)
         headers.with_csrf(auth.cookie_str)
         headers.set_referer(refer)
         params = Params()
@@ -1943,7 +1950,7 @@ class DouyinAPI:
         params.add_param("live_id", '1')
         params.add_param("device_platform", 'web')
         params.add_param("language", 'zh-CN')
-        params.add_param("enter_from", 'web_others_homepage')
+        params.add_param("enter_from", kwargs.get('enter_from', 'link_share'))
         params.add_param("cookie_enabled", 'true')
         params.add_param("screen_width", get_profile()["screen_width"])
         params.add_param("screen_height", get_profile()["screen_height"])
@@ -1951,9 +1958,14 @@ class DouyinAPI:
         params.add_param("browser_platform", 'Win32')
         params.add_param("browser_name", get_profile()["browser_name"])
         params.add_param("browser_version", get_profile()["browser_version"])
-        params.add_param("room_id", room_id)
+        params.add_param("room_id", str(room_id))
         params.add_param("content", content)
-        params.add_param("type", '0')
+        params.add_param("type", str(kwargs.get('type', '0')))
+        for key in ('episode_info_str', 'flow_time', 'team_id', 'camera_id',
+                    'emoji_id', 'rtf_content', 'paste_edit_method'):
+            value = kwargs.get(key)
+            if value not in (None, ''):
+                params.add_param(key, value)
         params.add_param("msToken", auth.msToken)
         params.with_a_bogus(host=LIVE_HOST)
         res = requests.get(f'{DouyinAPI.live_url}{api}', headers=headers.get(), params=params.get(),
