@@ -2076,6 +2076,28 @@ class DouyinAPI:
         :return: JSON.
         """
         api = "/aweme/v1/web/comment/publish"
+        # 评论发布是 bd-ticket-guard 的强校验写接口。调用方从同一个
+        # 浏览器会话抓到的短时凭据可以通过 kwargs 显式传入；之前这些
+        # 参数被静默忽略，导致请求沿用旧 `.env` 或缺少 dtrait，最终被
+        # 服务端以二次验证/空响应拒绝。
+        for name in (
+                'ticket', 'ts_sign', 'client_cert', 'private_key',
+                'dtrait_blob', 'dtrait_profile', 'session_dtrait'):
+            value = kwargs.get(name)
+            if value is not None:
+                setattr(auth, name, value)
+        if not auth.ticket_matches_session():
+            raise RuntimeError(
+                '评论发布需要与当前 Cookie 同会话的 ticket/ts_sign；'
+                '请重新导出配套浏览器凭据，不能混用旧 .env。'
+            )
+        if not (getattr(auth, 'dtrait_blob', None)
+                or getattr(auth, 'dtrait_profile', None)
+                or getattr(auth, 'session_dtrait', None)):
+            raise RuntimeError(
+                '评论发布需要同一浏览器会话的 dtrait_blob/profile 或 '
+                'session_dtrait；只提供 Cookie 会被风控拦截。'
+            )
         # 传链接进来时先解析成数字 ID：否则会把整条 URL 塞进 body 的 aweme_id，
         # 服务端直接返回 status_code=5，且报错完全看不出是参数错
         if "://" in str(aweme_id):
@@ -2159,10 +2181,16 @@ class DouyinAPI:
         uid = DouyinAPI._comment_uid(auth)
         if uid:
             params.add_param("uid", uid)
+        if hasattr(auth, "publish_attempted"):
+            auth.publish_attempted = True
         res = requests.post(f'{DouyinAPI.douyin_url}{api}', headers=headers.get(), params=params.get(),
                             cookies=auth.cookie, data=data, verify=False)
         check_risk_response(res)
-        return res.json()
+        result = res.json()
+        if (result.get('status_code') == 0
+                and hasattr(auth, "publish_server_verified")):
+            auth.publish_server_verified = True
+        return result
 
     @staticmethod
     def _comment_uid(auth):

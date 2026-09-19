@@ -94,28 +94,54 @@ class DouyinLive:
                 self.on_gift_event(event)
         elif method == 'ChatMessage':
             message = Live_pb2.ChatMessage.FromString(item.payload)
+            user = self._user_identity(message.user)
             event = dict(type='chat', method=item.method,
                          msg_id=str(item.msgId) if item.msgId else None,
-                         uid=message.user.id_str or (str(message.user.id) if message.user.id else None),
-                         sec_uid=message.user.sec_uid, nickname=message.user.nickname,
+                         **user,
                          content=message.content)
             print(f'\033[1;37;40m[消息]UID = {event["uid"]} SEC_UID = {event["sec_uid"]} - {event["nickname"]}\033[m : \033[4;30;44m{event["content"]}\033[m')
             if self.on_chat_event is not None:
                 self.on_chat_event(event)
         elif method == 'MemberMessage':
             message = Live_pb2.MemberMessage.FromString(item.payload)
-            print(f'\033[1;37;40m[进入]SEC_UID = {message.user.sec_uid} - {message.user.nickname}\033[m 进入直播间')
+            user = self._user_identity(message.user)
+            print(f'\033[1;37;40m[进入]SEC_UID = {user["sec_uid"]} - {user["nickname"]}\033[m 进入直播间')
         elif method == 'LikeMessage':
             message = Live_pb2.LikeMessage.FromString(item.payload)
-            print(f'\033[1;37;40m[点赞]SEC_UID = {message.user.sec_uid} - {message.user.nickname}\033[m 点赞了 {message.count} 次')
+            user = self._user_identity(message.user)
+            print(f'\033[1;37;40m[点赞]SEC_UID = {user["sec_uid"]} - {user["nickname"]}\033[m 点赞了 {message.count} 次')
             print(f'\033[1;37;40m[点赞]点赞总数 = {message.total}\033[m')
         elif method == 'SocialMessage':
             message = Live_pb2.SocialMessage.FromString(item.payload)
             if message.action == 1:
-                print(f'\033[1;37;40m[关注]SEC_UID = {message.user.sec_uid} - {message.user.nickname}\033[m 关注主播')
+                user = self._user_identity(message.user)
+                print(f'\033[1;37;40m[关注]SEC_UID = {user["sec_uid"]} - {user["nickname"]}\033[m 关注主播')
         elif method == 'RoomStatsMessage':
             message = Live_pb2.RoomStatsMessage.FromString(item.payload)
             print(f'\033[1;37;40m[房间信息] {message.displayLong}')
+
+    @staticmethod
+    def _user_identity(user):
+        """Return a privacy-safe identity for a live message user.
+
+        The protobuf contains both raw identity fields and the privacy flag.
+        For anonymous users the raw fields must never cross the event/log
+        boundary, even when the upstream payload happens to include them.
+        """
+        anonymous = bool(getattr(user, 'is_anonymous', False))
+        if anonymous:
+            nickname = (getattr(user, 'desensitized_nickname', '')
+                        or '匿名用户')
+            return dict(uid=None, sec_uid=None, nickname=nickname,
+                        is_anonymous=True)
+        return dict(
+            uid=(getattr(user, 'id_str', '')
+                 or (str(getattr(user, 'id', 0))
+                     if getattr(user, 'id', 0) else None)),
+            sec_uid=getattr(user, 'sec_uid', ''),
+            nickname=getattr(user, 'nickname', ''),
+            is_anonymous=False,
+        )
 
     @staticmethod
     def _gift_event(message, item):
@@ -134,16 +160,17 @@ class DouyinLive:
         variant_price = DouyinLive._variant_diamond_count(
             message.interactGiftInfo, message.diyItemInfo)
         effective_price = variant_price or unit_price
+        sender = DouyinLive._user_identity(message.user)
+        recipient = DouyinLive._user_identity(message.toUser)
         event = dict(
             type='gift',
             method=item.method,
             msg_id=str(item.msgId) if item.msgId else None,
-            uid=message.user.id_str or (str(message.user.id) if message.user.id else None),
-            sec_uid=message.user.sec_uid,
-            nickname=message.user.nickname,
-            to_uid=message.toUser.id_str or (str(message.toUser.id) if message.toUser.id else None),
-            to_sec_uid=message.toUser.sec_uid,
-            to_nickname=message.toUser.nickname,
+            **sender,
+            to_uid=recipient['uid'],
+            to_sec_uid=recipient['sec_uid'],
+            to_nickname=recipient['nickname'],
+            to_is_anonymous=recipient['is_anonymous'],
             gift_id=str(message.giftId or gift.id),
             gift_name=gift.name,
             diamond_count=unit_price,
