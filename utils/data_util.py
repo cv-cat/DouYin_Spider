@@ -120,13 +120,19 @@ def save_to_xlsx(datas, file_path):
     wb.save(file_path)
     logger.info(f'数据保存至 {file_path}')
 
+# douyinvod.com 视频 CDN 不带 Referer 会返回 403（2026-09-27 实测），图片 CDN 不校验
+MEDIA_HEADERS = {'Referer': 'https://www.douyin.com/'}
+
+
 def download_media(path, name, url, type):
     if type == 'image':
-        content = requests.get(url).content
+        res = requests.get(url, headers=MEDIA_HEADERS)
+        res.raise_for_status()
         with open(path + '/' + name + '.jpg', mode="wb") as f:
-            f.write(content)
+            f.write(res.content)
     elif type == 'video':
-        res = requests.get(url, stream=True)
+        res = requests.get(url, headers=MEDIA_HEADERS, stream=True)
+        res.raise_for_status()
         size = 0
         chunk_size = 1024 * 1024
         with open(path + '/' + name + '.mp4', mode="wb") as f:

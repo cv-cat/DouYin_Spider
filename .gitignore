@@ -43,6 +43,8 @@ datas
 /_scratch*/
 /_scratch_*
 /_scratch_im_login_qr.png
+/artifacts/
+/test.py
 
 # Chrome/Charles IM captures contain live Cookie and ticket material.
 *.network-request

@@ -8,10 +8,10 @@
   </p>
   <div align="center">
       <a href="https://www.python.org/">
-          <img src="https://img.shields.io/badge/python-3.7%2B-blue" alt="Python 3.7+">
+          <img src="https://img.shields.io/badge/python-3.9%2B-blue" alt="Python 3.9+">
       </a>
       <a href="https://nodejs.org/zh-cn/">
-          <img src="https://img.shields.io/badge/nodejs-18%2B-blue" alt="NodeJS 18+">
+          <img src="https://img.shields.io/badge/nodejs-18%2B%20(optional)-lightgrey" alt="NodeJS 18+ (optional)">
       </a>
   </div>
   
@@ -24,28 +24,17 @@
 
 > [想出现在这里？](mailto:992822653@qq.com)
 
-<details open>
-<summary>点击折叠</summary>
-
 <div align="center">
 
-[![FastAIToken](./author/fastaitoken-banner.png)](https://www.fastaitoken.com/register?aff=48J4VXUABAAV)
+<a href="https://api.openai-next.com" target="_blank"><img src="./author/vectrust-logo.png" width="96" alt="Vectrust"></a>
+
+Sponsored by [Vectrust](https://api.openai-next.com) @ OpenDev Org & NextRouter Alliance
 
 </div>
 
-**FastAIToken** 是面向开发者的 AI API 聚合平台，支持 OpenAI、Claude、Gemini 等主流大模型，兼容 OpenAI API 协议，可无缝接入 **Claude Code、Codex、Gemini CLI、Cherry Studio、Cline、Continue** 等各类 AI 开发工具。平台采用 **充值 1:1（1 元 = 1 美元 API 额度）**，帮助开发者以更低成本、更高效率地使用全球领先的大模型服务。
-
-平台提供多个可选分组与公开状态页，开发者可根据成本、响应速度和稳定性自由选择不同渠道，并享受 **7×24 小时真人技术支持**（非机器人）。
-
-**主要做 AI 开发接入？可以试试 [FastAIToken](https://www.fastaitoken.com/register?aff=48J4VXUABAAV)，兼容 Codex / Claude Code / Gemini CLI 等主流工具。**
-
-
 ---
 
-
-</details>
-
-**✨ 专业的抖音数据采集与交互解决方案，支持数据爬取、直播间监听、私信收发等功能**
+**✨ 专业的抖音数据采集与交互解决方案，支持数据爬取、直播间监听、私信收发、创作者发布等功能**
 
 大模型时代，自动化是每个开发者都绕不开的课题。
 当你想让 AI Agent 真正落地到抖音——自动处理私信、感知直播间动态、驱动内容互动——第一道墙往往不是模型能力，而是**平台通信能力的缺失**。
@@ -64,6 +53,7 @@
   - 消息通知 / 收藏列表 / 推荐流
 - 🎙️ **直播间实时监听**
   - 弹幕消息 / 礼物（含送礼对象）/ 进场 / 关注 / 点赞 / 房间热度
+  - PK 实时事件 / PK 排行榜 / 直播间贡献榜
   - 直播间发送弹幕消息
   - 直播间点赞
 - 💬 **抖音私信收发**
@@ -74,6 +64,10 @@
   - 点赞视频
   - 发布评论 / 回复评论
   - 收藏 / 移动 / 取消收藏作品
+- 📤 **创作者中心**
+  - 发布图集 / 视频（支持可见范围、是否允许下载等设置）
+- 🔑 **多种登录方式**
+  - Cookie / 扫码登录 / 手机号验证码登录
 - 🚀 **高性能架构**
   - 自动重试机制 / 断线重连
 - 🔒 **安全稳定**
@@ -100,17 +94,15 @@
 
 ## 🛠️ 快速开始
 ### ⛳运行环境
-- Python 3.7+
-- Node.js 18+
+- Python 3.9+
+- Node.js 18+（可选，仅部分直播 / 验证码场景会调用，主流程签名已全部纯 Python 实现）
 
 ### 🎯安装依赖
 ```
 pip install -r requirements.txt
-npm install
 ```
 
 ### 🎨配置文件
-这里以小红书的cookie获取为例
 
 现在推荐只配置 `DY_COOKIES`：主站 `Auth` 会被作品接口、直播 REST/WebSocket 和创作者中心共同复用。
 `DY_LIVE_COOKIES` 仍可作为旧版独立直播浏览器的显式覆盖，但不再是必填项。
@@ -120,6 +112,8 @@ npm install
 
 复制cookie到.env文件中（注意！登录抖音后的cookie才是有效的，不登陆没有用）
 ![image](https://github.com/user-attachments/assets/60291f3f-9b69-423f-8b11-167278d44639)
+
+> ⚠️ 请在 `www.douyin.com` 登录后，从任意 `/aweme/v1/web/` 接口请求中复制**完整** cookie，确认其中包含 `UIFID` 字段。缺少 `UIFID` 时作品详情、搜索等接口会被风控拦截（`Uifid Not Found`）。
 
 
 
@@ -133,6 +127,9 @@ python dy_live/server.py
 
 # 抖音私信实时接收
 python dy_apis/douyin_recv_msg.py
+
+# 创作者中心快速发布图集 / 视频（先修改文件顶部的“用户配置”）
+python quick_publish.py
 ```
 
 ### 🗝️注意事项
@@ -140,6 +137,9 @@ python dy_apis/douyin_recv_msg.py
 - `dy_apis/douyin_api.py` 包含全部 API 接口封装，含直播间点赞、发消息、私信收发等
 - `dy_live/server.py` 包含直播间 WebSocket 监听逻辑
 - `dy_apis/douyin_recv_msg.py` 包含抖音私信 WebSocket 实时接收逻辑
+- `dy_apis/douyin_creator_api.py` 包含创作者中心上传 / 发布作品接口
+- `dy_apis/login_api.py` 包含扫码、手机号验证码登录逻辑
+- `dy_live/pk.py` 包含直播间 PK 事件解析
 
 
 ## 🍥日志
@@ -157,6 +157,12 @@ python dy_apis/douyin_recv_msg.py
 | 23/12/22 | - 修复了直播间监控 |
 | 25/06/07 | - 开放所有之前闭源的代码，包括数据爬取和直播间监听 |
 | 26/04/09 | - 修复直播间礼物信息接收（含送礼对象）；新增直播间点赞、直播间发弹幕；新增抖音私信实时接收（WebSocket）与主动发送功能 |
+| 26/07/26 | - 签名算法全部改为纯 Python 实现，主流程不再依赖 Node.js；私信支持浏览器登录 |
+| 26/08/30 | - 新增创作者中心发布图集 / 视频；新增扫码、手机号验证码登录 |
+| 26/09/13 | - 新增直播间贡献榜接口 |
+| 26/09/19 | - 新增直播间 PK 排行榜接口与 PK 实时事件监听 |
+| 26/09/20 | - 对齐直播间弹幕发送与作品评论发布接口 |
+| 26/09/27 | - 修复视频下载（CDN 需带 Referer，之前会把 403 页面存成 mp4）；单个作品下载失败时跳过，不再中断整批 |
 
 ## 🤝 欢迎贡献 PR
 
