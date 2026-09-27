@@ -8,6 +8,14 @@ from utils.common_util import init
 from utils.data_util import handle_work_info, download_work, save_to_xlsx
 
 
+def safe_download_work(work_info, path, save_choice):
+    # download_work 自带重试，重试后仍失败则跳过该作品，避免中断整批爬取
+    try:
+        download_work(work_info, path, save_choice)
+    except Exception as e:
+        logger.error(f'作品 {work_info["work_id"]} 下载失败，已跳过: {e}')
+
+
 class Data_Spider():
     def __init__(self):
         self.douyin_apis = DouyinAPI()
@@ -44,7 +52,7 @@ class Data_Spider():
             work_list.append(work_info)
         for work_info in work_list:
             if save_choice == 'all' or 'media' in save_choice:
-                download_work(work_info, base_path['media'], save_choice)
+                safe_download_work(work_info, base_path['media'], save_choice)
         if save_choice == 'all' or save_choice == 'excel':
             file_path = os.path.abspath(os.path.join(base_path['excel'], f'{excel_name}.xlsx'))
             save_to_xlsx(work_list, file_path)
@@ -74,7 +82,7 @@ class Data_Spider():
             work_info_list.append(work_info)
             logger.info(f'爬取作品信息 {work_info["work_url"]}')
             if save_choice == 'all' or 'media' in save_choice:
-                download_work(work_info, base_path['media'], save_choice)
+                safe_download_work(work_info, base_path['media'], save_choice)
         if save_choice == 'all' or save_choice == 'excel':
             file_path = os.path.abspath(os.path.join(base_path['excel'], f'{excel_name}.xlsx'))
             save_to_xlsx(work_info_list, file_path)
@@ -104,7 +112,7 @@ class Data_Spider():
             work_info = handle_work_info(work_info['aweme_info'])
             work_info_list.append(work_info)
             if save_choice == 'all' or 'media' in save_choice:
-                download_work(work_info, base_path['media'], save_choice)
+                safe_download_work(work_info, base_path['media'], save_choice)
         if save_choice == 'all' or save_choice == 'excel':
             file_path = os.path.abspath(os.path.join(base_path['excel'], f'{excel_name}.xlsx'))
             save_to_xlsx(work_info_list, file_path)
