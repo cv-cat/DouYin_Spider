@@ -2898,6 +2898,7 @@ class DYLoginApi:
                         "继续轮询只会把限频拖得更久。请等几分钟再重试，"
                         "并避免短时间内反复重启登录。")
                 wait = min(wait * 2, 60)
+                logger.info(f"处于限频状态，将在 {round(wait,1)} 秒之后重新检查二维码结果")
                 time.sleep(wait)
                 continue
             throttled_since = None

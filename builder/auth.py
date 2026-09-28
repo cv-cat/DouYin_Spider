@@ -6,9 +6,11 @@ import os
 import time
 import uuid
 
-from dy_apis.douyin_api import DouyinAPI
+from dy_apis import douyin_api
 from utils.dy_util import (trans_cookies, generate_msToken, generate_dynamic_msToken,
                            generate_s_v_web_id)
+
+from utils.http_client import _Response
 
 # msToken 缓存有效期（秒）：过期后下次访问自动重新换取
 _MS_TTL = 600
@@ -474,7 +476,7 @@ class DouyinAuth:
         self._http_seeded = True
         return self.http
 
-    def request(self, method, url, **kwargs):
+    def request(self, method, url, **kwargs) -> _Response:
         """使用 Auth 拥有的持久会话发送请求。"""
         session = self.ensure_http_session()
         # Legacy endpoints pass ``cookies=self.cookie`` even though this
@@ -1045,8 +1047,7 @@ class DouyinAuth:
             return generate_fake_webid()
         self._webid_resolving = True
         try:
-            from dy_apis.douyin_api import DouyinAPI
-            wid = str(DouyinAPI.get_device_id(self) or "")
+            wid = douyin_api.DouyinAPI.get_device_id(self) or ""
         except Exception:
             wid = ""
         finally:
@@ -1294,5 +1295,5 @@ class DouyinAuth:
 
     def get_uid(self):
         if self.uid is None:
-            self.uid = DouyinAPI.get_my_uid(self)
+            self.uid = douyin_api.DouyinAPI.get_my_uid(self)
         return self.uid

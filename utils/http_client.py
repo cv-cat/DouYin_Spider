@@ -27,6 +27,7 @@ header 对得再齐，TLS 握手一开口还是 Python。curl_cffi 底下是 cur
 from curl_cffi import requests as _cffi
 from curl_cffi.requests.headers import Headers as _Headers
 from curl_cffi.requests.models import Request as _Request
+from curl_cffi.requests.models import Response as _Response
 from contextlib import contextmanager
 import os
 import re
@@ -94,7 +95,7 @@ def split_h2_cookie_fields(cookie_header):
             if part.strip()]
 
 
-def request(method, url, **kwargs):
+def request(method, url, **kwargs) -> _Response:
     # Compatibility bridge for the many historical API call sites that pass
     # ``cookies=auth.cookie`` to this module.  CookieDict carries a private
     # owner back-reference, so those calls now use the same persistent Auth
@@ -132,7 +133,7 @@ class Session:
     def cookies(self):
         return self._session.cookies
 
-    def request(self, method, url, **kwargs):
+    def request(self, method, url, **kwargs) -> _Response:
         kwargs.setdefault("impersonate", IMPERSONATE)
         kwargs.setdefault("default_headers", False)
         kwargs.setdefault("http_version", HTTP_VERSION)

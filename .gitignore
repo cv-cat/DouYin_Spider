@@ -50,3 +50,9 @@ datas
 *.network-response
 /im_snapshot.txt
 /send_*.txt
+
+# dy_live/server.py 产生的文件
+*.zstd
+live.*.log
+live.*.json
+live.*/

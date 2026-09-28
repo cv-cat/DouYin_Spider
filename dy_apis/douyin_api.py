@@ -1,14 +1,16 @@
 import base64
 import hashlib
 import json
+import pathlib
 import re
 import time
+import traceback
 import urllib
 import uuid
 
 from utils import http_client as requests
 requests.packages.urllib3.disable_warnings()
-from bs4 import BeautifulSoup
+from lxml import html
 from loguru import logger
 from google.protobuf.json_format import MessageToDict as _message_to_dict
 
@@ -17,6 +19,7 @@ def protobuf_to_dict(message):
     return _message_to_dict(message, preserving_proto_field_name=True)
 
 import static.Response_pb2 as ResponseProto
+from builder.auth import DouyinAuth
 from builder.header import HeaderBuilder, HeaderType
 from builder.params import Params
 from builder.proto import ProtoBuilder
@@ -815,7 +818,7 @@ class DouyinAPI:
 
 
     @staticmethod
-    def get_live_info(auth_, live_id, **kwargs):
+    def get_live_info(auth: DouyinAuth, live_id, **kwargs) -> tuple[dict, dict]:
         """
         获取直播间信息.
         :param live_id: 直播间ID
@@ -838,88 +841,104 @@ class DouyinAPI:
             "upgrade-insecure-requests": "1",
             "user-agent": get_profile()["ua"]
         }
+        kwargs.setdefault("timeout", 30)
         # Use the same persistent Auth transport as the main-site calls.  The
         # live landing page may rotate ``ttwid``; absorbing that Set-Cookie is
         # required before the following REST/WebSocket handshake.  Older code
         # indexed the response cookie directly and crashed when an edge did
         # not rotate it on every visit.
-        if hasattr(auth_, "request"):
-            res = auth_.request(
-                "GET", url, headers=headers, verify=False,
-                timeout=kwargs.get("timeout", 30),
-            )
-            try:
-                from utils.passport import merge_set_cookies
-                merge_set_cookies(auth_, res.cookies.get_dict())
-            except Exception:
-                pass
-        else:
-            res = requests.get(url, headers=headers, cookies=auth_.cookie,
-                               verify=False)
-        ttwid = (res.cookies.get_dict().get("ttwid")
-                 or (getattr(auth_, "cookie", {}) or {}).get("ttwid", ""))
-        soup = BeautifulSoup(res.text, 'html.parser')
-        scripts = soup.select('script[nonce]')
-        # print(res.text)
-        for script in scripts:
-            if script.string is not None and 'roomId' in script.string:
+        resp = auth.request("GET", url, headers=headers, verify=False, **kwargs)
+        try:
+            from utils.passport import merge_set_cookies
+            merge_set_cookies(auth, resp.cookies.get_dict())
+        except Exception:
+            logger.debug("Error ignored while merging cookies: ", traceback.format_exc())
+            pass
+    
+        ttwid = resp.cookies.get("ttwid") or getattr(auth, "cookie", {}).get("ttwid", "")
+
+        def parse_response(text: str) -> tuple[dict, dict]:
+            # pathlib.Path(f'html1').write_text(text)
+
+            scripts: list[str] = html.fromstring(text).xpath('//script/text()')
+
+            for i,s in enumerate(filter(lambda s: 'roomId' in s, scripts)):
+                data = {} # try pasing the payload json. failures are ok
                 try:
-                    user_id = re.findall(r'\\"user_unique_id\\":\\"(\d+)\\"', script.string)[0]
-                    room_id = re.findall(r'\\"roomId\\":\\"(\d+)\\"', script.string)[0]
-                    user_unique_id = re.findall(r'\\"user_unique_id\\":\\"(\d+)\\"', script.string)[0]
-                    room_info = re.findall(r'\\"roomInfo\\":\{\\"room\\":\{\\"id_str\\":\\".*?\\",\\"status\\":(.*?),\\"status_str\\":\\".*?\\",\\"title\\":\\"(.*?)\\"', script.string)[0]
-                    # "anchor\":{\"id_str\":\"3998258005032616\",\
-                    anchor_id = re.findall(r'\\"anchor\\":\{\\"id_str\\":\\"(\d+)\\"', script.string)[0]
-                    # , \"sec_uid\":\"M
-                    sec_uid = re.findall(r'\\"sec_uid\\":\\"(.*?)\\"', script.string)[0]
-                    room_status = room_info[0]
-                    room_title = room_info[1]
-                    res = {
-                        "room_id": room_id,
-                        "user_id": user_id,
-                        "user_unique_id": user_unique_id,
-                        "anchor_id": anchor_id,
-                        "sec_uid": sec_uid,
-                        "ttwid": ttwid,
-                        # 2 是直播中 4 是未开播
-                        "room_status": room_status,
-                        "room_title": room_title
-                    }
-                    # A parsed room page is the first concrete live-REST
-                    # verification point.  Construction of a shared Auth
-                    # alone does not imply this flag.
-                    if hasattr(auth_, "live_rest_verified"):
-                        auth_.live_rest_verified = True
-                    return res
-                except Exception:
-                    pass
-        # Some live edges return a server-rendered JSON blob without a
-        # ``nonce`` attribute.  Keep the parser useful for those responses by
-        # scanning the complete document as a final, read-only fallback.
-        text = res.text or ""
-        if "roomId" in text:
-            try:
-                def _first(pattern):
-                    match = re.search(pattern, text)
-                    return match.group(1) if match else ""
-                room_id = _first(r'\\"roomId\\"\s*:\s*\\"(\d+)\\"')
-                user_id = _first(r'\\"user_unique_id\\"\s*:\s*\\"(\d+)\\"')
-                anchor_id = _first(r'\\"anchor\\"\s*:\s*\\{[^{}]*?\\"id_str\\"\s*:\s*\\"(\d+)\\"')
-                sec_uid = _first(r'\\"sec_uid\\"\s*:\s*\\"([^\"]+)\\"')
-                if room_id and user_id:
-                    if hasattr(auth_, "live_rest_verified"):
-                        auth_.live_rest_verified = True
+                    data = json.loads(s.split('(', 1)[1].rsplit(')', 1)[0])  # s = __pace.push([1,"...<escaped json>..."])
+                    data = json.loads(re.split(r'^\w+:', data[1], 1)[1])  # data[1] = "d:[...<escaped json>...]"
+                    # pathlib.Path(f'script1.{i}').write_text(s)
+                    # pathlib.Path(f'json1.{i}').write_text(json.dumps(data, ensure_ascii=False, indent=4))
+                    if "state" not in data[-1]:
+                        continue
+                    data = data[-1]["state"] # ["$","$L12",null,{"state":...}]
+                    roomInfo = data["roomStore"]["roomInfo"]
+                    odin = data["userStore"]["odin"]
+
+                    if 'roomId' not in roomInfo: # 刚下播时可能为空
+                        errorPrompts = data.get("detailExtra", {}).get("errorPrompts")
+                        if errorPrompts:
+                            logger.info(errorPrompts)
+                        else:
+                            logger.debug('Not found roomId in data: ' + json.dumps(data, ensure_ascii=False))
+                        return {}, {}
+
                     return {
-                        "room_id": room_id,
-                        "user_id": user_id,
-                        "user_unique_id": user_id,
-                        "anchor_id": anchor_id or user_id,
-                        "sec_uid": sec_uid,
+                        "room_id": roomInfo["roomId"],
+                        "anchor_id": roomInfo["anchor"]["id_str"],
+                        "sec_uid": roomInfo["anchor"]["sec_uid"],
+                        # 2 是直播中 4 是未开播
+                        "room_status": roomInfo["room"]["status"],
+                        "room_title": roomInfo["room"]["title"],
                         "ttwid": ttwid,
-                    }
-            except Exception:
-                pass
-        return None
+                        "user_id": odin["user_unique_id"], # of the cookie user
+                        "user_unique_id": odin["user_unique_id"],
+                    }, data
+                except Exception as e:
+                    logger.debug(traceback.format_exc())
+
+            logger.debug("Unable to parse payload script as JSON.")
+
+            if "roomId" in text:
+                text_ = text.replace(r'\"', '"') # remove messy escapes
+                def _first(pattern):
+                    match = re.search(pattern, text_)
+                    return match.groups() if match else [""]
+                try:
+                    room_id = _first(r'"roomId": *"(\d+)"')[0]
+                    user_id = _first(r'"user_unique_id": *"(\d+)"')[0]
+                    anchor_id = _first(r'"anchor": *\{[^{}]*?"id_str": *"(\d+)"')[0]
+                    sec_uid = _first(r'"sec_uid": *"([^\"]+)"')[0]
+                    room_info = _first(r'"roomInfo":\{"room":\{"id_str":".*?","status":(.*?),"status_str":".*?","title":"(.*?)"')
+
+                    if room_id and user_id:
+                        return {
+                            "room_id": room_id,
+                            "anchor_id": anchor_id,
+                            "sec_uid": sec_uid,
+                            "room_status": room_info[0],
+                            "room_title": room_info[1] if len(room_info)==2 else "",
+                            "ttwid": ttwid,
+                            "user_id": user_id,
+                            "user_unique_id": user_id,
+                        }, {}
+                    else:
+                        raise Exception(None)
+                except Exception:
+                    logger.debug(f"Can't parse room info from reponse text. {traceback.format_exc()}")
+            else:
+                logger.debug("Not found roomId in response text.")
+
+            return {}, {}
+
+        result, data = parse_response(resp.text)
+        if result:
+            # A parsed room page is the first concrete live-REST
+            # verification point.  Construction of a shared Auth
+            # alone does not imply this flag.
+            auth.live_rest_verified = True
+        logger.debug(result)
+        return result, data
 
     @staticmethod
     def _live_ecom_headers(url):
@@ -1001,7 +1020,7 @@ class DouyinAPI:
         `pop/v3` 一次返回整个轮播列表，没有游标，所以这里不再翻页。
         「全部商品」那个分页端点已经服务端不可用，见 `get_live_production`。
         """
-        room_info = DouyinAPI.get_live_info(auth, url.split("/")[-1].split("?")[0])
+        room_info, _ = DouyinAPI.get_live_info(auth, url.split("/")[-1].split("?")[0])
         if not room_info:
             raise RuntimeError(f"未能解析直播间信息: {url}")
         room_id = room_info["room_id"]
@@ -1851,7 +1870,7 @@ class DouyinAPI:
         )
 
     @staticmethod
-    def get_webcast_detail(auth, user_id, room_id, url: str):
+    def get_webcast_detail(auth: DouyinAuth, user_id: str, room_id: str, url: str):
         api = f"/webcast/im/fetch/"
         headers = HeaderBuilder().build(HeaderType.FORM)
         headers.set_header("origin", DouyinAPI.live_url)
@@ -2696,7 +2715,7 @@ if __name__ == '__main__':
 
     live_url = "https://live.douyin.com/852953608964"
     live_id = "852953608964"
-    res = DouyinAPI.get_live_info(auth_, live_id)
+    res, _ = DouyinAPI.get_live_info(auth_, live_id)
     print(res)
 
     room_id = res['room_id']
