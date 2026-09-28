@@ -9,6 +9,7 @@ import uuid
 from dy_apis.douyin_api import DouyinAPI
 from utils.dy_util import (trans_cookies, generate_msToken, generate_dynamic_msToken,
                            generate_s_v_web_id)
+from utils.dtrait_profile import load_dtrait_profile
 
 # msToken 缓存有效期（秒）：过期后下次访问自动重新换取
 _MS_TTL = 600
@@ -36,7 +37,13 @@ class DouyinAuth:
         #   dtrait_blob     给内层 blob，外层由 utils/dtrait.py 按 path 现算
         #   dtrait_profile  给设备档案，内层 blob 也由 utils/dtrait_features.py 现算
         self.dtrait_blob = None
-        self.dtrait_profile = None
+        try:
+            self.dtrait_profile = load_dtrait_profile()
+        except (OSError, ValueError, KeyError, TypeError):
+            # Keep construction usable when a deployment intentionally ships
+            # without the checked-in profile; strict request paths will still
+            # fail closed if no explicit dtrait material is supplied.
+            self.dtrait_profile = None
         self.session_dtrait = None
         # x-tt-passport-verify-portrait（`<uuid>.login`），登录期间 passport 请求要带
         self.verify_portrait = None

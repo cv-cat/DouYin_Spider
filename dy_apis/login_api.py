@@ -1403,18 +1403,20 @@ class DYLoginApi:
             os.getenv("DY_PASSPORT_FIXED_VERIFY_PORTRAIT")
             or f"{uuid.uuid4()}.login"
         )
-        # dtrait blob 是**设备**绑定而不是会话绑定：重新登录、换账号都照样有效，
-        # 而生成它的 @byted/uc-secure-dtrait-core 是混淆 SDK，暂时没法纯算复现
-        # （见 utils/dtrait.py 开头）。所以从 .env 继承已有的那份。
+        # dtrait blob 是**设备**绑定而不是会话绑定：重新登录、换账号都照样有效。
+        # 优先沿用显式素材；没有显式素材时，DouyinAuth 已加载由 DevTools
+        # 取证固化的设备档案，并在每个请求按当前 path 纯算内层 blob。
         # （.env 已在函数开头载入。）
         auth.dtrait_blob = os.getenv("DY_DTRAIT_BLOB") or None
         auth.session_dtrait = os.getenv("DY_SESSION_DTRAIT") or None
-        if not auth.dtrait_blob and not auth.session_dtrait:
-            logger.warning("没有 dtrait 素材（DY_DTRAIT_BLOB / DY_SESSION_DTRAIT 都为空），"
-                           "passport 请求会缺 x-tt-session-dtrait，可能被判需二次验证")
+        if not auth.dtrait_blob and not auth.dtrait_profile and not auth.session_dtrait:
+            logger.warning("没有 dtrait 素材（DY_DTRAIT_BLOB / DY_DTRAIT_PROFILE / "
+                           "DY_SESSION_DTRAIT 都为空），passport 请求会缺 "
+                           "x-tt-session-dtrait，可能被判需二次验证")
             if strict:
                 raise RuntimeError(
-                    "严格短信登录缺少 DY_DTRAIT_BLOB / DY_SESSION_DTRAIT；"
+                    "严格短信登录缺少 DY_DTRAIT_BLOB / DY_DTRAIT_PROFILE / "
+                    "DY_SESSION_DTRAIT；"
                     "不能用猜测值代替 x-tt-session-dtrait"
                 )
         # Current Chrome 151 ordering on jingxuan is:
