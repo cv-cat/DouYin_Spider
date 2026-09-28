@@ -58,7 +58,7 @@ def _int_env(key, default):
         return int(default)
 
 
-def get_profile():
+def get_profile() -> dict[str, str]:
     """进程级指纹档案（UA/几何/硬件统一，进程内稳定）。"""
     global _profile
     if _profile is None:

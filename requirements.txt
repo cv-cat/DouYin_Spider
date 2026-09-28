@@ -25,3 +25,5 @@ curl_cffi
 # 所以这里显式钉住版本，装完请确认 protobuf 没被降下去。
 protobuf>=5.27
 blackboxprotobuf
+backports.zstd ; python_version<'3.14'
+rocksdict==0.3.29
