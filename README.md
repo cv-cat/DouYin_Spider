@@ -115,6 +115,37 @@ pip install -r requirements.txt
 
 > ⚠️ 请在 `www.douyin.com` 登录后，从任意 `/aweme/v1/web/` 接口请求中复制**完整** cookie，确认其中包含 `UIFID` 字段。缺少 `UIFID` 时作品详情、搜索等接口会被风控拦截（`Uifid Not Found`）。
 
+> `UIFID` 是推荐流接口响应下发的设备标识，复制完整 Cookie 后会自动带上，用户不需要手工生成或填写。
+
+### 写接口的 dtrait 配置
+
+发布、评论、点赞、收藏等写接口会发送按请求路径重算的 `x-tt-session-dtrait`。项目默认加载随包的 [utils/dtrait_profile.json](utils/dtrait_profile.json)，通常不需要额外配置；显式设置 `DY_DTRAIT_BLOB` 时会优先使用它。
+
+`utils/dtrait_features.py` 是 dtrait 内层 VM 的纯 Python 实现，负责 Murmur3、特征标签、布尔位图和 base64 打包；档案里的渲染哈希是设备一次采样后复用的常量，外层 RSA/AES 则每次按请求路径和时间重新计算。
+
+换设备时可以在 `.env` 中设置 `DY_DTRAIT_PROFILE` 指向自己的设备档案 JSON。抓取时在已登录的 `www.douyin.com` 打开开发者工具，在 Console 先执行下面的 hook，再回到页面触发一次点赞、收藏或评论请求：
+
+```js
+(() => {
+  const aes = window.DTraitUcAesEncrypt;
+  if (!aes?.encryptData) throw new Error('dtrait SDK 尚未初始化，请先刷新并等待页面加载完成');
+  const original = aes.encryptData;
+  aes.encryptData = function (...args) {
+    for (const value of args) {
+      const text = typeof value === 'string' ? value : JSON.stringify(value ?? '');
+      try {
+        const payload = JSON.parse(text);
+        if (payload?.dtrait) console.log('DY_DTRAIT_BLOB=', payload.dtrait);
+      } catch (_) {}
+    }
+    return original.apply(this, args);
+  };
+  console.log('dtrait hook installed; now trigger one write request');
+})();
+```
+
+把 Console 打印的 `DY_DTRAIT_BLOB` 值复制到 `.env`。不要复制完整 Cookie 或 `x-tt-session-dtrait` 外层密文；外层头会由项目按当前路径和时间重新生成。
+
 
 
 ### 🚀运行项目

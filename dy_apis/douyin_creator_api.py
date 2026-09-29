@@ -2272,7 +2272,8 @@ class DouyinCreatorAPI:
             or getattr(auth, "dtrait_profile", None)
         ):
             raise RuntimeError(
-                "缺少可按 create_v2 path 和当前时间重算的 DY_DTRAIT_BLOB；"
+                "缺少可按 create_v2 path 和当前时间重算的 DY_DTRAIT_BLOB "
+                "或内置 dtrait_profile；"
                 "静态 DY_SESSION_DTRAIT 不能用于发布，禁止发送请求"
             )
 

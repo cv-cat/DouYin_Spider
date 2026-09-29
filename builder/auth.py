@@ -1084,7 +1084,8 @@ class DouyinAuth:
         if not blob:
             if strict:
                 raise RuntimeError(
-                    "缺少可按 path 重算的 dtrait 设备素材；请配置 DY_DTRAIT_BLOB，"
+                    "缺少可按 path 重算的 dtrait 设备素材；请配置 DY_DTRAIT_BLOB "
+                    "或使用内置 dtrait_profile，"
                     "发布接口禁止省略 x-tt-session-dtrait"
                 )
             return None

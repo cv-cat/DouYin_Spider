@@ -481,8 +481,19 @@ class DouyinAPI:
         params.add_param("channel", "channel_pc_web")
         params.add_param("search_channel", "aweme_general")
         params.add_param("enable_history", "1")
+        # 综合频道的后端不会从 is_filter_search 反推出具体条件；五个值
+        # 必须作为 JSON 一起传递，否则排序/发布时间等筛选只显示为已筛选，
+        # 实际结果仍按默认条件返回。
+        filter_selected = json.dumps({
+            "sort_type": str(sort_type),
+            "publish_time": str(publish_time),
+            "filter_duration": str(filter_duration),
+            "search_range": str(search_range),
+            "content_type": str(content_type),
+        }, ensure_ascii=False, separators=(",", ":"))
+        params.add_param("filter_selected", filter_selected)
         params.add_param("keyword", query)
-        params.add_param("search_source", "normal_search")
+        params.add_param("search_source", "tab_search")
         params.add_param("query_correct_type", "1")
         params.add_param("is_filter_search", '0' if not any(
             [sort_type != '0', publish_time != '0', filter_duration, search_range, content_type]) else '1')
@@ -1129,7 +1140,8 @@ class DouyinAPI:
         refer = "https://www.douyin.com/?recommend=1"
         headers.set_referer(refer)
         headers.with_bd_readonly(auth)
-        # 注意：实录里 collect 接口**没有** x-tt-session-dtrait（digg 才有）
+        # 收藏是写接口，当前风控要求与 digg 一样带 path 绑定的 dtrait。
+        headers.with_session_dtrait(api, auth)
         headers.with_csrf(auth.cookie_str)
         headers.with_uifid(auth)
         headers.set_header("origin", DouyinAPI.douyin_url)
@@ -1171,10 +1183,7 @@ class DouyinAPI:
         refer = "https://www.douyin.com/?recommend=1"
         headers.set_referer(refer)
         headers.with_bd_readonly(auth)
-        # 实录 digg 带 x-tt-session-dtrait（写接口的风控头）
-        _dt = auth.session_dtrait_header(api)
-        if _dt:
-            headers.set_header('x-tt-session-dtrait', _dt)
+        headers.with_session_dtrait(api, auth)
         headers.with_csrf(auth.cookie_str)
         headers.with_uifid(auth)
         headers.set_header("origin", DouyinAPI.douyin_url)
@@ -1235,6 +1244,7 @@ class DouyinAPI:
         refer = "https://www.douyin.com/user/self?showTab=favorite_collection"
         headers.set_referer(refer)
         headers.with_bd_readonly(auth)
+        headers.with_session_dtrait(api, auth)
         headers.with_csrf(auth.cookie_str)
         headers.with_uifid(auth)
         headers.set_header("origin", DouyinAPI.douyin_url)
@@ -1999,11 +2009,10 @@ class DouyinAPI:
                 '请重新导出配套浏览器凭据，不能混用旧 .env。'
             )
         if not (getattr(auth, 'dtrait_blob', None)
-                or getattr(auth, 'dtrait_profile', None)
-                or getattr(auth, 'session_dtrait', None)):
+                or getattr(auth, 'dtrait_profile', None)):
             raise RuntimeError(
-                '评论发布需要同一浏览器会话的 dtrait_blob/profile 或 '
-                'session_dtrait；只提供 Cookie 会被风控拦截。'
+                '评论发布需要同一浏览器会话的 dtrait_blob/profile；'
+                '静态 session_dtrait 不能按当前 path 重算。'
             )
         # 传链接进来时先解析成数字 ID：否则会把整条 URL 塞进 body 的 aweme_id，
         # 服务端直接返回 status_code=5，且报错完全看不出是参数错
@@ -2013,7 +2022,7 @@ class DouyinAPI:
         headers = HeaderBuilder().build(HeaderType.FORM)
         headers.set_header("origin", DouyinAPI.douyin_url)
         headers.set_referer(refer)
-        headers.with_bd(api, auth)
+        headers.with_bd(api, auth, require_dtrait=True)
         headers.with_csrf(auth.cookie_str)
         # uifid 既在 query 也在头里，取自 UIFID Cookie
         uifid = auth.cookie.get('UIFID', '')

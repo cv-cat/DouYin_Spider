@@ -102,6 +102,23 @@ class Header:
             pass
         return self
 
+    def with_session_dtrait(self, api, auth, aid=6383,
+                            origin='https://www.douyin.com',
+                            timestamp=None, randbytes=None):
+        """Attach the path-bound dtrait header required by write endpoints.
+
+        A complete ``DY_SESSION_DTRAIT`` capture is intentionally not accepted
+        here: its encrypted payload is tied to one pathname and timestamp.
+        The inner blob must come from ``dtrait_blob`` or ``dtrait_profile`` so
+        the outer header can be rebuilt for this request.
+        """
+        dtrait = auth.session_dtrait_header(
+            api, aid=aid, origin=origin, timestamp=timestamp,
+            randbytes=randbytes, strict=True, allow_static=False,
+        )
+        self.set_header('x-tt-session-dtrait', dtrait)
+        return self
+
     def set_header(self, key, value):
         self.headers[key] = value
         return self
