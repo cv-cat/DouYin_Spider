@@ -5,6 +5,7 @@ list. They do not carry a battle ID: ``context_battle_id`` is only an inference
 from a live, time-compatible lifecycle/score event, never a confirmed ID.
 """
 from collections import OrderedDict
+from google.protobuf.message import Message
 
 from static import PK_pb2
 
@@ -39,45 +40,40 @@ def _scores(users):
                  battle_rank=int(u.battle_rank)) for u in users]
 
 
-def decode_pk_message(method, payload, msg_id=0):
+def decode_pk_message(method, m: Message, msg_id=0):
     """Return a normalized PK event, or None for a non-PK/other LinkMic event.
 
     All exposed 64-bit IDs and scores are strings. Protobuf DecodeError is
     deliberately left to the caller so a bad item cannot discard later items.
     """
-    canonical = method.removeprefix('Webcast')
-    cls = PK_MESSAGES.get(canonical)
-    if cls is None:
-        return None
-    message = cls.FromString(payload)
-    event = dict(method=method, msg_id=_id(msg_id or message.common.msg_id),
-                 room_id=_id(message.common.room_id),
-                 create_time_ms=_time_ms(message.common.create_time),
+    event = dict(method=method, msg_id=_id(msg_id or m.common.msg_id),
+                 room_id=_id(m.common.room_id),
+                 create_time_ms=_time_ms(m.common.create_time),
                  battle_id=None, channel_id=None, context_battle_id=None,
                  context_channel_id=None)
-    if canonical == 'LinkMicMethod':
-        if message.message_type != 202:
+    if method == 'LinkMicMethod':
+        if m.message_type != 202:
             return None
-        event.update(type='scores', battle_id=_id(message.battle_id, message.battle_id_str),
-                     channel_id=_id(message.channel_id), scores=_scores(message.user_scores))
-    elif canonical == 'LinkMicArmiesMethod':
+        event.update(type='scores', battle_id=_id(m.battle_id, m.battle_id_str),
+                     channel_id=_id(m.channel_id), scores=_scores(m.user_scores))
+    elif method == 'LinkMicArmiesMethod':
         event.update(type='armies', is_complete=False,
                      anchors=[dict(anchor_id=str(anchor), users=_ranks(army.user_armies))
-                              for anchor, army in sorted(message.user_armies_map.items())],
-                     unassigned_armies=[_ranks(army.user_armies) for army in message.user_armies_list],
-                     has_unsupported_rank_list_v2=bool(message.rank_list_v2))
+                              for anchor, army in sorted(m.user_armies_map.items())],
+                     unassigned_armies=[_ranks(army.user_armies) for army in m.user_armies_list],
+                     has_unsupported_rank_list_v2=bool(m.rank_list_v2))
     else:
-        settings = message.battle_settings
+        settings = m.battle_settings
         event.update(battle_id=_id(settings.battle_id, settings.battle_id_str),
                      channel_id=_id(settings.channel_id, settings.channel_id_str),
                      start_time_ms=settings.start_time_ms,
                      duration=int(settings.duration), battle_status=int(settings.battle_status))
-        if canonical == 'LinkMicBattleFinishMethod':
+        if method == 'LinkMicBattleFinishMethod':
             event.update(type='finish', is_complete=False,
-                         end_reason=message.end_reason,
-                         scores=_scores(message.battle_scores),
+                         end_reason=m.end_reason,
+                         scores=_scores(m.battle_scores),
                          anchors=[dict(anchor_id=_id(army.anchor_id, army.anchor_id_str),
-                                       users=_ranks(army.rank_list)) for army in message.battle_armies])
+                                       users=_ranks(army.rank_list)) for army in m.battle_armies])
         else:
             event['type'] = 'start' if settings.battle_status == 1 else 'status'
     return event
@@ -100,8 +96,8 @@ class PKMessageHandler:
             cache.popitem(last=False)
         return duplicate
 
-    def handle(self, method, payload, msg_id=0):
-        event = decode_pk_message(method, payload, msg_id)
+    def handle(self, method, message: Message, msg_id=0):
+        event = decode_pk_message(method, message, msg_id)
         if event is None:
             return None
         if event['msg_id'] and self._remember(

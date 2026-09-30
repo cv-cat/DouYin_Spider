@@ -1,0 +1,96 @@
+// syntax = "proto3"; // Leave syntax version to the protobuf compiler.
+package transport.webcast.im;
+
+message PushHeader {
+  optional string key = 1;
+  optional string value = 2;
+}
+
+message PushFrame {
+  optional uint64 SeqID = 1;
+  optional uint64 LogID = 2;
+  optional int32 service = 3;
+  optional int32 method = 4;
+  repeated PushHeader headers = 5;
+  optional string payload_encoding = 6;
+  optional string payload_type = 7;
+  optional bytes payload = 8;
+  optional string LodIDNew = 9;
+}
+
+message PayloadInIm {
+  map<string,bytes> Payloads = 1;
+  optional int32 CompressType = 2;
+
+  enum CompressTypeEnum {
+    NONE = 0;
+    ZLIB = 1;
+    ZSTD = 2;
+  }
+}
+
+message Request {
+  optional int64 live_id = 1;
+  optional int64 aid = 2;
+  optional string room_id = 3;
+  optional string identity = 4;
+  optional string last_rtt = 5;
+  optional string internal_ext = 6;
+  optional string cursor = 7;
+  optional string device_id = 8;
+  optional string unique_id = 9;
+  optional string device_platform = 10;
+  optional string app_language = 11;
+  optional string version_code = 12;
+  optional string update_version_code = 13;
+  optional string resp_content_type = 14;
+  optional string get_history = 15;
+  optional string ac = 16;
+  optional string keep_method = 17;
+  optional string stress = 18;
+  optional int64 recv_cnt = 19;
+  optional int64 parse_cnt = 20;
+  optional string fetch_rule = 21;
+  optional string ab_group = 22;
+  optional string live_cursor = 23;
+  optional string sub_room_id = 24;
+  optional int64 need_persist_msg_count = 25;
+}
+
+message Response {
+  repeated Message messages = 1;
+  optional string cursor = 2;
+  optional int64 fetch_interval = 3;
+  optional int64 now = 4;
+  optional string internal_ext = 5;
+  optional int32 fetch_type = 6;
+  map<string,string> route_params = 7;
+  optional int64 heartbeat_duration = 8;
+  optional bool need_ack = 9;
+  optional string push_server = 10;
+  optional string live_cursor = 11;
+  optional bool history_no_more = 12;
+  optional string proxy_server = 13;
+  optional string push_server_v2 = 14;
+}
+
+message Message {
+  optional string method = 1;
+  optional bytes payload = 2;
+  optional int64 msg_id = 3;
+  optional int32 msg_type = 4;
+  optional int64 offset = 5;
+  optional bool need_wrds_store = 6;
+  optional int64 wrds_version = 7;
+  optional string wrds_sub_key = 8;
+  map<string,string> message_extra = 9;
+  optional string tenant_id = 10;
+}
+
+message PreviewHistoryResponse {
+  optional ResponseData data = 1;
+
+  message ResponseData {
+    repeated Message messages = 1;
+  }
+}

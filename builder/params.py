@@ -4,8 +4,8 @@ from utils.dy_util import generate_webid, generate_msToken, splice_url, generate
 
 
 class Params:
-    def __init__(self):
-        self.params = {}
+    def __init__(self, params: dict[str, str] = {}):
+        self.params = params
 
     def with_platform(self, round_trip_time='0', auth=None, url="",
                       uifid=True, verify_fp=True,
