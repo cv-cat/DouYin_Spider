@@ -14,8 +14,8 @@
 - `pk1_version`：公钥版本号（如 `d0`/`d1`），服务端据此选择解密私钥，必须与所用公钥一致
 
 其中「设备特征 blob」由混淆过的 `@byted/uc-secure-dtrait-core` 采集生成；
-当前仓库已有固定设备档案路径（`utils/dtrait_features.py`），并由
-开发期校验脚本曾对采样 blob 做逐字节校验。外层随机 AES/IV/RSA
+当前仓库提供了经 DevTools 采样校验的设备档案（`utils/dtrait_profile.json`）
+和纯算实现（`utils/dtrait_features.py`）。外层随机 AES/IV/RSA
 材料仍必须与同一次浏览器调用配对，不能用长度或另一条 hook 记录替代。
 """
 
