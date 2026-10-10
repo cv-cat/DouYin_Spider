@@ -1,0 +1,38 @@
+AssetEffectUtilMessage # 未知
+AssetMessage # 无可用信息 {"common": {"method": "WebcastAssetMessage", "asset_id": "9447", "priority": {"queue_sizes": ["-1", "-1", "200", "150"], "self_queue_priority": "1"}, "log_id": "202601014210909C9A5FD7CAB4C6BEC8F6B"}
+BackupSEIMessage # 无可用信息
+BattleEffectContainerMessage # PK 暴击等
+BattleEndPunishMessage
+BattlePowerContainerMessage
+BattleRankSeasonMessage # PK 段位消息
+BattleStealDragonMessage # PK 抢龙
+BattleTeamTaskMessage # PK分数加成消息
+BattleUpdatePropCardTaskMessage # PK 定身卡等
+ChatLikeMessage # 未知
+DecorationModifyMethod # 未知
+DecorationUpdateMessage # 未知
+EasterEggDataMessage # 未知
+GiftPlayEventMessage
+GiftSortMessage # UI礼物布局，无可用信息
+InteractEffectMessage # 未知
+LightGiftMessage # 多人连线时给某个主播礼物的消息
+LikeMessage # 点赞消息 `on_LikeMessage`
+LinkSettingNotifyMessage # 暂无可用信息
+LinkerContributeMessage # 未知
+LinkmicPlayModeUpdateScoreMessage
+LowPcuGuideMessage # 未知
+LuckyBoxEndMessage # 红包结束，仅含 box_id 信息
+LuckyBoxTempStatusMessage # 无可用信息 {"common": {"method": "WebcastLuckyBoxTempStatusMessage"}}
+MemberMessage # 成员消息，比如用户进入直播间 `on_MemberMessage`
+PrizeNoticeMessage # 无可用信息 {"common": {"method": "WebcastPrizeNoticeMessage"}, "asset_id": "7424", "scene_context_id": "3", "play_priority": 35}
+ProfitGameStatusMessage # 无可用信息 {"common": {"method": "WebcastProfitGameStatusMessage"}, "status": 2, "game_extra": "{\"title\":\"游戏连屏中\"}", "track_info": {"link_game_id": "", "link_game_name": ""}, "channel_id": "7687665268155847722"}
+ProfitInteractionScoreMessage # 收益性互动分数？
+PullStreamUpdateMessage # 无可用信息 {"common": {"method": "WebcastPullStreamUpdateMessage"}, "push_stream_level": 4, "random_seconds": 60}
+RanklistHourEntranceMessage # 小时榜、百强榜。人气榜呢？
+ResidentGuestMessage # 未知
+RoomStreamAdaptationMessage # 直播间流配置 `on_RoomStreamAdaptationMessage`
+# TaskCenterEntranceMessage # 携带JSON格式的 extra 字段，需要进一步处理，暂不可忽略
+# InRoomBannerMessage # 携带JSON格式的 extra 字段，需要进一步处理，暂不可忽略
+RankListAwardMessage # 无可用信息 {"common": {"method": "WebcastRankListAwardMessage"}, "asset_id": "7914", "effect_open": true, "rank_type": "12", "play_priority": 20}
+GroupLiveOnCamRecognitionMessage # 团播消息，暂时未找到消息定义
+ShortTouchAreaMessage # UI布局

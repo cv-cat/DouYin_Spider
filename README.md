@@ -173,7 +173,7 @@ pip install -r requirements.txt
 python main.py
 
 # 直播间监听（弹幕 / 礼物 / 点赞等）
-python dy_live/server.py
+python -m dy_live.server <LIVE_ID>
 
 # 抖音私信实时接收
 python dy_apis/douyin_recv_msg.py
