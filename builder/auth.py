@@ -152,12 +152,35 @@ class DouyinAuth:
             self.private_key = keys_['ec_privateKey']
             self.ree_public_key = base64.b64encode(self.private_key.encode()).decode()
 
+    # 2026-10-17 浏览器 create_v2 实测的 cookie 发送顺序（登录态稳态）。
+    # Chrome 的 Cookie 头顺序由 cookie jar 的插入序决定；未列出的键按插入序排在其后。
+    BROWSER_COOKIE_ORDER = (
+        "bd_ticket_guard_client_web_domain", "n_mh", "has_biz_token",
+        "__security_server_data_status", "_bd_ticket_crypt_doamin",
+        "SEARCH_RESULT_LIST_TYPE", "live_use_vvc", "store-region",
+        "store-region-src", "d_ticket", "is_staff_user", "enter_pc_once",
+        "hevc_supported", "passport_csrf_token", "passport_csrf_token_default",
+        "UIFID", "uid_tt", "uid_tt_ss", "sid_tt", "sessionid", "sessionid_ss",
+        "bd_ticket_guard_ts_sign_id", "__security_mc_1_s_sdk_crypt_sdk",
+        "__security_mc_1_s_sdk_cert_key",
+        "__security_mc_1_s_sdk_sign_data_key_web_protect", "is_dbsc",
+        "is_support_rtm_web_ts", "stream_recommend_feed_params",
+        "home_can_add_dy_2_desktop", "strategyABtestKey",
+        "publish_badge_show_info", "is_dash_user", "sid_guard",
+        "session_tlb_tag", "sid_ucp_v1", "ssid_ucp_v1", "IsDouyinActive",
+        "x-web-secsdk-uid", "ttwid", "csrf_session_id", "s_v_web_id",
+        "odin_tt", "x_tt_token", "fpk1", "fpk2",
+    )
+
     def _serialize_cookie_str(self):
         cookie = getattr(self, "cookie", None) or {}
         raw = list(getattr(self, "_raw_cookie_tokens", ()) or ())
+        order = self.BROWSER_COOKIE_ORDER
+        known = [name for name in order if name in cookie]
+        rest = [name for name in cookie if name not in order]
         parts = [
-            name if name in raw else f"{name}={value}"
-            for name, value in cookie.items()
+            name if name in raw else f"{name}={cookie[name]}"
+            for name in known + rest
         ]
         parts.extend(token for token in raw if token not in cookie)
         return "; ".join(parts)
