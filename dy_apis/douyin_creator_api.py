@@ -869,7 +869,7 @@ def _creator_signed_params(auth, initial=None, *, include_platform=True,
     if include_platform:
         params.with_creator_platform()
     if include_ms_token:
-        params.add_param("msToken", auth.msToken)
+        params.add_param("msToken", getattr(auth, "creator_msToken", None) or auth.msToken)
     if sign:
         query_without_sign = splice_url(params.get())
         params.add_param(
@@ -1298,7 +1298,7 @@ class DouyinCreatorAPI:
         params = Params()
         if include_platform:
             params.with_creator_platform()
-        params.add_param("msToken", auth.msToken)
+        params.add_param("msToken", getattr(auth, "creator_msToken", None) or auth.msToken)
         query_without_sign = splice_url(params.get())
         params.add_param(
             "a_bogus",
@@ -2700,7 +2700,7 @@ class DouyinCreatorAPI:
         params = Params()
         params.add_param("read_aid", CREATOR_READ_AID)
         params.with_creator_platform()
-        params.add_param("msToken", auth.msToken)
+        params.add_param("msToken", getattr(auth, "creator_msToken", None) or auth.msToken)
         # a_bogus 需与 body 一起计算（POST 带 body）
         query_without_sign = splice_url(params.get())
         params.add_param(

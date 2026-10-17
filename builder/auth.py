@@ -67,7 +67,9 @@ class DouyinAuth:
         self._ttwid = ""
         self._webid = ""         # 真实设备号缓存
         self._webid_resolving = False
-        self._ms_cache = ""      # 动态 msToken 缓存
+        self._ms_cache = ""
+        self._creator_ms_cache = ""
+        self._creator_ms_ts = 0      # 动态 msToken 缓存
         self._ms_ts = 0          # 缓存时间戳
         # PC IM obtains a short-lived identity-security token immediately
         # before message/send.  Keep it on the same Auth instance so callers
@@ -1239,6 +1241,32 @@ class DouyinAuth:
             self._ms_ts = now
             return tok
         return self._ms_cache or generate_msToken()
+
+    @property
+    def creator_msToken(self):
+        """creator.douyin.com 域的 msToken（ms_appid=2906 轮换，184 字符）。
+
+        浏览器 creator 页的 mssdk 轮换与主站 6383 分开（2026-10-17 实测）；
+        create_v2 等 creator 域接口必须带这个版本。
+        """
+        now = time.time()
+        if self._creator_ms_cache and now - self._creator_ms_ts < _MS_TTL:
+            return self._creator_ms_cache
+        tok = ""
+        try:
+            tok = generate_dynamic_msToken(ttwid=self._ttwid, creator=True)
+        except Exception:
+            tok = ""
+        if tok:
+            self._creator_ms_cache = tok
+            self._creator_ms_ts = now
+        return self._creator_ms_cache or self.msToken
+
+    @creator_msToken.setter
+    def creator_msToken(self, value):
+        if value:
+            self._creator_ms_cache = value
+            self._creator_ms_ts = time.time()
 
     @msToken.setter
     def msToken(self, value):
