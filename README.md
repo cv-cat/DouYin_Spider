@@ -257,3 +257,18 @@ ps: 请加群，人满或者过期 issue | wx 提醒 | qq提醒
 | group-1 | group-2 | group-3 | group-4 (2000人qq群) |
 |:--:|:--:|:--:|:--:|
 | <img width="280" alt="group1" src="https://cvcat.site/assets/group1.jpg" /> | <img width="280" alt="group2" src="https://cvcat.site/assets/group2.jpg" /> | <img width="280" alt="group3" src="https://cvcat.site/assets/group3.jpg" /> | <img width="280" alt="group3" src="https://cvcat.site/assets/group4.jpg" /> |
+
+
+## 发布链二次验证（2026-10-17 逆向）
+
+`create_v2` 可能返回 `x-tt-verify-passport-decision` 要求二次验证（HTTP 200 空 body）：
+
+- **gateway_biz_verify**：`DYLoginApi` 可发起扫码二次验证闭环——
+  `get_qrcode` 参数 `aid=6383`（勿用 2906，回 4031）+ `scene=secondary_verify` +
+  `verify_scene=creator`，用户抖音 App 扫码后 `check_qrconnect` status=confirmed。
+- **gateway_web_authlv_check**：认证等级不足，扫码不够（需短信/人脸/密码）。
+  纯 HTTP 会话发码被 error_code=16 拒——建议用 cookie 导入（同设备已信任会话）。
+
+安全相关对齐基线（2026-10-17）：UA/sec-ch-ua Chrome 155、PASSPORT_SDK 3.4.9 族、
+dtrait 与真实设备逐字节一致、Cookie 头按浏览器 wire 顺序（`DouyinAuth.BROWSER_COOKIE_ORDER`）、
+creator 域 msToken 走 ms_appid=2906 独立通道。
