@@ -143,7 +143,9 @@ def computed_features(p):
         30: f"{p['avail_height']},{p['avail_left']},{p['avail_top']},{p['avail_width']}",
         31: f"{p['screen_height']},{p['screen_width']}",
         32: f"{p['color_depth']},{p['pixel_depth']},{p['device_pixel_ratio']}",
-        34: p["hook_score"],
+        # str_34(hook_score)：真实设备的分值哈希直接进 render_hashes（2026-10-17），
+        # 档案缺 hook_score 键时跳过，由 render_hashes[34] 提供值
+        **({"34": p["hook_score"]} if "hook_score" in p else {}),
     })
     return feats
 
