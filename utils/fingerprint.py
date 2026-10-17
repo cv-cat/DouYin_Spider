@@ -19,9 +19,9 @@ from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 # 2026-08-16 Chrome 实录：create_v2 抓包所用设备
 _DEFAULTS = {
     "ua": ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-           "(KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36"),
-    "browser_version": "151.0.0.0",
-    "engine_version": "151.0.0.0",
+           "(KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36"),
+    "browser_version": "155.0.0.0",
+    "engine_version": "155.0.0.0",
     "screen_width": "2560",
     "screen_height": "1440",
     "cpu_core_num": "20",
@@ -69,8 +69,8 @@ def get_profile():
             # Chrome 151 truth from the live login capture / user's curl.
             # Keep the brand order and GREASE token exactly as emitted by the
             # browser; this header is present on both passport and mssdk XHRs.
-            "sec_ch_ua": (f'"Not=A?Brand";v="99", "Google Chrome";v="{major}", '
-                          f'"Chromium";v="{major}"'),
+            "sec_ch_ua": (f'"Google Chrome";v="{major}", "Chromium";v="{major}", '
+                          f'"Not(A:Brand";v="24"'),
             "sec_ch_ua_platform": '"Windows"',
             "browser_name": "Chrome",
             "browser_version": _env("browser_version", _DEFAULTS["browser_version"]),

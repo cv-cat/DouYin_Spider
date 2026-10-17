@@ -801,21 +801,22 @@ PHONE_SSO_COOKIE_ORDER = (
 # 登录页 SDK 的版本标识，取自实录；版本对不上同样会被判 4031。
 # 2026-08-29 用 Chrome 151 短信登录页 Network 实录重新校准；上一版停留在
 # 3.4.2，服务端已经滚过版本。这批号会随抖音发版变，出问题先来核这里。
+# 2026-10-17 Chrome 155 隔离上下文实测（get_qrcode/check_qrconnect 逐参数对拍）校准
 PASSPORT_SDK = {
-    "passport_jssdk_version": "3.4.4",
+    "passport_jssdk_version": "3.4.9",
     "passport_jssdk_type": "normal",
     "is_from_ttaccountsdk": "1",
 }
 # 各 SDK 子版本，实录原样带上
 PASSPORT_SDK_TAIL = {
-    "p_ui": "2.4.4",
+    "p_ui": "2.4.10",
     "p_ca": "4.0.26",
-    "p_ca_real": "1.0.0.892",
+    "p_ca_real": "1.0.0.938",
     "account_sdk_source": "web",
-    "p_js_v": "3.4.4",
+    "p_js_v": "3.4.9",
     "p_js_t": "pro",
-    "p_zt": "3.3.17",
-    "p_ver": "1.1.3",
+    "p_zt": "3.3.30",
+    "p_ver": "1.1.4-beta.5",
     "p_ver_real": "0",
     "p_bd": "1.0.1.19-fix.01",
 }
