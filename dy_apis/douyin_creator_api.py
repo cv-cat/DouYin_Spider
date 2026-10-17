@@ -2113,6 +2113,15 @@ class DouyinCreatorAPI:
                     "hashtag_id": 0, "hashtag_name": "", "type": 8,
                 })
             text += desc
+        elif title:
+            # 2026-10-17 浏览器 create_v2 实测：空描述时也补尾部分隔符——
+            # text 末尾一个空格 + type8 条目（{"start":N,"end":N+1,...,"type":8}）
+            sep_start = _js_string_length(text)
+            text += " "
+            text_extra.append({
+                "start": sep_start, "end": sep_start + 1,
+                "hashtag_id": 0, "hashtag_name": "", "type": 8,
+            })
         return text, text_extra
 
     @staticmethod
