@@ -1,5 +1,6 @@
 import hashlib
 import json
+import threading
 import time
 
 import websocket
@@ -26,6 +27,7 @@ class DouyinRecvMsg:
         self.ws = None
         self._should_reconnect = False   # on_error 打标记，真正重连在 start() 的循环里
         self._stopped = False            # stop() 置位，用来跳出重连循环
+        self._stop_event = threading.Event()
         self._opened = False             # 本轮连接是否成功建立过（用来重置退避）
         deviceId = DouyinAPI.get_device_id(auth=self.auth)
         accessKey = f'{self.fpId + self.appKey + deviceId}f8a69f1719916z'
@@ -97,6 +99,7 @@ class DouyinRecvMsg:
         """外部主动停止：关掉当前连接并让 start() 的重连循环退出。"""
         self._stopped = True
         self.auto_reconnect = False
+        self._stop_event.set()
         if self.ws is not None:
             try:
                 self.ws.close()
@@ -146,7 +149,8 @@ class DouyinRecvMsg:
                 backoff = self.RECONNECT_BACKOFF_START
             print(f"\033[33m### {backoff:.0f} 秒后重连 ###\033[m")
             try:
-                time.sleep(backoff)
+                if self._stop_event.wait(backoff):
+                    break
             except KeyboardInterrupt:
                 break
             backoff = min(backoff * 2, self.RECONNECT_BACKOFF_MAX)
