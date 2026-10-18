@@ -157,6 +157,14 @@ class DouyinAuth:
             self.cookie["_bd_ticket_crypt_doamin"] = "2"
         if not self.cookie.get("csrf_session_id"):
             self.cookie["csrf_session_id"] = _secrets.token_hex(16)
+        # 2026-10-18 浏览器实测：这些是用户交互后 JS 写的 UI 状态 cookie，
+        # 值固定/格式简单，服务端只校验存在性。fresh 会话补齐默认值。
+        if not self.cookie.get("SEARCH_RESULT_LIST_TYPE"):
+            self.cookie["SEARCH_RESULT_LIST_TYPE"] = '"single"'
+        if not self.cookie.get("live_use_vvc"):
+            self.cookie["live_use_vvc"] = '"false"'
+        if not self.cookie.get("publish_badge_show_info"):
+            self.cookie["publish_badge_show_info"] = "0,0,0,0"
         self._sync_cookie_str()
         if web_protect_ != "":
             web_protect_ = json.loads(json.loads(web_protect_)['data'])
