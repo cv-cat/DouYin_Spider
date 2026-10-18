@@ -141,6 +141,22 @@ class DouyinAuth:
         # verifyFp / fp 取自 s_v_web_id，必须与随请求发出的 cookie 一致；缺失就自己生成
         if not self.cookie.get("s_v_web_id"):
             self.cookie["s_v_web_id"] = generate_s_v_web_id()
+        # 2026-10-18 浏览器无痕+登录态逆向：这些 cookie 由页面安全 SDK（uc_secure）JS 写入，
+        # 值为 UUID 截短 / hex / 单字符，服务端只校验存在性不校验值来源。
+        # 安全 SDK 的调用链在 mssdk/web/security.zijieapi.com 交互时触发，
+        # 纯 HTTP 会话需要在 bootstrap 后主动补齐。
+        import uuid as _uuid
+        import secrets as _secrets
+        if not self.cookie.get("__security_server_data_status"):
+            self.cookie["__security_server_data_status"] = "1"
+        if not self.cookie.get("__security_mc_1_s_sdk_cert_key"):
+            self.cookie["__security_mc_1_s_sdk_cert_key"] = _uuid.uuid4().hex[:18]
+        if not self.cookie.get("__security_mc_1_s_sdk_sign_data_key_web_protect"):
+            self.cookie["__security_mc_1_s_sdk_sign_data_key_web_protect"] = _uuid.uuid4().hex[:18]
+        if not self.cookie.get("_bd_ticket_crypt_doamin"):
+            self.cookie["_bd_ticket_crypt_doamin"] = "2"
+        if not self.cookie.get("csrf_session_id"):
+            self.cookie["csrf_session_id"] = _secrets.token_hex(16)
         self._sync_cookie_str()
         if web_protect_ != "":
             web_protect_ = json.loads(json.loads(web_protect_)['data'])
