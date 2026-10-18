@@ -117,6 +117,18 @@ class DouyinAuth:
 
     def perepare_auth(self, cookieStr: str, web_protect_: str = "", keys_: str = ""):
         self.cookie = trans_cookies(cookieStr)
+        # 2026-10-18：按浏览器 wire 序重排导入的 cookie（curl_cffi 的 jar 按
+        # dict 插入序发送，_serialize_cookie_str 的排序只覆盖显式 cookie 头路径）。
+        # 未列出的键保持原有相对顺序，续在已知键之后。
+        try:
+            order = self.BROWSER_COOKIE_ORDER
+            known = [k for k in order if k in self.cookie]
+            rest = [k for k in self.cookie if k not in order]
+            self.cookie = type(self.cookie)(
+                (k, self.cookie[k]) for k in known + rest
+            )
+        except Exception:
+            pass
         # ``trans_cookies`` keeps Chromium's occasional no-equals cookie
         # tokens (for example ``douyin.com``) on a sidecar because a normal
         # mapping cannot serialize that wire form without changing it.
