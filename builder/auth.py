@@ -27,7 +27,7 @@ class DouyinAuth:
         self._cookie_source_events = []
         self.private_key = None
         self.ticket = None
-        self.ts_sign = None
+        self._ts_sign = None
         self.client_cert = None
         self.ree_public_key = None
         self.uid = None
@@ -200,6 +200,19 @@ class DouyinAuth:
         ]
         parts.extend(token for token in raw if token not in cookie)
         return "; ".join(parts)
+
+    @property
+    def ts_sign(self):
+        return self._ts_sign
+
+    @ts_sign.setter
+    def ts_sign(self, value):
+        self._ts_sign = value
+        # 2026-10-18 浏览器实测：cookie 里的 bd_ticket_guard_ts_sign_id 就是
+        # 登录后 ticket 流程产出的 ts_sign 完整值（ts.2.xxx）。设置时同步进 jar。
+        if value and isinstance(getattr(self, "cookie", None), dict):
+            self.cookie["bd_ticket_guard_ts_sign_id"] = value
+            self._sync_cookie_str()
 
     @property
     def cookie_str(self):
