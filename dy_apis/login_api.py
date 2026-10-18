@@ -1552,7 +1552,39 @@ class DYLoginApi:
                         "严格短信登录要求 challenge 后初始化 client_data_v2 成功"
                     ) from err
         auth._ttwid = auth.cookie.get("ttwid", "")
+        # 2026-10-18 实测：douyin.com HTML 的 /jingxuan 响应 Set-Cookie 下发
+        # web_sign_token（HS256 JWT，含 device id）和完整 UIFID。
+        # 需要带 bootstrap 后的完整 cookie jar 二次访问 /jingxuan 才能拿到。
+        try:
+            DYLoginApi._collect_web_sign_token(auth)
+        except Exception as err:
+            logger.debug(f"web_sign_token collect failed: {err}")
         return auth
+
+    @staticmethod
+    def _collect_web_sign_token(auth) -> None:
+        """带完整 cookie jar 访问 /jingxuan 收集 web_sign_token / UIFID Set-Cookie。"""
+        import utils.http_client as _requests
+        resp = _requests.get(
+            HOME_URL + "/jingxuan",
+            headers={
+                "user-agent": get_profile()["ua"],
+                "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                "accept-language": "zh-CN,zh;q=0.9",
+                "cookie": auth.cookie_str,
+                "referer": HOME_URL + "/?recommend=1",
+            },
+            verify=False, timeout=20,
+        )
+        added = []
+        for name in ("web_sign_token", "UIFID"):
+            value = resp.cookies.get_dict().get(name, "")
+            if value:
+                auth.cookie[name] = value
+                added.append(name)
+        if added:
+            auth._sync_cookie_str()
+            logger.info(f"web_sign_token collected: {added}")
 
     # ---------- 公共参数 / 请求头 ----------
     @staticmethod
