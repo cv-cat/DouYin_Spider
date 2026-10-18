@@ -324,6 +324,15 @@ class DouyinAuth:
                 DYLoginApi._apply_ac_signature(auth, strict=False)
             except Exception:
                 pass
+        # 2026-10-18 实测：douyin.com 的 HTML 响应会 Set-Cookie 下发
+        # web_sign_token（HS256 JWT，含 device id）和完整 UIFID。Cookie 导入
+        # 路径此前完全跳过这一步；浏览器会话总是带着它们。
+        if not auth.cookie.get("web_sign_token") or not auth.cookie.get("UIFID"):
+            try:
+                from dy_apis.login_api import DYLoginApi
+                DYLoginApi._collect_web_sign_token(auth)
+            except Exception:
+                pass
         auth.ensure_http_session()
         if bootstrap_creator:
             auth.bootstrap_creator_session(proxies=proxies)
