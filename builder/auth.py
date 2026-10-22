@@ -27,7 +27,7 @@ class DouyinAuth:
         self._cookie_source_events = []
         self.private_key = None
         self.ticket = None
-        self.ts_sign = None
+        self._ts_sign = None
         self.client_cert = None
         self.ree_public_key = None
         self.uid = None
@@ -67,7 +67,9 @@ class DouyinAuth:
         self._ttwid = ""
         self._webid = ""         # 真实设备号缓存
         self._webid_resolving = False
-        self._ms_cache = ""      # 动态 msToken 缓存
+        self._ms_cache = ""
+        self._creator_ms_cache = ""
+        self._creator_ms_ts = 0      # 动态 msToken 缓存
         self._ms_ts = 0          # 缓存时间戳
         # PC IM obtains a short-lived identity-security token immediately
         # before message/send.  Keep it on the same Auth instance so callers
@@ -115,6 +117,18 @@ class DouyinAuth:
 
     def perepare_auth(self, cookieStr: str, web_protect_: str = "", keys_: str = ""):
         self.cookie = trans_cookies(cookieStr)
+        # 2026-10-18：按浏览器 wire 序重排导入的 cookie（curl_cffi 的 jar 按
+        # dict 插入序发送，_serialize_cookie_str 的排序只覆盖显式 cookie 头路径）。
+        # 未列出的键保持原有相对顺序，续在已知键之后。
+        try:
+            order = self.BROWSER_COOKIE_ORDER
+            known = [k for k in order if k in self.cookie]
+            rest = [k for k in self.cookie if k not in order]
+            self.cookie = type(self.cookie)(
+                (k, self.cookie[k]) for k in known + rest
+            )
+        except Exception:
+            pass
         # ``trans_cookies`` keeps Chromium's occasional no-equals cookie
         # tokens (for example ``douyin.com``) on a sidecar because a normal
         # mapping cannot serialize that wire form without changing it.
@@ -139,6 +153,30 @@ class DouyinAuth:
         # verifyFp / fp 取自 s_v_web_id，必须与随请求发出的 cookie 一致；缺失就自己生成
         if not self.cookie.get("s_v_web_id"):
             self.cookie["s_v_web_id"] = generate_s_v_web_id()
+        # 2026-10-18 浏览器无痕+登录态逆向：这些 cookie 由页面安全 SDK（uc_secure）JS 写入，
+        # 值为 UUID 截短 / hex / 单字符，服务端只校验存在性不校验值来源。
+        # 安全 SDK 的调用链在 mssdk/web/security.zijieapi.com 交互时触发，
+        # 纯 HTTP 会话需要在 bootstrap 后主动补齐。
+        import uuid as _uuid
+        import secrets as _secrets
+        if not self.cookie.get("__security_server_data_status"):
+            self.cookie["__security_server_data_status"] = "1"
+        if not self.cookie.get("__security_mc_1_s_sdk_cert_key"):
+            self.cookie["__security_mc_1_s_sdk_cert_key"] = _uuid.uuid4().hex[:18]
+        if not self.cookie.get("__security_mc_1_s_sdk_sign_data_key_web_protect"):
+            self.cookie["__security_mc_1_s_sdk_sign_data_key_web_protect"] = _uuid.uuid4().hex[:18]
+        if not self.cookie.get("_bd_ticket_crypt_doamin"):
+            self.cookie["_bd_ticket_crypt_doamin"] = "2"
+        if not self.cookie.get("csrf_session_id"):
+            self.cookie["csrf_session_id"] = _secrets.token_hex(16)
+        # 2026-10-18 浏览器实测：这些是用户交互后 JS 写的 UI 状态 cookie，
+        # 值固定/格式简单，服务端只校验存在性。fresh 会话补齐默认值。
+        if not self.cookie.get("SEARCH_RESULT_LIST_TYPE"):
+            self.cookie["SEARCH_RESULT_LIST_TYPE"] = '"single"'
+        if not self.cookie.get("live_use_vvc"):
+            self.cookie["live_use_vvc"] = '"false"'
+        if not self.cookie.get("publish_badge_show_info"):
+            self.cookie["publish_badge_show_info"] = "0,0,0,0"
         self._sync_cookie_str()
         if web_protect_ != "":
             web_protect_ = json.loads(json.loads(web_protect_)['data'])
@@ -150,15 +188,51 @@ class DouyinAuth:
             self.private_key = keys_['ec_privateKey']
             self.ree_public_key = base64.b64encode(self.private_key.encode()).decode()
 
+    # 2026-10-17 浏览器 create_v2 实测的 cookie 发送顺序（登录态稳态）。
+    # Chrome 的 Cookie 头顺序由 cookie jar 的插入序决定；未列出的键按插入序排在其后。
+    BROWSER_COOKIE_ORDER = (
+        "bd_ticket_guard_client_web_domain", "n_mh", "has_biz_token",
+        "__security_server_data_status", "_bd_ticket_crypt_doamin",
+        "SEARCH_RESULT_LIST_TYPE", "live_use_vvc", "store-region",
+        "store-region-src", "d_ticket", "is_staff_user", "enter_pc_once",
+        "hevc_supported", "passport_csrf_token", "passport_csrf_token_default",
+        "UIFID", "uid_tt", "uid_tt_ss", "sid_tt", "sessionid", "sessionid_ss",
+        "bd_ticket_guard_ts_sign_id", "__security_mc_1_s_sdk_crypt_sdk",
+        "__security_mc_1_s_sdk_cert_key",
+        "__security_mc_1_s_sdk_sign_data_key_web_protect", "is_dbsc",
+        "is_support_rtm_web_ts", "stream_recommend_feed_params",
+        "home_can_add_dy_2_desktop", "strategyABtestKey",
+        "publish_badge_show_info", "is_dash_user", "sid_guard",
+        "session_tlb_tag", "sid_ucp_v1", "ssid_ucp_v1", "IsDouyinActive",
+        "x-web-secsdk-uid", "ttwid", "csrf_session_id", "s_v_web_id",
+        "odin_tt", "x_tt_token", "fpk1", "fpk2",
+    )
+
     def _serialize_cookie_str(self):
         cookie = getattr(self, "cookie", None) or {}
         raw = list(getattr(self, "_raw_cookie_tokens", ()) or ())
+        order = self.BROWSER_COOKIE_ORDER
+        known = [name for name in order if name in cookie]
+        rest = [name for name in cookie if name not in order]
         parts = [
-            name if name in raw else f"{name}={value}"
-            for name, value in cookie.items()
+            name if name in raw else f"{name}={cookie[name]}"
+            for name in known + rest
         ]
         parts.extend(token for token in raw if token not in cookie)
         return "; ".join(parts)
+
+    @property
+    def ts_sign(self):
+        return self._ts_sign
+
+    @ts_sign.setter
+    def ts_sign(self, value):
+        self._ts_sign = value
+        # 2026-10-18 浏览器实测：cookie 里的 bd_ticket_guard_ts_sign_id 就是
+        # 登录后 ticket 流程产出的 ts_sign 完整值（ts.2.xxx）。设置时同步进 jar。
+        if value and isinstance(getattr(self, "cookie", None), dict):
+            self.cookie["bd_ticket_guard_ts_sign_id"] = value
+            self._sync_cookie_str()
 
     @property
     def cookie_str(self):
@@ -260,6 +334,15 @@ class DouyinAuth:
             try:
                 from dy_apis.login_api import DYLoginApi
                 DYLoginApi._apply_ac_signature(auth, strict=False)
+            except Exception:
+                pass
+        # 2026-10-18 实测：douyin.com 的 HTML 响应会 Set-Cookie 下发
+        # web_sign_token（HS256 JWT，含 device id）和完整 UIFID。Cookie 导入
+        # 路径此前完全跳过这一步；浏览器会话总是带着它们。
+        if not auth.cookie.get("web_sign_token") or not auth.cookie.get("UIFID"):
+            try:
+                from dy_apis.login_api import DYLoginApi
+                DYLoginApi._collect_web_sign_token(auth)
             except Exception:
                 pass
         auth.ensure_http_session()
@@ -1239,6 +1322,32 @@ class DouyinAuth:
             self._ms_ts = now
             return tok
         return self._ms_cache or generate_msToken()
+
+    @property
+    def creator_msToken(self):
+        """creator.douyin.com 域的 msToken（ms_appid=2906 轮换，184 字符）。
+
+        浏览器 creator 页的 mssdk 轮换与主站 6383 分开（2026-10-17 实测）；
+        create_v2 等 creator 域接口必须带这个版本。
+        """
+        now = time.time()
+        if self._creator_ms_cache and now - self._creator_ms_ts < _MS_TTL:
+            return self._creator_ms_cache
+        tok = ""
+        try:
+            tok = generate_dynamic_msToken(ttwid=self._ttwid, creator=True)
+        except Exception:
+            tok = ""
+        if tok:
+            self._creator_ms_cache = tok
+            self._creator_ms_ts = now
+        return self._creator_ms_cache or self.msToken
+
+    @creator_msToken.setter
+    def creator_msToken(self, value):
+        if value:
+            self._creator_ms_cache = value
+            self._creator_ms_ts = time.time()
 
     @msToken.setter
     def msToken(self, value):

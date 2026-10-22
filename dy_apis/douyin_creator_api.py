@@ -869,7 +869,7 @@ def _creator_signed_params(auth, initial=None, *, include_platform=True,
     if include_platform:
         params.with_creator_platform()
     if include_ms_token:
-        params.add_param("msToken", auth.msToken)
+        params.add_param("msToken", getattr(auth, "creator_msToken", None) or auth.msToken)
     if sign:
         query_without_sign = splice_url(params.get())
         params.add_param(
@@ -1298,7 +1298,7 @@ class DouyinCreatorAPI:
         params = Params()
         if include_platform:
             params.with_creator_platform()
-        params.add_param("msToken", auth.msToken)
+        params.add_param("msToken", getattr(auth, "creator_msToken", None) or auth.msToken)
         query_without_sign = splice_url(params.get())
         params.add_param(
             "a_bogus",
@@ -2113,6 +2113,15 @@ class DouyinCreatorAPI:
                     "hashtag_id": 0, "hashtag_name": "", "type": 8,
                 })
             text += desc
+        elif title:
+            # 2026-10-17 浏览器 create_v2 实测：空描述时也补尾部分隔符——
+            # text 末尾一个空格 + type8 条目（{"start":N,"end":N+1,...,"type":8}）
+            sep_start = _js_string_length(text)
+            text += " "
+            text_extra.append({
+                "start": sep_start, "end": sep_start + 1,
+                "hashtag_id": 0, "hashtag_name": "", "type": 8,
+            })
         return text, text_extra
 
     @staticmethod
@@ -2691,7 +2700,7 @@ class DouyinCreatorAPI:
         params = Params()
         params.add_param("read_aid", CREATOR_READ_AID)
         params.with_creator_platform()
-        params.add_param("msToken", auth.msToken)
+        params.add_param("msToken", getattr(auth, "creator_msToken", None) or auth.msToken)
         # a_bogus 需与 body 一起计算（POST 带 body）
         query_without_sign = splice_url(params.get())
         params.add_param(

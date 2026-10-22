@@ -801,21 +801,22 @@ PHONE_SSO_COOKIE_ORDER = (
 # 登录页 SDK 的版本标识，取自实录；版本对不上同样会被判 4031。
 # 2026-08-29 用 Chrome 151 短信登录页 Network 实录重新校准；上一版停留在
 # 3.4.2，服务端已经滚过版本。这批号会随抖音发版变，出问题先来核这里。
+# 2026-10-17 Chrome 155 隔离上下文实测（get_qrcode/check_qrconnect 逐参数对拍）校准
 PASSPORT_SDK = {
-    "passport_jssdk_version": "3.4.4",
+    "passport_jssdk_version": "3.4.9",
     "passport_jssdk_type": "normal",
     "is_from_ttaccountsdk": "1",
 }
 # 各 SDK 子版本，实录原样带上
 PASSPORT_SDK_TAIL = {
-    "p_ui": "2.4.4",
+    "p_ui": "2.4.10",
     "p_ca": "4.0.26",
-    "p_ca_real": "1.0.0.892",
+    "p_ca_real": "1.0.0.938",
     "account_sdk_source": "web",
-    "p_js_v": "3.4.4",
+    "p_js_v": "3.4.9",
     "p_js_t": "pro",
-    "p_zt": "3.3.17",
-    "p_ver": "1.1.3",
+    "p_zt": "3.3.30",
+    "p_ver": "1.1.4-beta.5",
     "p_ver_real": "0",
     "p_bd": "1.0.1.19-fix.01",
 }
@@ -1551,7 +1552,39 @@ class DYLoginApi:
                         "严格短信登录要求 challenge 后初始化 client_data_v2 成功"
                     ) from err
         auth._ttwid = auth.cookie.get("ttwid", "")
+        # 2026-10-18 实测：douyin.com HTML 的 /jingxuan 响应 Set-Cookie 下发
+        # web_sign_token（HS256 JWT，含 device id）和完整 UIFID。
+        # 需要带 bootstrap 后的完整 cookie jar 二次访问 /jingxuan 才能拿到。
+        try:
+            DYLoginApi._collect_web_sign_token(auth)
+        except Exception as err:
+            logger.debug(f"web_sign_token collect failed: {err}")
         return auth
+
+    @staticmethod
+    def _collect_web_sign_token(auth) -> None:
+        """带完整 cookie jar 访问 /jingxuan 收集 web_sign_token / UIFID Set-Cookie。"""
+        import utils.http_client as _requests
+        resp = _requests.get(
+            HOME_URL + "/jingxuan",
+            headers={
+                "user-agent": get_profile()["ua"],
+                "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                "accept-language": "zh-CN,zh;q=0.9",
+                "cookie": auth.cookie_str,
+                "referer": HOME_URL + "/?recommend=1",
+            },
+            verify=False, timeout=20,
+        )
+        added = []
+        for name in ("web_sign_token", "UIFID"):
+            value = resp.cookies.get_dict().get(name, "")
+            if value:
+                auth.cookie[name] = value
+                added.append(name)
+        if added:
+            auth._sync_cookie_str()
+            logger.info(f"web_sign_token collected: {added}")
 
     # ---------- 公共参数 / 请求头 ----------
     @staticmethod

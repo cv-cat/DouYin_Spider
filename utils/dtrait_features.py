@@ -143,7 +143,10 @@ def computed_features(p):
         30: f"{p['avail_height']},{p['avail_left']},{p['avail_top']},{p['avail_width']}",
         31: f"{p['screen_height']},{p['screen_width']}",
         32: f"{p['color_depth']},{p['pixel_depth']},{p['device_pixel_ratio']}",
-        34: p["hook_score"],
+        # str_34(hook_score)：档案含 hook_score 时按上游语义以 murmur3(值) 覆盖
+        # render_hashes[34]（键必须是 int，否则 sorted 混排 str/int 崩溃）；
+        # 缺省时由 render_hashes[34] 提供真实设备哈希（2026-10-17）
+        **({34: p["hook_score"]} if "hook_score" in p else {}),
     })
     return feats
 

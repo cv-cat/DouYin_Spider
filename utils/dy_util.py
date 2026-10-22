@@ -113,11 +113,11 @@ def generate_msToken(randomlength=107):
     return random_str
 
 
-def generate_dynamic_msToken(ttwid=None, proxies=None):
-    """msToken"""
+def generate_dynamic_msToken(ttwid=None, proxies=None, creator=False):
+    """msToken（creator=True 走 ms_appid=2906，creator.douyin.com 专用 184 字符版）"""
     try:
         from utils.mstoken import get_mstoken
-        return get_mstoken(ttwid=ttwid, proxies=proxies) or ''
+        return get_mstoken(ttwid=ttwid, proxies=proxies, creator=creator) or ''
     except Exception:
         return ''
 

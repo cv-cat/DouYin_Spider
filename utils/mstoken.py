@@ -23,9 +23,13 @@ from utils.fingerprint import get_profile
 #   behavior heartbeat every 300 seconds.  Each common response rotates the
 #   query token to a fresh 172-byte value.
 _TOKEN_URL = "https://mssdk.bytedance.com/web/r/token?ms_appid=6383"
+# creator.douyin.com 页面用自己的 appid 轮换（2026-10-17 页面5 实测：
+# POST mssdk/web/r/token?ms_appid=2906 → x-ms-token 184 字符，比 6383 的 164 长）
+_CREATOR_TOKEN_URL = "https://mssdk.bytedance.com/web/r/token?ms_appid=2906"
 _COMMON_URL = "https://mssdk.bytedance.com/web/common"
 
 _cache = {"token": "", "ts": 0}
+_creator_cache = {"token": "", "ts": 0}
 _TTL = 600
 
 _COMMON_PROFILE_PATH = os.path.join(
@@ -306,19 +310,25 @@ def _get_ttwid(ttwid: str = None) -> str:
 
 
 def get_mstoken(ttwid: str = None, proxies: dict = None, use_cache: bool = True,
-                cookie_sink=None) -> str:
-    if use_cache and _cache["token"] and (time.time() - _cache["ts"] < _TTL):
-        return _cache["token"]
+                cookie_sink=None, creator: bool = False) -> str:
+    """取 msToken。creator=True 时用 ms_appid=2906 轮换（creator.douyin.com 专用）。
+
+    浏览器 creator 页的 mssdk 轮换走 2906（token 184 字符），与主站 6383
+    （164 字符）不同缓存、不同长度；creator 域的请求（发布/评论等）必须带 2906 版。
+    """
+    cache = _creator_cache if creator else _cache
+    if use_cache and cache["token"] and (time.time() - cache["ts"] < _TTL):
+        return cache["token"]
 
     envelope = build_report_body()
+    url = _CREATOR_TOKEN_URL if creator else _TOKEN_URL
     # ``mssdk.bytedance.com`` is cross-site from the Douyin page.  Keep the
     # full Chrome 151 header set; only accept-encoding/content-length are left
     # to the HTTP transport.
     headers = _mssdk_headers()
-    url = _TOKEN_URL
     # 续期时把旧 token 挂在 query 上（实录 reqid=408/920/937 都是这么发的）
-    if _cache["token"]:
-        url += "&msToken=" + urllib.parse.quote(_cache["token"], safe="")
+    if cache["token"]:
+        url += "&msToken=" + urllib.parse.quote(cache["token"], safe="")
     try:
         resp = requests.post(url, data=envelope.encode("utf-8"), headers=headers,
                              verify=False, timeout=25, proxies=proxies)
@@ -332,8 +342,8 @@ def get_mstoken(ttwid: str = None, proxies: dict = None, use_cache: bool = True,
             m = re.search(r"msToken=([^;]+)", resp.headers.get("set-cookie", ""))
             token = m.group(1) if m else ""
         if token:
-            _cache["token"] = token
-            _cache["ts"] = time.time()
+            cache["token"] = token
+            cache["ts"] = time.time()
         return token
     except Exception:
         return ""

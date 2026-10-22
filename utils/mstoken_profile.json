@@ -3,7 +3,7 @@
  "_note": "设备档案：canvas.crc32 / webgl / audio.audioFp / math 这些必须真实渲染才能得到，抓一次存下来复用。换设备要重抓。",
  "nWID": {
   "navigator": {
-   "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36",
+   "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36",
    "vendor": "Google Inc.",
    "navToString": [
     "vendorSub:[object String]",
