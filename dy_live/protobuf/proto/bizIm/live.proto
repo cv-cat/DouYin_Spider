@@ -1,0 +1,732 @@
+// syntax = "proto3"; // Leave syntax version to the protobuf compiler.
+package bizIm.live;
+
+message AuctionUpdateMessage {
+  optional int64 product_id = 1;
+  optional int64 auction_id = 2;
+  optional int32 action_type = 3;
+  optional string jump_schema = 4;
+  optional EndTimeRefreshInfo end_time_refresh_info = 5;
+  optional string price_refresh_info = 6;
+  optional string pre_bid_refresh_info = 7;
+
+  message EndTimeRefreshInfo {
+    optional int64 end_time = 1;
+    optional string toast = 2;
+  }
+}
+
+message AuthorConnectMessage {
+  optional int32 msg_type = 1;
+  optional string toast = 2;
+  repeated int64 ecom_linkmic_room_ids = 3 [packed = true];
+  repeated ConnectRoom linkmic_pop_rooms = 4;
+}
+
+message ConnectRoom {
+  optional int64 room_id = 1;
+  optional int64 author_id = 2;
+  optional string sec_author_id = 3;
+}
+
+message LiveCommonMessage {
+  optional int32 msg_type = 1;
+  optional int64 screenshot_timestamp = 2;
+  optional RoomTagOfflineInfo room_tag_offline_info = 3;
+  optional FilterSwitchChangeData filter_switch_change_data = 4;
+  optional GMVData gmv_data = 5;
+}
+
+message RoomTagOfflineInfo {
+  optional int64 tag_type = 1;
+  optional string user_toast = 2;
+}
+
+message UpIcon {
+  optional string name = 1;
+  optional string up_icon = 2;
+  optional string up_desc = 3;
+  optional string public_screen_notice = 4;
+}
+
+message FilterSwitchChangeData {
+  optional bool enable = 1;
+  optional UpIcon up_icon = 2;
+}
+
+message GMVData {
+  optional string gmv = 1;
+}
+
+message URLPicture {
+  repeated string url_list = 1;
+  optional int64 width = 2;
+  optional int64 height = 3;
+}
+
+message DelayParam {
+  optional int32 delay_strategy = 1;
+  optional int32 min_delay_ms = 2;
+  optional int32 max_delay_ms = 3;
+}
+
+message LiveHighHeatMessage {
+  optional RedirectData redirect_data = 1;
+  optional string route_rule = 2;
+}
+
+message RedirectData {
+  map<string, string> route = 1;
+}
+
+message HotAtmosphere {
+  optional string img = 1;
+  optional string sale_num = 2;
+  optional int64 type = 3;
+  optional string num = 4;
+  optional string bg_color = 5;
+  optional string border_color = 6;
+  optional int64 left_margin = 7;
+  optional int64 ui_type = 8;
+  repeated string bg_colors = 9;
+  repeated string border_colors = 10;
+  optional string top_img = 11;
+}
+
+message ProductAtmosphere {
+  optional int32 atmosphere_type = 1;
+  optional ProductNumAtmosphere num_atmosphere = 2;
+}
+
+message ProductNumAtmosphere {
+  optional URLPicture left_icon = 1;
+  optional URLPicture background = 2;
+  optional int64 type = 3;
+  optional string num = 4;
+}
+
+message AuctionAtmosphere {
+  optional CountdownAtmosphere count_down = 1;
+  optional DigitalAtmosphere digital = 2;
+}
+
+message CountdownAtmosphere {
+  optional int64 start_time = 1;
+  optional int64 end_time = 2;
+  optional AtmosphereData data = 3;
+}
+
+message DigitalAtmosphere {
+  optional string frequency_key = 1;
+  optional int64 frequency_count = 2;
+  optional AtmosphereData data = 3;
+}
+
+message AtmosphereData {
+  optional string img = 1;
+  optional string num = 2;
+  optional string bg_color = 3;
+  optional string border_color = 4;
+  optional int64 left_margin = 5;
+  repeated string bg_colors = 6;
+  repeated string border_colors = 7;
+  optional string top_img = 8;
+  optional URLPicture bg_img = 9;
+  optional URLPicture left_icon = 10;
+}
+
+message IntelligentPopMessage {
+  optional int32 msg_type = 1;
+  optional int32 bubble_type = 2;
+  optional int64 promotion_id = 3;
+  optional DelayParam delay_param = 4;
+  map<string, string> params = 5;
+  optional string list_top_path = 10;
+  optional string pop_path = 11;
+}
+
+message BarrageBuyInfo {
+  optional string nick_name = 1;
+  optional int64 purchase_cnt = 2;
+  optional string text = 3;
+  optional string icon = 4;
+}
+
+message InteractionData {
+  optional bool full = 1;
+  repeated InteractionContent contents = 2;
+}
+
+message InteractionContent {
+  optional InteractionContentCheck check = 1;
+  optional int32 priority = 2;
+  optional int32 loop_count = 3;
+  repeated InteractionElement content = 4;
+  map<string, string> event_param = 5;
+  repeated ListTopInteractionRow rows = 6;
+  repeated string bg_colors = 7;
+  optional MessageProduct product = 8;
+  optional ListAction action = 9;
+}
+
+message ListTopInteractionRow {
+  repeated InteractionElement content = 1;
+}
+
+message MessageProduct {
+  optional ProductCover cover = 1;
+  optional bool show_index = 2;
+  optional int32 index = 3;
+}
+
+message ProductCover {
+  repeated string url_list = 1;
+  optional int64 width = 2;
+  optional int64 height = 3;
+}
+
+message ListAction {
+  optional int64 action_type = 1;
+  optional BizActionMeta biz_action = 2;
+  optional JumpActionMeta jump_action = 3;
+}
+
+message BizActionMeta {
+  optional string action_name = 1;
+  optional string action_param = 2;
+}
+
+message JumpActionMeta {
+  optional string url = 1;
+  optional int64 append_params_type = 2;
+}
+
+message InteractionContentCheck {
+  optional int64 product_id = 1;
+  optional int32 index = 2;
+}
+
+message InteractionElement {
+  optional int32 element_type = 1;
+  optional string text = 2;
+  optional string text_color = 3;
+  optional InteractionAvatar avatars = 4;
+  optional int32 blank_width = 5;
+  optional int32 text_size = 6;
+  optional ElementText text_v2 = 20;
+  optional ElementBlank blank_v2 = 21;
+  optional ElementAvatar avatars_v2 = 23;
+  optional ElementImage image_v2 = 24;
+  optional ElementLoopText loop_text = 29;
+}
+
+message InteractionAvatar {
+  repeated string url_list = 1;
+  optional int32 width = 2;
+  optional int32 height = 3;
+}
+
+message ElementAvatar {
+  optional UrlImage avatar = 1;
+}
+
+message UrlImage {
+  repeated string url_list = 1;
+  optional int64 width = 2;
+  optional int64 height = 3;
+}
+
+message ElementText {
+  optional string text = 1;
+  optional string color = 2;
+  optional int64 size = 3;
+  optional bool bold = 4;
+  optional UrlImage background = 5;
+  optional int64 max_width = 6;
+  optional bool ellipsis = 7;
+}
+
+message ElementLoopText {
+  repeated string texts = 1;
+  optional string color = 2;
+  optional int64 size = 3;
+  optional bool bold = 4;
+  optional int64 anim_gap = 5;
+}
+
+message ElementBlank {
+  optional int64 width = 1;
+}
+
+message ElementImage {
+  optional UrlImage image = 1;
+  optional ElementImageBubble bubble = 2;
+}
+
+message ElementImageBubble {
+  optional int64 height = 1;
+  optional int64 border_radius = 2;
+  optional string background_color = 3;
+  optional string border_color = 4;
+  optional string text = 5;
+  optional int64 font_size = 6;
+  optional string color = 7;
+  optional int64 horizontal_padding = 8;
+}
+
+message LiveInteractionMessage {
+  optional int32 msg_type = 1;
+  optional BarrageBuyInfo barrage_buy_info = 2;
+  optional InteractionData interaction_data = 3;
+}
+
+message Img {
+  repeated string url_list = 1;
+  optional int32 height = 2;
+  optional int32 width = 3;
+}
+
+message CurrentUserInfo {
+  optional Img user_pic = 1;
+  optional string user_name = 2;
+  optional int64 user_id = 3;
+}
+
+message IncrPriceList {
+  optional int64 price = 1;
+  optional int64 range = 2;
+}
+
+message AuctionInfo {
+  optional int64 price = 1;
+  optional string price_label = 2;
+  optional int32 status = 3;
+  optional string jump_url = 4;
+  optional CurrentUserInfo current_user_info = 5;
+  repeated IncrPriceList incr_price_lists = 6;
+  optional string button_label = 7;
+  optional int64 product_id = 8;
+  optional int64 end_time = 9;
+  optional int32 biz_id = 10;
+}
+
+message AuctionSuccess {
+  optional string title = 1;
+  optional int64 product_id = 2;
+  optional string product_name = 3;
+  optional string product_pic = 4;
+  optional int64 price = 5;
+  optional int64 charge = 6;
+  optional int64 freight = 7;
+  optional int64 total = 8;
+  optional string button_label = 9;
+  optional string jump_url = 10;
+  optional string freight_collect = 11;
+  optional int64 left_payment_time = 12;
+  optional int32 biz_id = 13;
+  optional string deposit_info = 14;
+}
+
+message RedpackActivityInfo {
+  optional int64 redpack_type = 1;
+  optional string redpack_activity_id = 2;
+  optional string redpack_activity_name = 3;
+  optional int64 start_apply_time = 4;
+  optional int64 end_apply_time = 5;
+  optional int64 preheat_time = 6;
+  optional int64 total_amount = 7;
+  optional string author_avatar_url = 8;
+  optional string author_name = 9;
+  optional string pendant_background_url = 10;
+  optional string redpack_front_background_url = 11;
+  optional string redpack_label = 12;
+  optional string redpack_after_background_url = 13;
+  optional string redpack_after_belt_url = 14;
+  optional int64 scatter_time = 15;
+  optional int64 server_time = 16;
+  optional int64 max_amount = 17;
+  optional int64 show_type = 18;
+  optional string shorttouch_pendant_background_url = 19;
+  optional string shorttouch_pendant_icon_url = 20;
+  optional string shorttouch_lottie_url = 21;
+}
+
+message BenefitLabel {
+  optional string LeftText = 1;
+  optional string RightText = 2;
+  optional int32 TextStyle = 3;
+  optional int32 ColorStyle = 4;
+  optional int32 DivLine = 5;
+}
+
+message LotteryInfoList {
+  optional string activity_id = 1;
+  optional int64 task_type = 2;
+  optional int64 open_time = 3;
+  optional int64 user_activity_status = 4;
+  optional string win_record_id = 5;
+  optional string result_label = 6;
+  optional string button_label = 7;
+  repeated string text = 8;
+  optional string jump_url = 9;
+  optional int64 lottery_type = 10;
+  optional string elastic_title = 11;
+  optional BenefitLabel benefit_label = 12;
+  optional string extra_info = 99;
+}
+
+message WinLotteryAlert {
+  optional string title = 1;
+  optional string content = 2;
+  optional string button_label = 3;
+}
+
+message WinLotteryInfo {
+  optional string title = 1;
+  optional string name = 2;
+  optional string img = 3;
+  optional string button_label = 4;
+  optional string win_record_id = 5;
+  optional string activity_id = 6;
+  optional bool is_addressed = 7;
+  optional WinLotteryAlert alert = 8;
+  optional bool is_win = 9;
+  optional string jump_url = 10;
+  optional int64 product_id = 11;
+  repeated int64 activity_price = 12 [packed = true];
+  optional int64 buy_time = 13;
+  optional int64 lottery_type = 14;
+  optional string product_id_str = 15;
+  optional LotteryInfoList lottery_info_list = 16;
+  optional int64 draw_prize_type = 17;
+  optional string button_bottom_desc = 18;
+  optional string extra_info = 99;
+}
+
+message CouponActivityInfoMessage {
+  optional int64 activity_type = 1;
+  optional string before_text = 2;
+  optional string before_button = 3;
+  optional string after_text = 4;
+  optional string after_button = 5;
+}
+
+message CouponMetaInfoMessage {
+  optional string coupon_meta_id = 1;
+  optional string start_time = 2;
+  optional string expire_time = 3;
+  optional int64 period_type = 4;
+  optional int64 valid_period = 5;
+  optional string start_apply_time = 6;
+  optional string end_apply_time = 7;
+  optional string coupon_name = 8;
+  optional string url = 9;
+  optional int64 threshold = 10;
+  optional int64 credit = 11;
+  optional int64 max_apply_times = 12;
+  optional int64 type = 13;
+  optional string type_detail = 14;
+  optional double discount = 15;
+  optional string shop_id = 16;
+  optional int64 pay_type = 17;
+  optional int64 max_discount_limit = 18;
+  optional string shop_name = 19;
+  optional string type_string = 20;
+  optional string what_coupon = 21;
+  optional string coupon_string = 22;
+  optional int64 channel_id = 23;
+  optional int64 left_amount = 24;
+  optional int64 has_applied = 25;
+  optional int64 status = 26;
+  optional string shop_logo = 27;
+  optional int64 is_show = 28;
+  optional int64 total_amount = 29;
+  optional int32 live_coupon_status = 30;
+  optional int32 coupon_source = 31;
+  optional int64 user_apply_times = 32;
+  optional bool can_continue_apply = 33;
+  optional bool coupon_status = 34;
+  optional bool coupon_reset = 35;
+  optional int64 start_time_timestamp = 36;
+  optional int64 expire_time_timestamp = 37;
+  optional string avatar = 38;
+  optional int64 kol_uid = 39;
+  repeated int64 product_ids = 40 [packed = true];
+  optional int64 platform_sub_type = 41;
+  optional bool has_available_goods = 42;
+  optional string type_title = 43;
+  optional int64 kol_user_tag = 45;
+  optional string type_icon = 46;
+  optional int64 type_icon_width = 47;
+  optional int64 type_icon_height = 48;
+  optional string coupon_category = 49;
+  optional string extra_data = 50;
+}
+
+message CouponInfo {
+  optional int64 meta_id = 1;
+  optional int64 server_time = 2;
+  optional int64 countdown = 3;
+  optional string activity_json_str = 4;
+  optional int32 coupon_type = 5;
+  optional CouponActivityInfoMessage activity_info = 6;
+  optional CouponMetaInfoMessage coupon_meta = 7;
+  optional string meta_id_str = 8;
+}
+
+message BrowseInfo {
+  optional int32 duration = 1;
+  optional string task_index = 2;
+  optional int32 stop_duration = 3;
+}
+
+message TaskInfo {
+  optional int32 task_type = 1;
+  optional int32 task_status = 2;
+  optional string report_event = 3;
+  optional BrowseInfo browse_task_info = 4;
+}
+
+message LiveMarketingMessage {
+  optional int32 msg_type = 1;
+  repeated int64 product_ids = 2 [packed = true];
+  optional AuctionSuccess auction_success = 3;
+  optional AuctionInfo auction_info = 4;
+  optional RedpackActivityInfo redpack_activity_info = 5;
+  optional WinLotteryInfo win_lotteryinfo = 6;
+  optional LotteryInfoList lottery_info_list = 7;
+  optional CouponInfo coupon_info = 8;
+  optional TaskInfo task_info = 9;
+}
+
+message PopProductInfo {
+  optional int64 promotion_id = 1;
+  optional int64 product_id = 2;
+  optional int64 explain_time = 3;
+}
+
+message LivePopMessage {
+  optional int32 msg_type = 1;
+  optional int32 bubble_type = 2;
+  optional int64 promotion_id = 3;
+  optional HotAtmosphere hot_atmosphere = 4;
+  optional DelayParam delay_param = 5;
+  optional PopProductInfo product_info = 6;
+}
+
+message CategoryRefreshMessage {
+  repeated CategoryInfo category_info = 1;
+  optional int64 update_ts = 2;
+  optional string update_toast = 3;
+
+  message CategoryInfo {
+    optional string unique_index = 1;
+    optional string name = 2;
+    optional int64 category_id = 3;
+    optional int64 category_type = 4;
+    optional bool need_reload = 5;
+    optional bool disable_append = 6;
+  }
+}
+
+message ProductListRefreshMessage {
+  optional int64 update_ts = 1;
+  optional string update_toast = 2;
+}
+
+message ProductListUpdateMessage {
+  optional int64 update_timestamp = 1;
+  optional string update_toast = 2;
+  repeated ProductInfo update_product_info = 3;
+  optional int64 total = 4;
+  repeated CategoryInfo update_category_info = 5;
+  optional int32 msg_type = 6;
+}
+
+message ProductInfo {
+  optional int64 promotion_id = 1;
+  optional int32 index = 2;
+  repeated int64 target_flash_uids = 3 [packed = true];
+  optional int64 explain_type = 4;
+}
+
+message CategoryInfo {
+  optional int32 id = 1;
+  optional string name = 2;
+  repeated string promotion_ids = 3;
+  optional string type = 4;
+  optional string unique_index = 5;
+}
+
+message ProductRefreshMessage {
+  optional int64 promotion_id = 1;
+  optional int64 product_id = 2;
+  optional int64 channel_type = 3;
+  optional int64 channel_id = 4;
+  optional int64 update_ts = 5;
+  optional int32 action_type = 6;
+  optional RequestInfo request_info = 7;
+  optional ProductInfo product_info = 8;
+  optional HotAtmosphere hot_atmosphere = 9;
+  optional AuctionInfo auction_info = 10;
+  optional AuctionAtmosphere auction_atmosphere = 11;
+  optional AtmosphereInfo atmosphere_info = 12;
+
+  message RequestInfo {
+    map<int32, Request> list = 1;
+    map<int32, Request> pop = 2;
+    map<int32, Request> intro = 3;
+
+    message Request {
+      optional string path = 1;
+      map<string, string> params = 2;
+      optional DelayParam delay_param = 3;
+    }
+  }
+
+  message ProductInfo {
+    optional string title = 1;
+    optional string cover = 2;
+  }
+
+  message AuctionInfo {
+    optional int64 price = 1;
+    optional string price_label = 2;
+    optional AuctionAtmosphere auction_atmosphere = 3;
+    optional int64 end_time = 4;
+    optional AuctionUser current_user = 5;
+    optional string intro_price_label = 6;
+
+    message AuctionUser {
+      optional bool is_self = 1;
+      optional string name = 2;
+      optional string profile = 3;
+    }
+  }
+
+  message AtmosphereInfo {
+    map<int32, ProductAtmosphere> atmosphere = 1;
+  }
+}
+
+message ProductUpdateMessage {
+  repeated int64 updated_product_ids = 1 [packed = true];
+  optional int32 update_type = 2;
+  optional int64 promotion_id = 3;
+  optional UpdatedProductInfo updated_product_info = 4;
+  optional bool sold_out = 5;
+  optional UpdatedCouponInfo updated_coupon_info = 6;
+  optional UpdatedCampaignInfo updated_campaign_info = 7;
+  optional int64 update_timestamp = 8;
+  optional UpdatedSkuInfo update_sku_info = 9;
+  optional UpdatedCommentaryVideoInfo updated_commentary_video_info = 10;
+  optional UpdatedGroupInfo updated_group_info = 11;
+  optional HotAtmosphere hot_atmosphere = 12;
+  optional bool can_sold = 13;
+  optional InteractionData promotion_header_interaction = 14;
+  optional BidInfo bid_info = 15;
+}
+
+message UpdatedProductInfo {
+  optional int64 price = 1;
+  optional string title = 2;
+  optional string cover = 3;
+  optional int64 status = 4;
+  optional string pop_upicon = 5;
+}
+
+message UpdatedCouponInfo {
+  optional string tag = 1;
+  optional string coupon_url = 2;
+  optional string coupon_applet = 3;
+  optional bool is_valid = 4;
+  optional string coupon_meta_id = 5;
+}
+
+message UpdatedCampaignInfo {
+  optional bool is_valid = 1;
+  optional string label = 2;
+  optional string price = 3;
+  optional string pic = 4;
+  optional string start_time = 5;
+  optional string end_time = 6;
+  optional string time_start_label = 7;
+  optional string time_end_label = 8;
+  optional string user_limit = 9;
+  optional string is_preheat = 10;
+  optional string campaign_id = 11;
+}
+
+message UpdatedSkuInfo {
+  map<string, SkuInfo> skus = 1;
+  optional int64 min_price = 2;
+  optional int64 max_price = 3;
+  optional int64 unuse_min_price = 4;
+  optional int64 coupon_price = 5;
+}
+
+message SkuInfo {
+  optional string sku_id = 1;
+  optional int64 stock_num = 2;
+  optional int64 price = 3;
+  optional int64 coupon_price = 4;
+}
+
+message UpdatedGroupInfo {
+  repeated string avatar_list = 1;
+  optional int64 joined = 2;
+  optional int64 group_size = 3;
+  optional int64 persent = 4;
+}
+
+message UpdatedCommentaryVideoInfo {
+  optional int64 action = 1;
+}
+
+message BidInfo {
+  optional string promotion_id = 1;
+}
+
+message LiveSellerMessage {
+  optional int32 msg_type = 1;
+  optional AuthorOrderLimitInfo author_order_limit_info = 2;
+  repeated StatsData list_room_stats_data = 3;
+  optional PopupInfo flash_popup_info = 4;
+}
+
+message AuthorOrderLimitInfo {
+  optional ICON icon = 1;
+  optional string title = 2;
+  optional string content = 3;
+  optional string button = 4;
+}
+
+message ICON {
+  repeated string url_list = 1;
+  optional int32 width = 2;
+  optional int32 height = 3;
+}
+
+message StatsData {
+  optional string value = 1;
+  optional string unit = 2;
+  optional int32 type = 3;
+}
+
+message PopupInfo {
+  optional string title = 1;
+  optional string text = 2;
+  repeated JumpUrl urls = 3;
+}
+
+message JumpUrl {
+  optional string key = 1;
+  optional string text = 2;
+  optional string url = 3;
+}
+
+message LiveTargetFlashMessage {
+  optional string schema = 1;
+  optional int64 create_time = 2;
+  optional int64 promotion_id = 3;
+}
